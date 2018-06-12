@@ -1,0 +1,7 @@
+/home/austin/PROPOSALsrc/build/CMakeFiles/edit_cache.dir
+/home/austin/PROPOSALsrc/build/CMakeFiles/PROPOSAL.dir
+/home/austin/PROPOSALsrc/build/CMakeFiles/PROPOSALtest.dir
+/home/austin/PROPOSALsrc/build/CMakeFiles/WriteSectorsFromDomList.dir
+/home/austin/PROPOSALsrc/build/CMakeFiles/rebuild_cache.dir
+/home/austin/PROPOSALsrc/build/doc/CMakeFiles/edit_cache.dir
+/home/austin/PROPOSALsrc/build/doc/CMakeFiles/rebuild_cache.dir
