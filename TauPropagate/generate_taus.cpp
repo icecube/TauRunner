@@ -1,26 +1,16 @@
 #include "PROPOSAL/Propagator.h"
-#include "PROPOSAL/Output.h"
-#include "process_muons.h"
-#include <sys/stat.h>
 #include <iostream>
-#include <fstream>
 #include <math.h>
-#include <cmath>
-#include <vector>
 
-#include <boost/histogram.hpp>
-#include <boost/histogram/serialization.hpp>
-#include <boost/archive/text_iarchive.hpp>
-#include <boost/archive/text_oarchive.hpp>
 
-#include <boost/histogram/histogram_ostream_operators.hpp>
+using namespace std;
 
-vector<double> linspace(double Emin, double Emax, unsigned int n_edges){
-    vector<double> linpoints;
-    double step_lin = (Emax - Emin)/double(n_edges-1);
+std::vector<double> linspace(double Emin,double Emax,int div){
+    std::vector<double> linpoints;
+    double step_lin = (Emax - Emin)/double(div);
 
     double EE = Emin;
-    while (EE <= Emax+0.0001){
+    while (EE <= Emax+0.001){
         linpoints.push_back(EE);
         EE = EE + step_lin;
     }
@@ -28,127 +18,76 @@ vector<double> linspace(double Emin, double Emax, unsigned int n_edges){
     return linpoints;
 }
 
-std::vector<double> logspace(double Emin_log, double Emax_log, unsigned int n_edges, double index=10.) {
+std::vector<double> logspace(double Emin,double Emax,int div){
     std::vector<double> logpoints;
-    double step_log = (Emax_log - Emin_log)/double(n_edges-1);
+    double Emin_log,Emax_log;
+    if (Emin < 1.0e-5 ) {
+        Emin_log = 0.0;
+    } else {
+        Emin_log = log(Emin);
+    }
+    Emax_log = log(Emax);
+
+    double step_log = (Emax_log - Emin_log)/double(div);
+
     double EE = Emin_log;
-    while (EE <= Emax_log+0.0001){
-        logpoints.push_back(std::pow(index,EE));
+    while (EE <= Emax_log+0.001){
+        logpoints.push_back(exp(EE));
         EE = EE + step_log;
     }
+
     return logpoints;
 }
 
-double overburden(double cos_theta, double depth=9.882075327949499, double r_E=32387.868420987306, double m=5.0677309374099995e-3) {
-    double d = depth;
-    double r = r_E;
-    double z = r-d;
-    return (std::sqrt(std::pow(z,2)*std::pow(cos_theta,2)+d*(2*r-d))-z*cos_theta)/m;
-}
+int main(int argc, char* argv[]){
+  //const double PeV = 1.0e9;
+  const double GeV = 1.0e3;
+  const double km = 1.0e5;
+  const double meter = 1.0e2;
 
-int main(int argc, char * argv[])
-{
-    const double GeV = 1.0e3;
-    const double km = 1.0e5;
-    const double meter = 1.0e2;
+  PROPOSAL::Propagator* ice_prop = new PROPOSAL::Propagator(PROPOSAL::TauMinusDef::Get(),"resources/config_ice.json"); //,false,true,true,true,1,12,1,1,1,1,false,2);//,false,true,true,true,1,12,1,1,1,1,false,2);
+  //ice_prop->set_seed(seed);
+  std::cout << "Made the Propagator" << std::endl;
+  unsigned int number_of_particles = 1e4;
+  unsigned int OnePercent = number_of_particles/100;
+  double initial_energy;
+  initial_energy = atof(argv[1]);
+  //std::vector<double> initial_energy_array = logspace(1e10*GeV,1e13*GeV,50); // in MeV
+  std::vector<double> distance_array = linspace(1.5*km,150.0*km,50); // in cm
+  PROPOSAL::Vector3D position(0., 0., 0.);
+  PROPOSAL::Vector3D direction(1., 1., 1.);
 
-    unsigned int energy_index;
-    std::stringstream ss;
-    std::string s(argv[1]);
-    ss.str(s);
-    ss >> energy_index;
-    //energy *= GeV;
+  std::cout << initial_energy << std::endl;
+//    for( double initial_energy : initial_energy_array ){
+    for( double distance : distance_array ){
+      for( unsigned int i = 0; i < number_of_particles; i++ ){
+        double ice_distance = distance;
+          // then propagate in ice
 
-    int seed;
-    ss.clear();
-    s = std::string(argv[2]);
-    ss.str(s);
-    ss >> seed;
+        ice_prop->GetParticle().SetEnergy(initial_energy);
+          //ice_prop->GetParticle().SetPhi(0);
+        //ice_prop->GetParticle()->SetTheta(0);
+        //ice_prop->GetParticle()->SetX(0);
+        //ice_prop->GetParticle()->SetY(0);
+        //ice_prop->GetParticle()->SetZ(0);
+        //ice_prop->GetParticle()->SetT(0);
+        ice_prop->GetParticle().SetPosition(position);
+        ice_prop->GetParticle().SetDirection(direction);
 
-    int n_muons;
-    ss.clear();
-    s = std::string(argv[3]);
-    ss.str(s);
-    ss >> n_muons;
+        ice_prop->GetParticle().SetPropagatedDistance(0);
+        ice_prop->GetParticle().SetParticleId(0);
+        //std::cout << "particle set" << std::endl;
 
-    EnergyCutSettings* ecut = new EnergyCutSettings(10,1e-4);
-    Medium* ICE = new Medium("ice",1.);
-    Propagator* ice_prop = new Propagator(ICE,ecut,"mu","resources/tables");
-    ice_prop->set_seed(seed);
+        ice_prop->Propagate(ice_distance);
 
-    ss.str("");
-    ss.clear();
-    ss << "./" << energy_index;
-    std::string dir_name = ss.str();
-    mkdir(dir_name.c_str(), S_IRUSR | S_IWUSR | S_IXUSR | S_IRGRP | S_IXGRP | S_IROTH);
-    ss <<"/" << seed << ".txt";
 
-    std::string file_name = ss.str();
+        //std::cout<< "Propaaaa" << std::endl;
+        double final_energy = ice_prop->GetParticle().GetEnergy();
 
-    std::cout << file_name << std::endl;
-    
-    std::ofstream f(file_name);
-    //boost::archive::text_oarchive out_archive(f);
-    std::vector<double> e_edges = logspace(0, 11, 88*3+1);
-    std::vector<double> e_grid = e_edges;
+        double final_distance = ice_prop->GetParticle().GetPropagatedDistance();
 
-    std::adjacent_difference(e_grid.begin(), e_grid.end(), e_grid.begin(), [](double a, double b)->double{return (a+b)/2.0;});
-    std::reverse(e_grid.begin(), e_grid.end());
-    std::reverse(e_edges.begin(), e_edges.end());
-    e_grid.pop_back();
-    std::cout << "e_grid: " << e_grid.size() << std::endl;
-
-    std::vector<double> L_grid = linspace(-0.05, 1, 1050+1);
-    std::transform(L_grid.begin(), L_grid.end(), L_grid.begin(), [](double a)->double{return overburden(a);});
-    std::reverse(L_grid.begin(), L_grid.end());
-    
-    std::cout << "L_grid: " << L_grid.size() << std::endl;
-    
-    muons::MuonHistogrammer<double> muon_hist(e_edges, e_grid, L_grid, energy_index);
-    
-    int id = 0;
-
-    std::function<void(Particle*,int,std::pair<double,std::string>,double)> callback = [&] (Particle *particle, int secondary_id, pair<double,string> energy_loss, double distance) {
-        double d = std::sqrt(std::pow(particle->GetX(), 2) + std::pow(particle->GetY(), 2) + std::pow(particle->GetZ(), 2))/meter;
-        double dE = energy_loss.first/GeV;
-        double E = particle->GetEnergy()/GeV;
-        if(secondary_id != id) {
-            id = secondary_id;
-            muon_hist.reset(energy_index);
+        std::cout << final_distance << " " << final_energy << std::endl;
         }
-        muon_hist.process_checkpoint(muons::MuonCheckpoint<double>(d, dE, E));
-    };
-
-    Output::getInstance().SetSecondaryCallback(callback);
-
-    for(int i=0; i<n_muons; ++i)
-    {
-        ice_prop->GetParticle()->SetEnergy(e_grid[energy_index]*GeV);
-        ice_prop->GetParticle()->SetPhi(0);
-        ice_prop->GetParticle()->SetTheta(0);
-        ice_prop->GetParticle()->SetX(0);
-        ice_prop->GetParticle()->SetY(0);
-        ice_prop->GetParticle()->SetZ(0);
-        ice_prop->GetParticle()->SetT(0);
-        ice_prop->GetParticle()->SetPropagatedDistance(0);
-        ice_prop->GetParticle()->SetParticleId(i);
-
-        ice_prop->Propagate(1e9*meter);
-
-        double final_energy = ice_prop->GetParticle()->GetEnergy();
-
-        double final_distance = ice_prop->GetParticle()->GetPropagatedDistance();
-        Output::getInstance().ClearSecondaryVector();
-        if(i%100 == 0) {
-            std::cout << i << std::endl;
-        }
-    }
-
-    namespace bh = boost::histogram;
-    using namespace bh::literals;
-
-    //out_archive << muon_hist.hist;
-    //out_archive << muon_hist.zero_hist;
-    f << muon_hist << std::endl;
+      }
+  return 0;
 }
-

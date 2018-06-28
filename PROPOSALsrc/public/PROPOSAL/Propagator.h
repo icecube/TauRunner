@@ -1,15 +1,37 @@
-/*
- * Propagator.h
- *
- *  Created on: 2013.05.06
- *      Author: Jan-Hendrik Köhne
- */
-#ifndef PROPAGATOR_H
-#define PROPAGATOR_H
 
+/******************************************************************************
+ *                                                                            *
+ * This file is part of the simulation tool PROPOSAL.                         *
+ *                                                                            *
+ * Copyright (C) 2017 TU Dortmund University, Department of Physics,          *
+ *                    Chair Experimental Physics 5b                           *
+ *                                                                            *
+ * This software may be modified and distributed under the terms of a         *
+ * modified GNU Lesser General Public Licence version 3 (LGPL),               *
+ * copied verbatim in the file "LICENSE".                                     *
+ *                                                                            *
+ * Modifcations to the LGPL License:                                          *
+ *                                                                            *
+ *      1. The user shall acknowledge the use of PROPOSAL by citing the       *
+ *         following reference:                                               *
+ *                                                                            *
+ *         J.H. Koehne et al.  Comput.Phys.Commun. 184 (2013) 2070-2090 DOI:  *
+ *         10.1016/j.cpc.2013.04.001                                          *
+ *                                                                            *
+ *      2. The user should report any bugs/errors or improvments to the       *
+ *         current maintainer of PROPOSAL or open an issue on the             *
+ *         GitHub webpage                                                     *
+ *                                                                            *
+ *         "https://github.com/tudo-astroparticlephysics/PROPOSAL"            *
+ *                                                                            *
+ ******************************************************************************/
+
+
+#pragma once
 
 /*! \mainpage PROPOSAL:
- * <b>PR</b>opagator with <b>O</b>ptimal <b>P</b>recision and <b>O</b>ptimized <b>S</b>peed for <b>A</b>ll <b>L</b>eptons.
+ * <b>PR</b>opagator with <b>O</b>ptimal <b>P</b>recision and <b>O</b>ptimized <b>S</b>peed for <b>A</b>ll
+ * <b>L</b>eptons.
  *
  * \section intro_sec Introduction
  *
@@ -23,228 +45,191 @@
  *
  */
 
-#include "PROPOSAL/Particle.h"
-#include "PROPOSAL/MathModel.h"
-#include "PROPOSAL/ProcessCollection.h"
-#include <utility>
-#include <boost/program_options.hpp>
-#include "PROPOSAL/Geometry.h"
-#include "PROPOSAL/Scattering.h"
-#include "PROPOSAL/ScatteringFirstOrder.h"
-#include "PROPOSAL/ScatteringMoliere.h"
+// there is a known apple bug
+#if defined(__APPLE__)
+/* undo some macro defs in pyport.h
+ the /boost/property_tree/detail/ptree_utils.hpp:31:66 the std::toupper is used
+ which would crash, if somewhere before the pyport.h is included
+ (comes with including python.h) */
+#if defined(_PY_PORT_CTYPE_UTF8_ISSUE) && defined(__cplusplus)
+#undef isalnum
+#undef isalpha
+#undef islower
+#undef isspace
+#undef isupper
+#undef tolower
+#undef toupper
+#endif /* _PY_PORT_CTYPE_UTF8_ISSUE && __cplusplus */
+#endif /* __APPLE__ */
 
-class Propagator :public MathModel
+#include <boost/property_tree/ptree.hpp>
+#include <deque>
+#include <vector>
+
+#include "PROPOSAL/Output.h"
+#include "PROPOSAL/sector/Sector.h"
+
+namespace PROPOSAL {
+
+class Propagator
 {
-private:
-    int  order_of_interpolation_;
-    bool debug_;
-    bool particle_interaction_;     //!< particle interaction? (false = decay)
-
-    int     seed_;                      //!< seed of the random number generator
-    int     brems_;                     //!< Bremsstrahlungs parametrization
-    int     photo_;                     //!< Photonuclear parametrization
-    bool    lpm_;                       //!< Landau-Pomeranchuk-Migdal supression of EM cross-sections enabled if true
-    bool    moliere_;                   //!< Moliere scattering enabled if true
-    bool    do_exact_time_calulation_;  //!< exact local time calculation enabled if true
-    bool    integrate_;                 //!< if true nothing will be interpolated
-    double  brems_multiplier_;          //!< multiplier to in- or decrease the Bremsstrahlung cross-sections
-    double  photo_multiplier_;          //!< multiplier to in- or decrease the Photonucler cross-sections
-    double  ioniz_multiplier_;          //!< multiplier to in- or decrease the Ionization cross-sections
-    double  epair_multiplier_;          //!< multiplier to in- or decrease the Epairproduction cross-sections
-    double  global_ecut_inside_;        //!< ecut for inside the detector (it's used when not specified explicit for a sector in congiguration file)
-    double  global_ecut_infront_;       //!< ecut for infront of the detector (it's used when not specified explicit for a sector in congiguration file)
-    double  global_ecut_behind_;        //!< ecut for behind the detector (it's used when not specified explicit for a sector in congiguration file)
-    double  global_vcut_inside_;        //!< vcut for inside the detector (it's used when not specified explicit for a sector in congiguration file)
-    double  global_vcut_infront_;       //!< ecut for infront of the detector (it's used when not specified explicit for a sector in congiguration file)
-    double  global_vcut_behind_;        //!< ecut for behind the detector (it's used when not specified explicit for a sector in congiguration file)
-    double  global_cont_inside_;        //!< continuous randominzation flag for inside the detector (it's used when not specified explicit for a sector in congiguration file)
-    double  global_cont_infront_;       //!< continuous randominzation flag for infront of the detector (it's used when not specified explicit for a sector in congiguration file)
-    double  global_cont_behind_;        //!< continuous randominzation flag for behind the detector (it's used when not specified explicit for a sector in congiguration file)
-
-    std::string path_to_tables_;        //!< path to interpolation tables (if not empty tables are stored)
-    bool    raw_;                       //!< if true interpolation tables will  be written binary if path is not empty
-
-    std::vector<ProcessCollection*> collections_;
-
-    Particle* particle_;
-    //FirstOrderScattering
-    ScatteringFirstOrder* scatteringFirstOrder_;
-    //FirstOrderMoliere
-    ScatteringMoliere* scatteringFirstOrderMoliere_;
-    int scattering_model_;
-    ProcessCollection *current_collection_;
-
-    Geometry*    detector_;
-
-
-//----------------------------------------------------------------------------//
-
-    /*!
-    * Initalize a geomtry. Used when reading the values from config file
-    *
-    */
-    void InitGeometry(Geometry* geometry, std::deque<std::string>* token , std::string first_token);
-//----------------------------------------------------------------------------//
-    /*!
-    * Init ProcessCollection from configuration file. When keyword sector is found in configuration
-    * file this function is called and inits ProcessCollections:
-    * 3 for muons inside/behind/infront
-    * 3 for taus inside/behind/infront
-    * 3 for electrons inside/behind/infront
-    */
-    void InitProcessCollections(std::ifstream &file);
-
-//----------------------------------------------------------------------------//
-    /*!
-     *  Apply options which are read from configuration file to ProcessCollections
-    */
-    void ApplyOptions();
-
-    void MoveParticle(double distance);
-
 public:
+    // Constructors
+    Propagator(const std::vector<Sector*>&, const Geometry&);
+    Propagator(const ParticleDef&, const std::vector<Sector::Definition>&, const Geometry&);
+    Propagator(const ParticleDef&, const std::vector<Sector::Definition>&, const Geometry&, const InterpolationDef&);
+    Propagator(const ParticleDef&, const std::string&);
 
-    //Constructors
-    Propagator();
-    Propagator(std::string config_file);
-    Propagator(Medium* medium,
-               EnergyCutSettings* cuts,
-               std::string particle_type,
-               std::string path_to_tables,
-               bool moliere = true,
-               bool continuous_rand = true,
-               bool exact_time = true,
-               bool lpm = true,
-               int brems = 1,
-               int photo = 12,
-               double brems_multiplier = 1,
-               double photo_multiplier = 1,
-               double ioniz_multiplier = 1,
-               double epair_multiplier = 1,
-               bool integrate = false,
-               int scattering_model = 0,
-               int seed = 1);
     Propagator(const Propagator&);
-    Propagator& operator=(const Propagator& propagator);
-    bool operator==(const Propagator &propagator) const;
-    bool operator!=(const Propagator &propagator) const;
-
-//----------------------------------------------------------------------------//
-    //Memberfunctions
-    /**
-     * Propagates the particle of initial energy e to the distance r.
-     * Returns the final energy if the
-     * particle has survived or the track length to the
-     * point of disappearance with a minus sign otherwise.
-     *
-     *  \param  distance   maximum track length
-     *  \param  energy   initial energy
-     *  \return energy at distance OR -(track length)
-     */
-
-    double Propagate(double distance);
-
-//----------------------------------------------------------------------------//
-    /**
-     * Propagates the particle through the current set of ProcessCollections
-     *  \return vector of secondarys
-     */
-
-    std::vector<Particle*> Propagate( Particle *particle );
-
-//----------------------------------------------------------------------------//
-    /*!
-    * advances the particle by the given distance
-    * Sets the x,y and z coordinates of particle_
-    * and its time and propagation distance
-    *
-    * \param    dr  flight distance
-    * \param    ei  initial energy
-    * \param    ef  final energy
-    */
-
-    void AdvanceParticle(double dr, double ei, double ef);
-
-//----------------------------------------------------------------------------//
-
-    void swap(Propagator &propagator);
-
-//----------------------------------------------------------------------------//
-
-    void InitDefaultCollection(Geometry* geom);
-
-//----------------------------------------------------------------------------//
-
-    void EnableInterpolation(std::string path ="",bool raw=false);
-
-//----------------------------------------------------------------------------//
-
-    void DisableInterpolation();
-
-//----------------------------------------------------------------------------//
-
-    void ReadConfigFile(std::string config_file);
-
-//----------------------------------------------------------------------------//
-    /**
-     * Choose the current collection by particle type and location.
-     */
-
-    void ChooseCurrentCollection(Particle* particle);
-
-//----------------------------------------------------------------------------//
-    /**
-     * Calculates the contiuous loss till the first stochastic loss happend
-     * and subtract it from initial energy
-     * Also caluclate the energy at which the particle decay
-     * These to energys can be compared to decide if a decay or particle interaction
-     * happens
-     *
-     *  \param  initial_energy   initial energy
-     *  \return pair.first final energy befor first interaction pair.second decay energy at which the
-     *          particle decay
-     */
-    std::pair<double,double> CalculateEnergyTillStochastic( double initial_energy );
-
-//----------------------------------------------------------------------------//
-
-    void Setup(int argc, char** argv);
-
-//----------------------------------------------------------------------------//
-
-    boost::program_options::options_description CreateOptions();
-
-//----------------------------------------------------------------------------//
-    //Getter
-
-    ProcessCollection* GetCurrentCollection() const
-    {
-        return current_collection_;
-    }
-//----------------------------------------------------------------------------//
-
-    std::vector<ProcessCollection*> GetCollections() const
-    {
-        return collections_;
-    }
-
-//----------------------------------------------------------------------------//
-    Particle* GetParticle() const
-    {
-        return particle_;
-    }
-
-//----------------------------------------------------------------------------//
-    //Setter
-    /**
-     *  Sets the particle for the Propagator and its current ProcessCollection
-     */
-    void SetParticle(Particle* particle);
-
-//----------------------------------------------------------------------------//
-    //Destructor
     ~Propagator();
 
+    bool operator==(const Propagator& propagator) const;
+    bool operator!=(const Propagator& propagator) const;
+
+    // ----------------------------------------------------------------------------
+    /// @brief Propagates the particle through the current set of Sectors
+    ///
+    /// @param MaxDistance_cm
+    ///
+    /// @return Secondary data
+    // ----------------------------------------------------------------------------
+    std::vector<DynamicData*> Propagate(double MaxDistance_cm = 1e20);
+
+    // --------------------------------------------------------------------- //
+    // Getter
+    // --------------------------------------------------------------------- //
+
+    const Sector* GetCurrentSector() const { return current_sector_; }
+    std::vector<Sector*> GetSectors() const { return sectors_; }
+
+    Geometry& GetDetector() const { return *detector_; };
+    Particle& GetParticle() { return particle_; };
+
+private:
+
+    Propagator& operator=(const Propagator& propagator);
+
+    // ----------------------------------------------------------------------------
+    /// @brief Simple wrapper to initialize propagator from config file
+    ///
+    /// The value of var will be treated as a default value.
+    ///
+    /// @param var: the variable to initialize
+    /// @param option: option in the property_tree
+    /// @param property_tree
+    // ----------------------------------------------------------------------------
+    template<class T>
+    void SetMember(T& var, const std::string option, const boost::property_tree::ptree& pt)
+    {
+        boost::optional<T> optional_param = pt.get_optional<T>(option);
+        if (optional_param)
+        {
+            var = optional_param.get();
+        } else
+        {
+            std::stringstream ss;
+            ss << "Option " << option << " not set! Use default: " << var;
+            log_warn("%s", ss.str().c_str());
+        }
+    }
+
+    // ----------------------------------------------------------------------------
+    /// @brief Create geometry from json config file
+    ///
+    /// @param pt boost property tree
+    ///
+    /// @return new Geometry
+    // ----------------------------------------------------------------------------
+    Geometry* ParseGeometryConifg(const boost::property_tree::ptree& pt);
+
+    // ----------------------------------------------------------------------------
+    /// @brief Choose the current collection the particle is in.
+    ///
+    /// @param particle_position
+    /// @param particle_direction
+    // ----------------------------------------------------------------------------
+    void ChooseCurrentCollection(const Vector3D& particle_position, const Vector3D& particle_direction);
+
+    // ----------------------------------------------------------------------------
+    /// @brief Calculate the distance to propagate
+    ///
+    /// Calculate the distance to propagate and
+    /// choose if the particle has to propagate through the whole sector
+    /// or only to the collection border
+    ///
+    /// @param particle_position
+    /// @param particle_direction
+    ///
+    /// @return distance
+    // ----------------------------------------------------------------------------
+    double CalculateEffectiveDistance(const Vector3D& particle_position, const Vector3D& particle_direction);
+
+    // --------------------------------------------------------------------- //
+    // Global default values
+    // --------------------------------------------------------------------- //
+
+    static const int
+        global_seed_; //!< Seed for the internal random number generator
+    static const double
+        global_ecut_inside_; //!< ecut for inside the detector (it's used when not specified explicit for a sector in
+    //! congiguration file)
+    static const double
+        global_ecut_infront_; //!< ecut for infront of the detector (it's used when not specified explicit for a
+    //! sector in congiguration file)
+    static const double
+        global_ecut_behind_; //!< ecut for behind the detector (it's used when not specified explicit for a sector in
+    //! congiguration file)
+    static const double
+        global_vcut_inside_; //!< vcut for inside the detector (it's used when not specified explicit for a sector in
+    //! congiguration file)
+    static const double
+        global_vcut_infront_; //!< ecut for infront of the detector (it's used when not specified explicit for a
+    //! sector in congiguration file)
+    static const double
+        global_vcut_behind_; //!< ecut for behind the detector (it's used when not specified explicit for a sector in
+    //! congiguration file)
+    static const double
+        global_cont_inside_; //!< continuous randominzation flag for inside the detector (it's used when not
+    //! specified explicit for a sector in congiguration file)
+    static const double
+        global_cont_infront_; //!< continuous randominzation flag for infront of the detector (it's used when not
+    //! specified explicit for a sector in congiguration file)
+    static const double
+        global_cont_behind_;        //!< continuous randominzation flag for behind the detector (it's used when not
+                                    //! specified explicit for a sector in congiguration file)
+    static const bool interpolate_; //!< Enable interpolation
+
+    // --------------------------------------------------------------------- //
+    // Private Member
+    // --------------------------------------------------------------------- //
+
+    std::vector<Sector*> sectors_;
+    Sector* current_sector_;
+
+    Particle particle_;
+    Geometry* detector_;
 };
 
-#endif // _PROPAGATOR_H
+} // namespace PROPOSAL
+
+// redefine the macros, which were undefined at the beginning of the header
+#if defined(__APPLE__)
+#if defined(_PY_PORT_CTYPE_UTF8_ISSUE) && defined(__cplusplus)
+#include <ctype.h>
+#include <wctype.h>
+#undef isalnum
+#define isalnum(c) iswalnum(btowc(c))
+#undef isalpha
+#define isalpha(c) iswalpha(btowc(c))
+#undef islower
+#define islower(c) iswlower(btowc(c))
+#undef isspace
+#define isspace(c) iswspace(btowc(c))
+#undef isupper
+#define isupper(c) iswupper(btowc(c))
+#undef tolower
+#define tolower(c) towlower(btowc(c))
+#undef toupper
+#define toupper(c) towupper(btowc(c))
+#endif /* _PY_PORT_CTYPE_UTF8_ISSUE && __cplusplus */
+#endif /* __APPLE__ */

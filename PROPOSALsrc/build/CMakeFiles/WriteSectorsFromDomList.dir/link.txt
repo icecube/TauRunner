@@ -1,1 +1,0 @@
-/usr/bin/c++   -std=c++11   CMakeFiles/WriteSectorsFromDomList.dir/private/test/WriteSectorsFromDomList.cxx.o  -o bin/WriteSectorsFromDomList -rdynamic lib/libPROPOSAL.a -lboost_program_options /usr/local/lib/liblog4cplus.so -Wl,-rpath,/usr/local/lib 
