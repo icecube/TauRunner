@@ -1,8 +1,25 @@
+import os 
+os.environ['HDF5_DISABLE_VERSION_CHECK']='2'
 import numpy as np
 import scipy as sp
 import nuSQUIDSpy as nsq
 import pickle
+import argparse
 
+parser = argparse.ArgumentParser()
+parser.add_argument('-s',dest='seed',type=int,help='just an integer seed to help with output file names')
+parser.add_argument('-e',dest='eini',type=float,help='initial nutau energy in GeV')
+parser.add_argument('-d', dest='total_distance', type=float, help='total distance you would like to propagate the neutrino/tau')
+parser.add_argument('-n', dest='nevents', type=int, help='how many events do you want?')
+args = parser.parse_args()
+
+if (not (args.seed or args.eini or args.total_distance or args.nevents)):
+    raise RuntimeError('You must specify a seed (-s), an initial energy (-e), total propagation distance (-d) and number of events to simulate (-n)') 
+
+seed = args.seed
+eini = args.eini
+total_distance = args.total_distance
+nevents = args.nevents
 
 units = nsq.Const()
 gr = nsq.GlashowResonanceCrossSection()
@@ -18,8 +35,9 @@ def find_nearest(array, value):
     return array[idx]
 
 def SampleFinalTauParams(e_in):
+    #below a PeV decay on-the-spot
     if (e_in < 1e6):
-        return(e_in, 1e-5)
+        return(e_in, 0.)
     else:
         eins = np.logspace(6,16,500)
         e_in = find_nearest(eins, e_in)
@@ -153,7 +171,7 @@ class CasinoEvent(object):
 
 
 def RollDice(initial_neutrino_energy,
-             TotalDistance = 7210.*units.km,
+             TotalDistance,
              ProposedDistanceStep = 10.*units.km,
              density = 2.6*units.gr/(units.cm**3)):
     FirstEvent = CasinoEvent("tau_neutrino",initial_neutrino_energy,0.0)
@@ -189,8 +207,9 @@ def RollDice(initial_neutrino_energy,
             event.position += ProposedDistanceStep
     return EventCollection
 
-eini = 1.e9*units.GeV
-CasinoGame = np.array([RollDice(eini)[0] for i in xrange(100000)])
+eini = eini*units.GeV
+total_distance = total_distance*units.km
+CasinoGame = np.array([RollDice(eini, total_distance)[0] for i in xrange(nevents)])
 
 taus_e = []
 nus_e = []
@@ -201,5 +220,5 @@ for event in CasinoGame:
     else:
         nus_e.append(event.energy)
 
-np.save('taus_onTheOtherSide.npy', taus_e)
-np.save('nus_onTheOtherSide.npy', nus_e)
+np.save('taus_onTheOtherSide'+str(seed)+'_'+str(eini/units.GeV)+'GeV.npy', taus_e)
+np.save('nus_onTheOtherSide'+str(seed)+'_'+str(eini/units.GeV)+'GeV.npy', nus_e)
