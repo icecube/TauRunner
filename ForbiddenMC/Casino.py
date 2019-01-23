@@ -73,7 +73,7 @@ def TotalNeutrinoCrossSection(enu,
                               flavor = nsq.NeutrinoCrossSections_NeutrinoFlavor.electron,
                               neutype = nsq.NeutrinoCrossSections_NeutrinoType.neutrino,
                               interaction = nsq.NeutrinoCrossSections_Current.NC):
-    if(enu/units.GeV > 1e8):
+    if(enu > 1e17):
         if(interaction == nsq.NeutrinoCrossSections_Current.NC):
             return((10**f_NC(np.log10(enu)))*(units.cm)**2)
         else:
@@ -164,7 +164,12 @@ class CasinoEvent(object):
     def InteractParticle(self, interaction):
         if self.particle_id == "tau_neutrino":
 
-            dNdEle = lambda y: DifferentialOutGoingLeptonDistribution(self.energy,self.energy*y,
+	    if(self.energy/units.GeV > 1e12):
+  		dNdEle = lambda y: DifferentialOutGoingLeptonDistribution(1e12*units.GeV,1e12*units.GeV*y,
+                                                                      interaction = interaction)
+	    else:
+
+                dNdEle = lambda y: DifferentialOutGoingLeptonDistribution(self.energy,self.energy*y,
                                                                       interaction = interaction)
             NeutrinoInteractionWeights = map(dNdEle,yy)
             NeutrinoInteractionWeights = NeutrinoInteractionWeights/np.sum(NeutrinoInteractionWeights)
