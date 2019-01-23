@@ -5,6 +5,7 @@ import scipy as sp
 import nuSQUIDSpy as nsq
 import pickle
 import argparse
+from scipy.interpolate import interp1d
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-s',dest='seed',type=int,help='just an integer seed to help with output file names')
