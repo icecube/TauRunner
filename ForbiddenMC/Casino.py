@@ -10,7 +10,7 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-s',dest='seed',type=int,help='just an integer seed to help with output file names')
 parser.add_argument('-e',dest='eini',type=float,help='initial nutau energy in GeV')
 parser.add_argument('-d', dest='total_distance', type=float, help='total distance you would like to propagate the neutrino/tau')
-parser.add_argument('-n', dest='nevents', type=int, help='how many events do you want?')
+parser.add_argument('-n', dest='nevents', type=float, help='how many events do you want?')
 args = parser.parse_args()
 
 if (not (args.seed or args.eini or args.total_distance or args.nevents)):
@@ -19,7 +19,7 @@ if (not (args.seed or args.eini or args.total_distance or args.nevents)):
 seed = args.seed
 eini = args.eini
 total_distance = args.total_distance
-nevents = args.nevents
+nevents = int(args.nevents)
 
 units = nsq.Const()
 gr = nsq.GlashowResonanceCrossSection()
@@ -28,6 +28,24 @@ tds = nsq.TauDecaySpectra()
 
 File = open('taus_rock_ALLM97_lpm_vcut1e-3_MMC_Ordered_weighted.pickle','r')
 tau_loss_array = pickle.load(File)
+
+#cross sections from 1e8 - 1e16 GeV patched with nuSQUIDS 
+#temporary until EHE cross sections are added to nuSQUIDS
+
+######################################
+charged = np.load('nuXS_CC_8-16.npy')
+neutral = np.load('nuXS_NC_8-16.npy')
+energies = np.logspace(17, 25, 500)
+energies = (energies[:-1] + energies[1:])/2
+
+log_e = np.log10(energies)
+log_XS_CC = np.log10(charged)
+log_XS_NC = np.log10(neutral)
+
+f_NC = interp1d(log_e, log_XS_NC)
+f_CC = interp1d(log_e, log_XS_CC)
+
+#####################################
 
 def find_nearest(array, value):
     array = np.asarray(array)
@@ -50,12 +68,17 @@ def SampleFinalTauParams(e_in):
 
         return(10**e_final, 10**distance)
 
-
 def TotalNeutrinoCrossSection(enu, 
                               flavor = nsq.NeutrinoCrossSections_NeutrinoFlavor.electron,
                               neutype = nsq.NeutrinoCrossSections_NeutrinoType.neutrino,
                               interaction = nsq.NeutrinoCrossSections_Current.NC):
-    return dis.TotalCrossSection(enu,flavor,neutype,interaction)*(units.cm)**2
+    if(enu/units.GeV > 1e8):
+        if(interaction == nsq.NeutrinoCrossSections_Current.NC):
+            return((10**f_NC(np.log10(enu)))*(units.cm)**2)
+        else:
+            return((10**f_CC(np.log10(enu)))*(units.cm)**2)
+    else:
+        return dis.TotalCrossSection(enu,flavor,neutype,interaction)*(units.cm)**2
 
 def DifferentialOutGoingLeptonDistribution(enu_in,enu_out,
                                        flavor = nsq.NeutrinoCrossSections_NeutrinoFlavor.tau,
@@ -64,7 +87,6 @@ def DifferentialOutGoingLeptonDistribution(enu_in,enu_out,
                                     ):
     diff = dis.SingleDifferentialCrossSection(enu_in,enu_out,flavor,neutype,interaction)
     return diff
-
 
 Etau = 100.
 zz = np.linspace(0.0,1.0,500)[1:-1]
@@ -220,5 +242,5 @@ for event in CasinoGame:
     else:
         nus_e.append(event.energy)
 
-np.save('taus_onTheOtherSide'+str(seed)+'_'+str(eini/units.GeV)+'GeV.npy', taus_e)
-np.save('nus_onTheOtherSide'+str(seed)+'_'+str(eini/units.GeV)+'GeV.npy', nus_e)
+np.save('./taus/taus_onTheOtherSide'+str(seed)+'_'+str(eini/units.GeV)+'GeV.npy', taus_e)
+np.save('./nus/nus_onTheOtherSide'+str(seed)+'_'+str(eini/units.GeV)+'GeV.npy', nus_e)
