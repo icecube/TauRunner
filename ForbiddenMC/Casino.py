@@ -73,12 +73,15 @@ def TotalNeutrinoCrossSection(enu,
                               flavor = nsq.NeutrinoCrossSections_NeutrinoFlavor.electron,
                               neutype = nsq.NeutrinoCrossSections_NeutrinoType.neutrino,
                               interaction = nsq.NeutrinoCrossSections_Current.NC):
-    if(enu > 1e17):
+
+    if(np.log10(enu) > log_e[0]):
+
         if(interaction == nsq.NeutrinoCrossSections_Current.NC):
             return((10**f_NC(np.log10(enu)))*(units.cm)**2)
         else:
             return((10**f_CC(np.log10(enu)))*(units.cm)**2)
     else:
+
         return dis.TotalCrossSection(enu,flavor,neutype,interaction)*(units.cm)**2
 
 def DifferentialOutGoingLeptonDistribution(enu_in,enu_out,
@@ -140,7 +143,6 @@ class CasinoEvent(object):
     def GetInteractionLength(self,density,interaction):
         if self.particle_id == "tau_neutrino":
             # this should be actually divided by average of proton and neutron mass
-            #print TotalNeutrinoCrossSection(self.energy, interaction = interaction), self.energy, interaction
             return proton_mass/(TotalNeutrinoCrossSection(self.energy, interaction = interaction)*density)
         if self.particle_id == "tau":
             # here we need the total tau cross section
@@ -168,7 +170,6 @@ class CasinoEvent(object):
   		dNdEle = lambda y: DifferentialOutGoingLeptonDistribution(1e12*units.GeV,1e12*units.GeV*y,
                                                                       interaction = interaction)
 	    else:
-
                 dNdEle = lambda y: DifferentialOutGoingLeptonDistribution(self.energy,self.energy*y,
                                                                       interaction = interaction)
             NeutrinoInteractionWeights = map(dNdEle,yy)
@@ -236,6 +237,7 @@ def RollDice(initial_neutrino_energy,
     return EventCollection
 
 eini = eini*units.GeV
+print(np.log10(eini))
 total_distance = total_distance*units.km
 CasinoGame = np.array([RollDice(eini, total_distance)[0] for i in xrange(nevents)])
 
