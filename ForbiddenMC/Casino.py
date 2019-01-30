@@ -136,6 +136,15 @@ class CasinoEvent(object):
         else:
             return np.inf
 
+    def GetProposedDistanceStep(self, density, p):
+        #Calculate the inverse of the interaction lengths (The lengths should be added reciprocally)
+        first_piece = (1./self.GetInteractionLength(density, interaction=nsq.NeutrinoCrossSections_Current.CC))
+        second_piece = (1./self.GetInteractionLength(density, interaction=nsq.NeutrinoCrossSections_Current.NC))
+        step = (first_piece + second_piece)
+
+	#return the distance to interaction - weighted by a sampled random number 
+	return -np.log(p)/step
+
     def GetDecayProbability(self,dL):
         boost_factor = self.GetBoostFactor()
         return dL/(boost_factor*self.lifetime)
@@ -179,17 +188,19 @@ class CasinoEvent(object):
             if interaction == nsq.NeutrinoCrossSections_Current.CC:
                 self.particle_id = "tau"
                 self.SetParticleProperties()
+		self.history.append("Neutrino Interacted via CC")
+
             elif interaction == nsq.NeutrinoCrossSections_Current.NC:
                 self.particle_id = "tau_neutrino"
                 self.SetParticleProperties()
-
-            self.history.append("Neutrino Interacted")
+		self.history.append("Neutrino Interacted via NC")
             return
         if self.particle_id == "tau":
             Efin, Ladv = SampleFinalTauParams(self.energy/units.GeV)
             self.energy = Efin*units.GeV
             self.position += Ladv*units.km
             self.history.append("Tau Interacted")
+	    self.history.append(" moved "+str(Ladv)+" km and has "+str(Efin)+" GeV left") 
             self.DecayParticle()
             return
 
@@ -201,39 +212,39 @@ class CasinoEvent(object):
 
 def RollDice(initial_neutrino_energy,
              TotalDistance,
-             ProposedDistanceStep = 10.*units.km,
              density = 2.6*units.gr/(units.cm**3)):
+
     FirstEvent = CasinoEvent("tau_neutrino",initial_neutrino_energy,0.0)
     EventCollection = [FirstEvent]
-
-    while(not np.any(map(lambda e: (e.position > TotalDistance) or (e.energy < e.GetMass()), EventCollection))):
+    
+    while(not np.any(map(lambda e: (e.position >= TotalDistance) or (e.energy <= e.GetMass()), EventCollection))):
         for event in EventCollection:
-            p = np.random.random_sample()
-            if event.GetDecayProbability(ProposedDistanceStep) > p:
-                event.DecayParticle()
-                continue
 
-            p = np.random.random_sample()
-            p_int = event.GetInteractionProbability(ProposedDistanceStep,density,
-                                                    interaction = nsq.NeutrinoCrossSections_Current.CC)
-            if p_int > 1:
-                print "pick smaller step"
-            if p_int > p:
-                event.InteractParticle(nsq.NeutrinoCrossSections_Current.CC)
-                continue
+            if(event.particle_id == 'tau_neutrino'):
 
-            p = np.random.random_sample()
-            p_int = event.GetInteractionProbability(ProposedDistanceStep,density, 
-                                                    interaction = nsq.NeutrinoCrossSections_Current.NC)
-            if p_int > 1:
-                print "pick smaller step"
-            if p_int > p:
-                event.InteractParticle(nsq.NeutrinoCrossSections_Current.NC)
-                continue
+                #Determine how far you're going
+                p1 = np.random.random_sample()
+                DistanceStep = event.GetProposedDistanceStep(density, p1)
+		#Check to make sure you don't overshoot the total distance
+                if(event.position + DistanceStep >= TotalDistance):
+                    event.position = TotalDistance
+                    continue
+                #now pick an interaction
+                p2 = np.random.random_sample()
+                p_int_CC = event.GetInteractionProbability(DistanceStep,density,
+                                                        interaction = nsq.NeutrinoCrossSections_Current.CC)
 
-        # move everything forward
-        for event in EventCollection:
-            event.position += ProposedDistanceStep
+                if(p2 <= p_int_CC):
+                    event.InteractParticle(nsq.NeutrinoCrossSections_Current.CC)
+                    event.position += DistanceStep
+                    
+                else:
+                    event.InteractParticle(nsq.NeutrinoCrossSections_Current.NC)
+                    event.position += DistanceStep
+
+            elif(event.particle_id == 'tau'):
+                event.InteractParticle(interaction = nsq.NeutrinoCrossSections_Current.NC)
+
     return EventCollection
 
 eini = eini*units.GeV
