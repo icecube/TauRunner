@@ -145,6 +145,10 @@ class CasinoEvent(object):
 	#return the distance to interaction - weighted by a sampled random number 
 	return -np.log(p)/step
 
+    def GetTotalInteractionLength(self, density):
+        return(1./(1./self.GetInteractionLength(density, interaction=nsq.NeutrinoCrossSections_Current.NC)
+               + 1./self.GetInteractionLength(density, interaction=nsq.NeutrinoCrossSections_Current.CC)))
+
     def GetDecayProbability(self,dL):
         boost_factor = self.GetBoostFactor()
         return dL/(boost_factor*self.lifetime)
@@ -229,11 +233,12 @@ def RollDice(initial_neutrino_energy,
                 if(event.position + DistanceStep >= TotalDistance):
                     event.position = TotalDistance
                     continue
+                    
                 #now pick an interaction
                 p2 = np.random.random_sample()
-                p_int_CC = event.GetInteractionProbability(DistanceStep,density,
-                                                        interaction = nsq.NeutrinoCrossSections_Current.CC)
-
+                CC_lint = event.GetInteractionLength(density, interaction=nsq.NeutrinoCrossSections_Current.CC)
+                p_int_CC = CC_lint / event.GetTotalInteractionLength(density)
+                
                 if(p2 <= p_int_CC):
                     event.InteractParticle(nsq.NeutrinoCrossSections_Current.CC)
                     event.position += DistanceStep
@@ -241,8 +246,8 @@ def RollDice(initial_neutrino_energy,
                 else:
                     event.InteractParticle(nsq.NeutrinoCrossSections_Current.NC)
                     event.position += DistanceStep
-
-            elif(event.particle_id == 'tau'):
+            
+	    elif(event.particle_id == 'tau'):
                 event.InteractParticle(interaction = nsq.NeutrinoCrossSections_Current.NC)
 
     return EventCollection
