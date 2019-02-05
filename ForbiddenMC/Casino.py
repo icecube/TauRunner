@@ -69,8 +69,8 @@ def SampleFinalTauParams(e_in):
 
         return(10**e_final, 10**distance)
 
-def TotalNeutrinoCrossSection(enu, 
-                              flavor = nsq.NeutrinoCrossSections_NeutrinoFlavor.electron,
+def TotalNeutrinoCrossSection(enu,
+                              flavor = nsq.NeutrinoCrossSections_NeutrinoFlavor.tau,
                               neutype = nsq.NeutrinoCrossSections_NeutrinoType.neutrino,
                               interaction = nsq.NeutrinoCrossSections_Current.NC):
 
@@ -142,8 +142,8 @@ class CasinoEvent(object):
         second_piece = (1./self.GetInteractionLength(density, interaction=nsq.NeutrinoCrossSections_Current.NC))
         step = (first_piece + second_piece)
 
-	#return the distance to interaction - weighted by a sampled random number 
-	return -np.log(p)/step
+        #return the distance to interaction - weighted by a sampled random number
+	    return -np.log(p)/step
 
     def GetTotalInteractionLength(self, density):
         return(1./(1./self.GetInteractionLength(density, interaction=nsq.NeutrinoCrossSections_Current.NC)
@@ -220,7 +220,7 @@ def RollDice(initial_neutrino_energy,
 
     FirstEvent = CasinoEvent("tau_neutrino",initial_neutrino_energy,0.0)
     EventCollection = [FirstEvent]
-    
+
     while(not np.any(map(lambda e: (e.position >= TotalDistance) or (e.energy <= e.GetMass()), EventCollection))):
         for event in EventCollection:
 
@@ -229,24 +229,24 @@ def RollDice(initial_neutrino_energy,
                 #Determine how far you're going
                 p1 = np.random.random_sample()
                 DistanceStep = event.GetProposedDistanceStep(density, p1)
-		#Check to make sure you don't overshoot the total distance
+
+                #Check to see if your particle escapes before interacting
                 if(event.position + DistanceStep >= TotalDistance):
                     event.position = TotalDistance
                     continue
-                    
+
                 #now pick an interaction
                 p2 = np.random.random_sample()
                 CC_lint = event.GetInteractionLength(density, interaction=nsq.NeutrinoCrossSections_Current.CC)
-                p_int_CC = CC_lint / event.GetTotalInteractionLength(density)
-                
+                p_int_CC = event.GetTotalInteractionLength(density) / CC_lint
+
                 if(p2 <= p_int_CC):
                     event.InteractParticle(nsq.NeutrinoCrossSections_Current.CC)
                     event.position += DistanceStep
-                    
                 else:
                     event.InteractParticle(nsq.NeutrinoCrossSections_Current.NC)
                     event.position += DistanceStep
-            
+
 	    elif(event.particle_id == 'tau'):
                 event.InteractParticle(interaction = nsq.NeutrinoCrossSections_Current.NC)
 
