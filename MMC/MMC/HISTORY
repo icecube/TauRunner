@@ -1,0 +1,1507 @@
+Subject: Muon Propagation
+Date: Thu, 30 Nov 2000 23:56:13 +0100
+
+muon montecarlo code written in java version 0.01
+
+The code:
+
+1. compiles
+2. runs
+3. contains all foreseen cross sections
+
+The main purpose of the code is to calculate final energy of the muon with the
+given initial energy after some known distance, or to say where exactly it
+disappeared if it didn't reach the final point located at a given distance
+form the initial point.
+
+Running of this code is *not* for the weak of heart. Please do not start it
+unless you have a couple of hours to spare (at least on my machine).
+
+As it is given, it will propagate a total of 2 (two) muons with energy 10^5
+MeV to a distance of 10^4 cm. Each muon will be subject to decay, ionization ,
+bremsstrahlung, pair production and photonuclear losses as well as knock-on
+stochastic energy transfers to electrons and photons arising in the above
+mentioned processes.
+
+Although I have sorted out most of the notational and purport questions, I
+still have a couple, including the following:
+
+1. what is M in formula (8) of the cross sections' paper?
+
+2. do we take it seriously?
+
+3. If yes, do we take into account the binding energy of the nucleons in the
+nucleus?
+
+4. Almost in every cross section the energy lost is the energy gained by the
+main knocked particle (electron, photon, epair, or nucleus). This most likely
+leads to systematic error - energy lost being smaller than it really is. Is
+there a reference that calculates distribution of energy between main particle
+and those of secondary importance?
+
+5. Where do I take delta (density correction) in the ionization formula from?
+
+6. maybe something else.
+
+Now there is the following work still to be performed:
+
+1. Answer the above questions and implement their recommendations.
+
+2. plot all cross sections and compare them with values from papers.
+
+3. look at the plots and think of the possible variable changes in the
+integrals to accelerate calculation
+
+4. choose and implement parametrization scheme for each of the integrals
+(except the tracking) that would allow the use of the program for the peaceful
+purposes.
+
+
+Subject: Muon Propagation
+Date: Fri, 01 Dec 2000 00:06:33 +0100
+
+>5. Where do I take delta (density correction) in the ionization formula from?
+
+A small correction: from the formula given in the paper, but what is `m' in
+this formula?
+
+
+Subject: Muon Propagation
+Date: Fri, 01 Dec 2000 05:48:57 +0100
+
+version 0.01.01 of the muon propagation montecarlo code written in Java
+(MPMCWJ)
+
+The update fixes handling of an unusual condition in class Integral as well as
+bug in the integration limits in the photonuclear cross section. This BTW
+could be considered as the bug in the cross sectional paper: 3rd formula from
+the top of the page 255 gives negative values for low enough energies (lower
+than 512.68 MeV). Probably the formula is not applicable at energies that low,
+but then we need to know exactly the cutoff energy, or if the contribution of
+this formula from energies lower than cutoff is negligible, just do nothing.
+
+Another correction:
+
+>6. maybe something else.
+
+6. what exactly is the expression for the dzi in Z*(Z+dzi) in the pair
+production formula?
+
+7. maybe something else.
+
+in the todo list:
+
+5. compare energies of some small set of muons with the results of a+bE
+formula.
+
+
+Subject: Muon Propagation
+Date: Tue, 05 Dec 2000 04:34:29 +0100
+
+I am thrilled to announce version 0.01.02 of the mmc. It was possible to
+compare this version of the program with the tables from the yellow book
+(1985). All energy losses are comparable to those in the book. Agreement is
+within the first 2 digits in most cases. I have noticed, however, that
+bremsstrahlung for the Hydrogen differs more, and the more, the smaller the
+energy. E.g.
+
+Energy, GeV	book		mine
+1		17.41e-8	8.235856436249125E-8
+10		3.173e-6	1.9318150603531618E-6
+100		4.589e-5	3.664803882069739E-5
+1000		5.786e-4	5.380685468381188E-4
+10000		0.008635	0.008775320747892678
+
+Is it known of works reporting similar deviations? Or is it more likely to be
+due to the programming error?
+
+This version is half the speed, twice the bugs. Or rather, half the bugs, but
+one tenth of the speed of the previous version. Part of this (or all) is due
+to more realistic settings. For the ongoing calculation in the Symphony
+framework I set the energy of muons to 1 TeV, and they are propagated through
+1.5 km of ice.
+
+Next step would be to improve the speed. By a lot. Really. A factor of
+thousand in speed (i mean faster) would probably advance version to 0.02.
+
+
+Subject: Muon Propagation
+Date: Tue, 05 Dec 2000 22:57:04 +0100
+
+Version 0.01.03 is out.
+
+I was able to find the formula for the electron correction to the pair
+production cross section in the "cross section" paper: at the bottom of page
+255. From now on I will not dare say something is missing in there or
+incorrect. So, this is implemented.
+
+Another change is implementation of frejus rock. It is created by calling
+Medium("Frejus Rock"); of the class Medium. Regular "rock" is now called
+"Standard Rock".
+
+
+Subject: Muon Propagation
+Date: Wed, 06 Dec 2000 18:30:00 +0100
+
+Version 0.01.04 of the mmc program is ready.
+
+The main change was clearing up the code containing random number generations,
+and putting comments describing the decision steps performed by the
+propagateTo function in form of the debug messages. Medium class now contains
+the string, describing the employed medium.
+
+The next release will include parameterizations.
+
+
+Subject: Muon Propagation
+Date: Fri, 08 Dec 2000 20:50:00 +0100
+
+0.01.05
+
+And yet another update before v 0.02.
+
+Structure of the program has changed significantly: there is now 3 subclasses
+for each cross section. This should help the code's modularity and
+maintainability.
+
+Interpolate routine in the class Integral is updated with the new step
+algorithm. A new class Interpolate was written and included in the alpha of
+version 0.02. The Propagate code with the routines from this class is,
+however, not yet reliable, so not yet released.
+
+vCut (in Medium) is now a function. This allows for both constant vCut or
+eCut=vCut*E settings.
+
+
+Subject: Muon Propagation
+Date: Tue, 12 Dec 2000 02:35:23 +0100
+
+Na ... endlich. For your exclusive entertainment the new v 0.02 of the Muon
+Propagation Monte Carlo Written in Java is brought out into the world. This
+version features:
+
+1. Greatly improved performance: Time of calculating 1 (one) event with all
+parameterizations enabled is 0.25 seconds. The same with only epair
+intermediate integral parametrized is 20 seconds. The same with no
+parameterizations at all is 360 seconds.
+
+The times given above increase for the eCut=const option enabled. All
+calculations were made on my P3 892 MHz computer with JDK 1.3.
+
+2. New not yet completely explored bugs: Some cross sections give negative
+values outside there scope of applicability. Parameterizations sometimes lead
+to very wrong results: one of the 2 included parametrization schemes (which is
+supposed to be more precise) almost always fails to propagate even one
+particle due to not smooth behavior on the boundaries of the approximation.
+Some routine checking for the boundary conditions could repair this.
+
+3. There are now only 2 more integrals which have not yet been parametrized:
+these are those that take the calculated cross sections and evaluate the path
+length to the next interaction and energy at that point. These one-dimensional
+integrals should be parametrized too.
+
+
+Subject: Muon Propagation
+Date: Wed, 13 Dec 2000 03:58:04 +0100
+
+You are invited to enjoy v 0.03 of the Muon Monte Carlo!
+
+New things:
+
+1. Root finding in the parametrized cross sections was stabilized by
+implementing a brand new substitution of the lost energy. Now results are much
+closer to what non-parametrized version gives. To compare simply remove
+reference to p.interpolate() in the New class.
+
+2. This substitution solves a large number of problems that I've been hunting
+down for the last 10 hours. The program now really gives results in real time
+that are believable. Please find attached a plot that shows the energy
+distribution of 10000 muons propagated through 300 cm of iron with initial
+energy 1e6 MeV. You may compare this plot to the plot contained in the PDB
+p.138 (1996, figure 22.13). It took 30 minutes to generate the muon set.
+Fractional energy cutoff was chosen at 1.e-4. The plot with vCut=1.e-3 looks
+somewhat different. It also took only 15 minutes to generate.
+
+
+Subject: Muon Propagation
+Date: Wed, 13 Dec 2000 14:12:58 +0100
+
+This is an update to version 0.03.1.
+
+A very serious bug was repaired in the Interpolate class that was severely
+hindering the precision of the root finding interpolation. Now the precision
+of that part is raised by many orders of magnitude without the help of the
+FindRoot class.
+
+
+Subject: Muon Propagation
+Date: Thu, 14 Dec 2000 04:00:17 +0100
+
+In this new 0.04 version of the MMC I have improved the following things:
+
+1. Energy track and distance integrals have been fully parametrized.
+
+1a. It turned out that one dimensional parametrization of these integrals had
+awful precision, so I made it 2-dimensional. In the code implemented 100x10
+array provides orders of magnitude better accuracy than 1000 element array
+that I left out.
+
+2. This has improved speed, but only by a factor of 10-20. Now if we could
+find out how to estimate time that the program spends per routine, we could
+try to optimize it more. Do we know people specializing in Java who could
+explain how to do that? I have some ideas of how to optimize the code. For
+example, the parametrization routine that finds roots calculates N=100
+functions, each evaluation being a superposition of another 5-10. However,
+only Ln_2 N + 5 = 6 + 5 = 11 function values are used. It would be nice to
+know if the program spends a significant part of its time on this routine. If
+so, it could be optimized another 100/11~10 times!
+
+3. Fixed various bugs that were handicapping the calculation at small
+energies. All unusual conditions that resulted in NaNs and too big to believe
+energy losses have been fixed (at least in my test run).
+
+4. Test run was made for Frejus Rock, 1.e5 particles with energy 100 TeV were
+generated and propagated through 300 m. According to your formula a+bE the
+average final energy of the particles is 74820 GeV. The average from the plot
+is 71000 GeV. The calculation took 17 minutes. Files a and b differ in
+binning: a has 100 bins and b has 500. Are the effects that we see at closer
+resolution normal?
+
+5. I do not see why not try a sample of Frank's data today. I only need to
+include file i/o option in the code. Rather, the code is complete, but the
+programs that calls functions from this code needs some i/o software
+implementation.
+
+
+Subject: Muon Propagation
+Date: Thu, 14 Dec 2000 15:09:39 +0100
+
+In this new version 0.05 I have optimized the interpolate root finding routine
+as discussed in the previous memo. It turned out that it was an important
+optimization: the test run that took 17 minutes now runs in 5 (plus 45-50
+seconds for creating parametrization profiles in each case). Now I am out of
+ideas for optimizations. If necessary, one would have to hunt for the next
+major culprits that eat too much time, and optimize those, if possible. I do
+not remember any possible candidates, however.
+
+This version should be considered as pre-release, with only minor things still
+being tweaked, unless something major (a bug or bugs) comes crashing
+everything down.
+
+
+Subject: Muon Propagation
+Date: Mon, 18 Dec 2000 00:49:05 +0100
+
+On the way to (and from) London I have thought of the few things that could be
+improved. Some of them I have just implemented. So here is v 0.05.1:
+
+1. Interpolate is faster: the test run now takes only 3.5 minutes. This was
+still achieved without sacrificing the clarity of the code.
+
+2. Comments are added to all uncommented functions (i don't claim these
+comments are useful).
+
+3. it is now possible to enable only some of the parameterizations by passing
+a string variable to p.parametrize(w) that contains the names of things to
+parametrize. w="all" will parametrize everything, just as before.
+
+
+Subject: Muon Propagation
+Date: Mon, 18 Dec 2000 14:53:07 +0100
+
+v 0.05.2:
+
+1. Photon-nucleon cross section parametrization based on the table of values
+now uses class Interpolate, that means more precise interpolation. It can be
+enabled by setting p.s.n.measured=true.
+
+2. Precision of photonuclear cross section parametrization was raised to the
+same level as precision of the other cross sections.
+
+
+Subject: Muon Propagation
+Date: Wed, 20 Dec 2000 01:34:59 +0100
+
+Please find a new v 0.06 of mmc. How do you like this name, BTW? The changes
+are:
+
+1. This version is faster than the previous: the test run takes now only 1
+minute 50 seconds (plus 1 minute for initialization). I have to move to a
+bigger test run now, since this one finishes too fast. The improvement in
+speed occurred when I removed some string functions that were preparing the
+string to be output on the screen, even though the output itself was disabled.
+Apparently, java string functions are not too efficient.
+
+2. New class "Output" was created. Now it's possible to choose between F2000
+and default outputs. As follows from point 1., enabling any of these outputs
+(to see the history of particle propagation) will slow the program down 2-3
+times.
+
+3. Particle and Propagate classes were reworked. Now it is
+angle-dependence-ready. All calculations are done carefully in 3 dimensions.
+Adding an angle distribution (when the formula is known) should be a snap.
+
+4. All vital classes were moved into a package called "mmc".
+
+The new test with 1 mil. particles took only 18 minutes.
+
+
+Subject: Muon Propagation
+Date: Sun, 24 Dec 2000 05:38:31 +0100
+
+Introducing v 0.07!
+
+New features:
+
+1. Amount of static variables is reduced to a minimum, which allows several
+instances of class Propagate to coexist simultaneously.
+
+2. Added classes Frejus and Amanda. First simplifies handling of the data
+tables for comparison with Frejus data. Second implements a simple solution
+for the f2000 format handling and is designed to replace dedx in the AMANDA
+software chain.
+
+3. A little debugging of Propagate and Particle allowed for more reasonable 3d
+model.
+
+
+Subject: Muon Propagation
+Date: Mon, 25 Dec 2000 03:39:06 +0100
+
+This Christmas brought to you by Dima co. R (Copyright Wuppertal, 2000):
+
+mmc v 0.08!
+
+1. Once again, a rewrite of the Cross section classes, with the aim of
+improving the class structure (readability and maintainability). Now the only
+static variables are in the Output class, where they belong.
+
+2. A brand new feature: table save and restore. Simply put the proposed
+filename (best try "") as the second parameter of the interpolate function,
+and the second time you run the program, parametrization time will be reduced
+by a lot (20 times in my test run, but depends on how large the tables and
+precision of the parametrization are).
+
+This should likely conclude the introduction of brand new features with every
+new version stepping. One thing that should still be done is a more precise
+consideration of 3 regions in the Amanda class. At the moment only a crude
+model is used, where the regions are separated by top and bottom of the
+detector.
+
+In the yesterday's version (0.07) the file routine in the Frejus class was
+improved, and now processing of the Frank's Frejus data file takes only 2
+hours - just what he mentioned for the MUM code. One should take into
+consideration, however, that MUM code was run on a 533 MHz Alpha processor,
+while mmc was run on a potentially faster (and possibly by a lot) Celeron 892
+MHz.
+
+Run Frejus as follows: time cat dedx_out.txt | java Frejus | sed '1,/---/d' >
+dedx_out.out
+
+
+Subject: Muon Propagation
+Date: Sat, 27 Jan 2001 18:00:00 +0000
+
+Update from the South Pole.
+To generate a set of data (for frejus type analysis) run
+
+awk 'BEGIN {for(i=0;i<100000;i++) print 1.e5*exp(log(rand())/(1-3.7)),
+1.e3*(3+2*rand())}' > dedx_out.txt
+
+This will produce 100000 particles with E^-3.7 spectrum at the surface that
+are to be propagated to the depths of 3000-5000 meters. After you run Frejus
+on the dedx_out.txt file, run cat dedx_out.out | awk '{if($3>.3) print $2}' >
+out to select the events that reach the given depth. Then you can plot number
+of events vs. depth. This is the "frejus" type test. As of today this test
+gives exactly the same results for MUM as for MMC. The execution time for MMC
+is 737 seconds (1000000 events) with romberg parameters set to 5 (default
+setting). When decreasing romberg parameters to 2 in all parameterizations,
+calculation time improves by a factor of 3 and takes only 248 seconds. For
+comparison, MUM takes only 71 seconds to finish the same run (with 18 seconds
+necessary for initialization it takes 89 seconds). The reason for the bigger
+calculation time of MMC is that for every interpolation step it calls a
+function that interpolates in a cycle. It even calls another function for 2
+dimensional interpolations. In addition, many parameterizations use exp-log
+substitutions. This is done for generality and code simplicity. MUM, on the
+other hand, does all interpolations in-line, in about 4 addition operations
+altogether. Execution times are given for the P3 866 MHz computer.
+
+
+Subject: Muon Propagation
+Date: Sun, 28 Jan 2001 18:00:00 +0000
+
+Update from the South Pole: mmc v 0.08.1
+
+3 regions in the Amanda class are now treated according to their definition:
+the first region is outside the detector volume, where the particle (muon)
+propagates from the ice surface to the detector, the second is between the
+initial entry of the muon into the detector volume up to the point when it
+leaves the volume, and third region describes the particle after it leaves the
+detector until it stops. In case the particle misses the detector volume
+altogether, the complete history of the particle is considered as happened in
+the third region. Also the correct re-sequencing of the track numbers was
+implemented. The particle parent information is kept only for the secondaries
+created by this mc, however. The program also leaves a history line.
+
+
+Subject: Muon Propagation
+Date: Sun, 28 Jan 2001 23:00:00 +0000
+
+Update from the South Pole: mmc v 0.08.2
+
+The correct formatting of the doubles was finally implemented. Now the user
+can enjoy the output being free of the crazy numbers like 0.9999999997.
+Special care was taken to make sure that the execution time increases by as
+little as possible because of the change (2% increase was observed in a one
+minute test run).
+
+
+Subject: Muon Propagation
+Date: Mon, 29 Jan 2001 23:00:00 +0000
+
+Update from the South Pole: mmc v 0.08.3
+
+Another change of the double number printout. This time it's made more uniform
+and every number can now be represented by up to 7 digits (and E?? part, if
+necessary, in the scientific notation).
+
+
+Subject: Muon Propagation
+Date: Sat, 24 Feb 2001 17:00:00 0800 (PST)
+
+mmc v 0.08.4
+
+It was found that the application of the double number printout function gives
+incorrect results when used from inside the java-applet MPMCWJ (to be used
+with SYMPHONY), so it was disabled there. Also, it appears that this function
+gives locale-oriented output, so that e.g. in Germany decimal point is a
+comma. This makes the following processing of data more complicated, since
+most of the shell utilities not to mention FORTRAN will choke on the numbers
+containing commas. To always get US English standard output, set the variable
+LANG to en_US in the shell from which java program is started. Otherwise, if
+you don't mind having long numbers like 0.9999999997 (standard java output),
+just delete all instances of "Output.f" in the output functions of the calling
+class (e.g. Frejus.java).
+
+It was found that some of the entries of the parametrization tables had
+negative values. The error was reduced to the minimal energy used during the
+parametrization being smaller than the minimal energy p.low. It was due to the
+minimal parametrization energy being set to at most twice the mass of the
+muon, while p.low was set to a higher value (450 MeV). The error was corrected
+by setting the lower parametrization energy to exactly p.low. Since the values
+of the parametrization tables for energies lower than p.low are/were never
+used, this correction should not affect the previous results.
+
+
+Subject: Muon Propagation
+Date: Mon, 05 Mar 2001 18:00:00 0800 (PST)
+
+mmc v 0.08.5
+
+To correct for the low-energy deficiency found in the final energy plot of the
+muons with constant initial energy (found by comparing non-parametrized
+version of the program with the parametrized), substitutions used in the
+parametrization formulae were changed, and as a result, simplified. Also the
+"rationalY" variable was set to true, which improved the precision by at least
+another order of magnitude. Extensive check of the precision of cross section
+parameterizations was made (at 4 energies 10, 1e3, 1e5 and 1e9 TeV), and it
+was shown that the overall precision improved by 2-5 orders of magnitude.
+
+Also, scripts acom and ammc were included for compilation and running of the
+Amanda.java program.
+
+
+Subject: Muon Propagation
+Date: Wed, 28 Mar 2001 19:00:00 0800 (PST)
+
+mmc v 0.08.6
+
+vMin was introduced for the ionization. This replaces the made-up value of the
+lower limit in the integration of the inelastic electron bremsstrahlung
+correction to the ionization energy losses. This should not change the
+previously performed calculations by more than 1.e-6 - 1.e-7.
+
+A presentation containing formulae used in this program and some analysis
+conclusions, presented at the Bartol meeting is now available at the mmc
+homepage.
+
+
+Subject: Muon Propagation
+Date: Fri, 30 Mar 2001 12:00:00 0800 (PST)
+
+mmc v 0.08.7
+
+Amanda class now understands command-line options. Type "java Amanda -help"
+for a list of them. At the moment you can set the dimensions (length, radius
+and depth) of the detector. Scripts ammc and acom were modified accordingly
+and unified. Now to compile the program run "ammc -compile", and to execute it
+run "ammc -run". For a list of available options in the run mode, use "-help"
+option.
+
+A fail-safe mechanism was implemented to avoid using the stale corrupt data
+files and recalculate them on the fly.
+
+
+Subject: Muon Propagation
+Date: Wed, 18 Apr 2001 19:00:00 0800 (PST)
+
+mmc v 0.08.8
+
+A weird bug was determined: after some number of input lines (14000) the
+program fails to pass the first argument of the initDefault function (time)
+along to the function correctly. The argument changes right after the function
+call, before executing the body of the function. It is possible to correct the
+problem by introducing the dummy first argument (int igen) and then calling
+this function with some integer (e.g. 1) as the first argument. I also found
+that introducing a special line (with the comment //Java bug) gets rid of the
+problem. At this time it looks like a compiler (or jre) problem. Also,
+Amanda.java was cleaned up and optimized a bit.
+
+A small bug was found in a Ionizationloss class: an ieb correction contained a
+typo (thanks, Ped). In principle it could have affected the results. The
+effect was negligible in our tests, however.
+
+ammc script was changed to process Frejus program as well as Amanda. Call ammc
+with an extra parameter "-f" to compile or run Frejus class.
+
+A set of two values of radiation logarithm constant B used thus far in
+bremsstrahlung and pair production corrections (for H and all others) was
+replaced with the table of pre-calculated values for most elements.
+Calculation of B as well as B(prime) was moved into the Medium class.
+
+
+Subject: Muon Propagation
+Date: Wed, 16 May 2001 22:00:00 0800 (PST)
+
+mmc v 0.09
+
+Following a suggestion by Paolo, an option to record a user line is
+introduced. Just add "-user" to the list of options to enable. Similar to
+mudedx, the user line format is "USER_DEF mpmcwj-energy E_CPD E_IN E_OUT CDP_X
+CDP_Y CDP_Z Z_IN Z_OUT E_INI". The values in the line are evaluated for the
+highest energy muon only. Coordinates are always evaluated. If an energy is
+not evaluated (e.g. the muon disappeared in the first region, E_OUT is not
+evaluated), it is set to zero. If it is negative, it shows the z component of
+the distance from the region end to the point where the muon disappeared with
+the minus sign. Otherwise the muon survived and its evaluated energy is
+recorded.
+
+As a result of some rewrite of Amanda class the java bug mentioned above
+disappeared and does not seem to need any artificial correction. Another bug
+was revealed. A decision whether a particle reached the final z or disappeared
+is based on a comparison of the type z==z. A correction to account for the
+possible deviation due to the finite computer precision was implemented.
+
+A change is made to the function propagateTo: now if the returned value is
+negative, it shows the z component of the distance from the final z to to the
+point where the muon disappeared. Function propagateTo was also overloaded: if
+a third argument, containing a value of some zc is added, the following call
+to a function getPropEc will give the value of energy of the muon at that zc.
+This zc should lie on the particle path before z, otherwise the result is
+undefined.
+
+
+Subject: Muon Propagation
+Date: Sat, 19 May 2001 17:00:00 0800 (PST)
+
+mmc v 0.09.1
+
+Another change to the definition of the propagateTo function and all its
+derivatives has occurred: now if the returned value is negative, it shows the
+distance traveled to the point of disappearance. It seems to be an easier and
+more precise way to describe particle location in the 3d model. Consequently,
+definition of the output by Frejus class has changed, as well as definition of
+energies in the user line produced by Amanda class.
+
+It is now possible to generate java manual pages by running ammc script with
+an option "-manual". Manual pages will be put into the "manual" directory.
+Also, an index.html file is created and put into the main directory.
+
+
+Subject: Muon Propagation
+Date: Thu, 31 May 2001 15:00:00 0800 (PST)
+
+mmc v 0.09.2
+
+ammc script was substantially changed: it now works with older versions of sh,
+on pc's and alpha's. It also tries to find the latest version of java in a
+pre-defined set of directories. If your java distribution is not in it, add it
+to the set and let me know. I will modify the set of directories to include
+any general locations of java. ammc will report and check the found version of
+java when called without parameters. Only versions 1.2.2 and higher have been
+tested. Version 1.1.8 will not work. The script will attempt to notify you of
+insufficient version of java by displaying appropriate warnings.
+
+All standard output statements of the java files in the mmc directory were
+changed to standard error output statements. Those not directly related to
+interesting output of classes Amanda.java and Frejus.java were changed in the
+same way. This simplified handling of auxiliary output, which is now directed
+to the standard error output. A line containing some information about the run
+is output at the end of Amanda execution. This also simplified ammc script
+somewhat. It will now give an error message and return the exit code 1 if
+running or compilation failed.
+
+Treatment of the corrupt data files improved. It is now compatible with the
+new java v. 1.3.1. Exception class mmcException was made public and is used in
+Amanda and Frejus classes for reporting an input error as well as for the
+parametrization table exceptions. Format of the parametrization table files
+was changed: data is saved in a different order than before. The tables from
+the previous versions must be deleted and generated with the current version.
+A failure when handling a corrupted table that fails when epair cross sections
+are read was repaired. Now it should be possible to run interpolate function
+several times during one execution (e.g. after an interactive change of mc
+settings).
+
+
+Subject: Muon Propagation
+Date: Sun, 10 Jun 2001 00:00:00 0800 (PST)
+
+mmc v 0.10
+
+Substitutions in parameterizations of stochastic components were reworked,
+which resulted in a better precision of interpolation routines. Integrations
+inside classes Propagate and CrossSections were changed to be done with log
+substitution, and parametrization model for them was changed to 1-dimensional.
+Precision of these integrals and parameterizations was increased
+substantially. Class TestPropagate was modified to allow for easy check of the
+precision of the parametrization routines. Run "ammc -test=[1 or 2] to execute
+one of the two checks: first of the parameterizations of the cross sections,
+or second of the parameterizations of the tracking integrals.
+
+A high fidelity version of the program can now be easily generated with "ammc
+-hifi". This will, however, lead to a program that takes much, much longer to
+initialize (on my P3-850 regular mmc takes 2.5 min, and hf mmc takes 70 min).
+
+Particle propagation code in Propagate.java was simplified without changing
+the tracking algorithm. A cosmetic change was also done in class Integral.
+
+Artificial cutoff of 10 GeV in Epairproduction was removed, even though the
+precision of the formula for the epair production is not guaranteed to give
+accurate results below 10 GeV. This revealed a bug in the class Integral - if
+the integral is zero, the routines rombergIntegrate* were getting stuck at the
+precision evaluation. Now, however, for some non-zero functions with a lot of
+bad luck a loss of precision in the integral evaluation may occur.
+
+An electron produced by muon decay is now output with the correct energy. It
+is also possible to consider decay of the stopped muon. Calling Amanda with
+the option "-sdec" will allow this.
+
+
+Subject: Muon Propagation
+Date: Mon, 25 Jun 2001 01:00:00 0800 (PST)
+
+mmc v 0.11
+
+Interpolate class was augmented by log substitutions, which were taken out
+from the main code for energy substitutions. Both arguments and function value
+log transformations are available.
+
+ammc was augmented to compile and run other programs. Also compile all option
+is there. Cleaning without sources will now not delete the program executable.
+
+A precise timing for slow particles is now available. Set p.exactTime=true to
+enable. The program was also successfully tested with the p.low value set to
+the muon mass. This means that particles can be tracked precisely until they
+decay (not just disappear in the definition of the program).
+
+An option to enable some continuous energy loss randomization is introduced.
+It is based on an assumption that the probability to lose energy e at small
+fractional losses goes as 1/e. To enable, set p.contiCorr=true.
+
+
+Subject: Muon Propagation
+Date: Thu, 12 Jul 2001 18:00:00 0800 (PST)
+
+mmc v 0.12
+
+The contiCorr option can now be enabled by selecting the "-cont" command line
+option when running Frejus program. It now evaluates the standard deviation of
+final energy from the average value after each propagation step by integration
+of this deviation over the propagation step without any special assumptions
+about the form of the cross sections.
+
+The dependence of the program on the implementation of java.text.DecimalFormat
+was removed. Now all formatting of the double is done inside class Output.
+
+Amanda now has more command-line options, the default behavior was changed to
+that of other MCs. You can enable exact timing and continuous randomization by
+passing "-time" and "-cont" options respectively.
+
+
+Subject: Muon Propagation
+Date: Sun, 15 Jul 2001 22:00:00 0800 (PST)
+
+mmc v 0.13
+
+Landau Pomeranchuk Migdal (LPM) effect (bremsstrahlung and epair production)
+and dielectric suppression (bremsstrahlung only) suppression effects can now
+be evaluated. To enable, set p.s.lpm=true.
+
+
+Subject: Muon Propagation
+Date: Thu, 19 Jul 2001 12:00:00 0800 (PST)
+
+mmc v 0.14
+
+Abramowicz Levin Levy Maor (ALLM) parametrized photonuclear cross section can
+now be enabled by setting p.s.n.allm=true. Do not forget to change the name or
+delete parametrization tables when changing this option (as well as other
+options that are not reflected in the name of the table file).
+
+A number of command-line options was added to all programs. You can enable
+most features now without recompiling the program. p.s.n.measured variable has
+been changed to int: 4 different photonuclear parametrization formulae can now
+be selected (plus allm) by using option -phnu=[1, 2, 3 or 4].
+
+
+Subject: Muon Propagation
+Date: Sat, 21 Jul 2001 19:00:00 0800 (PST)
+
+mmc v 0.15
+
+Moliere scattering of the muon can now be considered. Option "-scat" turns
+this feature on. Secondaries are emitted along the muon path, which is bent
+during the "continuous" part of the propagation.
+
+Amanda class originally written to propagate muons from the surface of the
+Earth down to the detector. Now it also treats correctly muons originating
+elsewhere, e.g. inside or outside the detector and going up or down. Use of
+horizontal tracks is not recommended. User line was updated to record muon
+energy at a fixed depth.
+
+
+Subject: Muon Propagation
+Date: Mon, 23 Jul 2001 16:00:00 0800 (PST)
+
+mmc v 0.16
+
+The definition of propagateTo(r, e) routine has changed: now r describes the
+distance to travel, not its z-component. The change was necessary to simplify
+Amanda.java class implementation: now it should work for all zenith angles.
+
+
+Subject: Muon Propagation
+Date: Mon, 30 Jul 2001 00:00:00 0800 (PST)
+
+mmc v 0.17
+
+Track ordering in Amanda.java class was brought in compliance with F2000 file
+format. Definition of the user line has changed - it now includes the muon
+track number that it describes, and the line is output for every muon. It was
+necessary to buffer the input lines. The default size of the buffer is 10000
+lines. Increase MAX_BUFFER in Amanda.java if necessary.
+
+
+Subject: Muon Propagation
+Date: Wed, 22 Aug 2001 15:00:00 0800 (PST)
+
+mmc v 0.18
+This is a pre-1.0 version.
+
+This is an updated version after ICRC. The radiation logarithm table is
+updated. Moliere treatment is modified to describe low energies better. ALLM
+parametrization is corrected after private communication with the author.
+
+COPYING and CREDITS file are added. An extensive description of the algorithm
+is available at the MMC homepage.
+
+
+Subject: Muon Propagation
+Date: Tue, 04 Sep 2001 14:00:00 0800 (PST)
+
+mmc v 0.19
+This is a 1.0-pre2 version.
+
+This version contains some new optimizations. It is about 2x faster than the
+previous version. An option specifying the number of interpolation points is
+introduced. It is also possible to save tables in raw format. A possible file
+close bug is fixed. A possible loss of precision at low romberg setting (i.e.
+p.g=2) is repaired. README files are updated and consolidated.
+
+
+Subject: Muon Propagation
+Date: Sat, 08 Sep 2001 15:00:00 0800 (PST)
+
+mmc v 0.20
+This is a 1.0-pre3 version.
+
+It is now possible to generate mmc version with all double variables replaced
+by floats. It is about 20% faster. Option "-tau" is added to Frejus and Test.
+Precision of trackE integral interpolation is improved for vcut close to 1
+(could be important for propagation of taus). Integrations in Energy2LossX are
+now done separately for all cross sections, which improved parametrization of
+the en2ldX integral. ALLM and LPM options now work for taus.
+
+
+Subject: Muon Propagation
+Date: Mon, 10 Sep 2001 17:00:00 0800 (PST)
+
+mmc v 1.0
+
+This is a first official release of mmc. It was tested to work together with
+all options for muons and taus in the energy range from the rest mass of the
+particle to 10^20 eV with romb setting of 3 to 5 for both double and float
+versions or to 10^30 eV with the default romb setting of 5, double version.
+
+
+Subject: Muon Propagation
+Date: Tue, 04 Dec 2001 12:00:00 0800 (PST)
+
+mmc v 1.01
+
+This fixes possible NaNs arising in the calculation of the Moliere scattering
+angle, discovered by Paolo (added 11/28/01). Also fixes phi angle NaNs which
+appear in webmmc when running from Netscape with scat option enabled. Some
+spelling errors were corrected.
+
+
+Subject: Muon Propagation
+Date: Tue, 01 Jan 2002 20:00:00 0800 (PST)
+
+mmc v 1.02
+
+Script ammc was modified: now it is possible to produce static executables for
+alpha. It works on ices02.physto.se. Change GCC_DIR to point to /usr/local (in
+the first few lines of ammc), and then run "ammc -gcj".
+
+
+Subject: Muon Propagation
+Date: Wed, 09 Jan 2002 12:00:00 0800 (PST)
+
+mmc v 1.03
+
+"-amasim" option is introduced for Amanda. e+/e- are replaced with epair/delta
+when enabled.
+
+
+Subject: Muon Propagation
+Date: Tue, 19 Feb 2002 18:00:00 0800 (PST)
+
+mmc v 1.04
+
+F2000 format update: TEND and END are once again output correctly. "-tau"
+option is included for Amanda.java. Tau decays into mu(-/+), e(-/+) or hadr.
+Muon and electron energies are correctly evaluated. In case of hadr the energy
+output is the energy of the decayed tau (correct treatment may be included in
+the future - requires modifying Decay.java file). For simultaneous treatment
+of muons and taus in the same stream, run mmc twice in a pipe: first with tau
+option on, then off (e.g. "ammc -r -tau | ammc -r"). Tau option ignores muons
+and muon version will ignore taus, plus process muons created by the run with
+tau option.
+
+Option "-sdec" was added in Frejus.java (useful together with "-debug"). Both
+Amanda.java and Frejus.java now can set elow/ebig values (previously known as
+p.low/bigEnergy) through the command-line options "-elow=" and "-ebig=".
+Parametrization tables are compatible with the previous version. However, if
+"-elow="/"-ebig=" options are used and the default values of elow/ebig are
+changed, this will be reflected in the names of the table files.
+
+MAX_BUFFER which is a maximum number of lines per event and by default equals
+10000 can now be changed through the "-maxbuf=" option.
+
+ammc was updated to look for the SUN Java 1.4 installation (which installs
+into j2sdk1.4.x) and IBM Java (which installs into IBMJava*). If IBM Java is
+found, it is preferred to the SUN's since it is faster. You can list all found
+distributions with "ammc -show" (works only for Linux).
+
+Now if "-vcut=" (used for the 1st region) is negative, its value is used for
+ecut value (in MeV) in that region, whereas the used value of vcut is set to
+-1. Correspondingly, if "-ecut=" (used for the 2nd region) is negative, its
+value is used for vcut value (dimensionless) in that region, whereas the used
+value of ecut is set to -1. This allows running Amanda.java for muons of all
+energies from elow to ebig without having to raise the ecut in the second
+region for higher energies. (Because if the standard 500 MeV cutoff is used
+for all energies, propagation of particles with energies above 500 PeV may
+fail since the effective vcut_eff=ecut/E becomes smaller than the precision
+(resolution) of the MMC algorithm).
+
+
+Subject: Muon Propagation
+Date: Thu, 28 Feb 2002 11:00:00 0800 (PST)
+
+mmc v 1.05
+
+MMC behavior was improved for small ratios ecut=vcut/E. Different approaches
+are now used for energy transfers above and below 1.e-5 (half of the assumed
+computer precision).
+
+Some configuration constants were moved into the file PhysicsModel. Debugging
+information output when "-debug" option is used has been made more verbose. A
+particle position resolution variable was added (set to 1.e-3 cm). It is used
+as a cutoff value for the diverging decay probability of a slow particle. The
+table format has changed, so the next time mmc is run it will delete the
+tables of the previous version and produce new ones. Float and hifi versions
+of the program now save parametrization tables in files with names different
+from those used by the default version. Precision and table sizes of the hifi
+version changed: it should now initialize quite a bit faster.
+
+
+Subject: Muon Propagation
+Date: Thu, 11 Jul 2002 20:00:00 0800 (PDT)
+
+mmc v 1.06
+
+A small update (4/18/02): class StandardNormal is extended from MathModel once
+again. A default initialization method is added.
+
+Another update (5/24/02): script ammc updated to correct for the misbehavior
+of the "test" command on certain platforms, used to process script options.
+
+ammc would fail to find sources or compiled program when started as "ammc"
+(i.e. without specifying path, e.g. "./ammc") when used in tcsh. This was
+fixed.
+
+Test.java can now be used to easily generate spectra of secondaries. Option
+"-proc=3" picks out the routine that does that. Set the muon energy in GeV
+with "-RND1=[energy]". Number of points is set with "-RND2=[10-1000]"
+
+Amanda.java now has a "-rdmc" option that enforces compliance with rdmc. If an
+"mmc_en" user line is enabled, exactly one such line (for the highest energy
+muon) is output per event. If an event contains no muons "mmc_en" user line is
+still output with question marks "?" in all fields.
+
+Amanda.java now has an option "-tdir=[dir]" which you can use to specify the
+directory in which to place (or from which to read in) parametrization tables.
+The specified directory must exist, or else table read/save will be disabled.
+
+New option to ammc: run "ammc -ps" to create printable readme.ps file.
+
+
+Subject: Muon Propagation
+Date: Wed, 18 Sep 2002 19:00:00 0800 (PDT)
+
+mmc v 1.07
+
+A small update (8/28/02): ammc now exits with code 1 when java is not found.
+
+New option is added to Amanda.java: use "-surf=[h in meters]" to propagate
+muons to the xy plane z=h in AMANDA coordinates. The muon coordinates, energy,
+and time are updated at the end of propagation. This option is useful when
+propagating muons through more than one medium, e.g. propagating them up
+through the rock and then ice is achieved by "ammc -r -surf=-1080 -face
+-medi="Standard Rock" [other options] | ammc -r [other options]".
+
+Use the option "-face" together with "-surf=[h]" to propagate muons only if
+the detector is located on the opposite side of the z=h plane. This allows to
+use the above pipe for not only muons propagating up from the rock below the
+ice, but also for atmospheric muons moving down from the surface of the ice.
+
+Default values for length and radius have been changed to 800 and 400 meters.
+
+ammc script was modified to compile executables for alpha with new gcc 3.2.
+Executables produced with gcc 3.2 seem to be a bit faster (up to 50%) than
+those produced with an older gcc 3.0.
+
+
+Subject: Muon Propagation
+Date: Sun, 10 Nov 2002 17:00:00 0800 (PST)
+
+mmc v 1.08
+
+Several media can now be defined. Create a media definition file with contents
+as follows:
+
+	# media definitions file
+	# sphere z r det vcut ecut conti medium
+	all 1 0.05 5.e2 1 Ice
+	sphere -1080 6397190 0 0.05 5.e2 1 Standard Rock
+
+First word in a definition line can be either "all" or "sphere". Use "all" for
+the main propagation media that fills all space, and then place "sphere"s on
+top of it. End result will depend on the order in which the spheres are
+placed. If there is no "all" line the media used to fill "all" space is that
+supplied with the "-medi=[]" command-line option or default (Ice) if this
+option was not used. z-r gives the z-coordinate of the sphere center, and r is
+its radius. At the moment only "all" and "sphere" keywords are understood. If
+necessary, new keywords can be added to the code rather easily.
+
+If no part of the active volume of the detector (specified by "-length=[]" and
+"-radius=[]" command-line options) is located in one or more of the media,
+parameterizations for that media can be omitted by setting det=0. Otherwise
+det must be set to 1 (unless you need to run non-parameterized mmc in the
+detector region, which is much slower). Setting det=0 for some of the media
+will reduce the program size and initialization time at the run time.
+
+The seed of the random number generator used by Amanda.java can now be set
+with the "-seed=[long integer]" option. This should simplify future backward
+compatibility testing of new releases.
+
+
+Subject: Muon Propagation
+Date: Fri, 12 Sep 2003 17:00:00 0800 (PDT)
+
+mmc v 1.09
+
+Due to the way java handles the String object mmc was unnecessarily slowed
+down for events with number of generated vertices above 100. After String
+objects were replaced with StringBuffer the code execution speed improved.
+E.g. for events with 400 vertices by 7 times, and with 3300 vertices by as
+much as 60 times.
+
+
+Subject: Muon Propagation
+Date: Sat, 31 Jan 2004 00:00:00 0800 (PST)
+
+mmc v 1.10
+
+Several new cross sections are implemented: Andreev, Bezrukov, and Bugaev
+(abb) parameterization of the bremsstrahlung cross section can now be selected
+with -bs=2. The previously available kkp (Kelner, Kokoulin, and Petrukhin) can
+be chosen with -bs=1.
+
+The options -allm and -phnu are now obsolete. A new option -ph=[1-4] chooses
+Bezrukov and Bugaev photonuclear cross section parameterization (1), Bezrukov
+and Bugaev with hard component from Bugaev and Shlepin (2), ALLM (3), and
+Butkevich and Mikheyev (4) parameterization. Another option -bb (similar to
+the former -phnu) chooses one of the parameterizations of the soft component
+in the BB cross section (for -ph=1-2, values of -bb=3/4 correspond to BB/ZEUS
+photon-nucleon cross section formula) or version of the ALLM parameterization
+(for -ph=3, values of -bb=1/2 choose the ALLM91/ALLM97 parameter sets).
+
+New option -sh=[1-2] is introduced. It allows to choose the nuclear structure
+function calculation algorithm for -ph=[3-4] according to Dutta-Seckel or
+Butkevich-Mikheyev papers.
+
+Hadronic channels of the tau decay are now described as two-body decays into a
+tau neutrino and a pion or a rho-770, a1-1260, or rho-1450 resonance.
+
+All front-end programs (Amanda, Frejus, and Test) will now list parameters,
+which are not supported, in a warning message. Parameterization table names
+have changed to accommodate new features; tables of previous mmc versions will
+no longer be used and can be deleted.
+
+All classes were placed in 4 packages: mmc (core classes of mmc), tfa (Test,
+Frejus, Amanda front-ends), web (webmmc classes), and exa (mostly examples and
+test programs for the MathModel classes). ammc -m now creates a page with the
+webmmc button and a download link.
+
+
+Subject: Muon Propagation
+Date: Sun, 29 Feb 2004 00:00:00 0800 (PST)
+
+mmc v 1.1
+
+Several minor improvements: ammc now lists the "-jre=[target]" and "-O[0-3 s]"
+options previously hidden. Webmmc now uses white on black color scheme for
+output, previously it used a default color scheme, which was difficult to read
+in some browsers. New options "-c[i/b/p/e/d]=[factor] are introduced, which
+modify cross sections used for ionization/bremsstrahlung/photonuclear/epair/
+decay energy losses by multiplying them by factors attached to these options.
+Energy losses can be completely disabled by using factor=0. Disabling some of
+the energy losses (e.g. ionization) may require a use of the "-elow=" option
+(e.g. "-elow=1"). At least one of the energy losses should be always enabled.
+
+
+Subject: Muon Propagation
+Date: Tue, 16 Mar 2004 16:00:00 0800 (PST)
+
+mmc v 1.2
+
+Two parameters in the ALLM91 parameterization were corrected to match their
+values in the original publication. Some density correction parameters of the
+ionization energy loss formula have been revised, and the formula has been
+corrected to also work for conductors. Air (dry, 1 atm) medium is introduced.
+
+It is now possible to specify a correction factor by which the density of the
+propagation medium is multiplied. It should be specified with the -rho= option
+or as the new parameter in the mediadef file media definition line, after the
+"cont" option and before the media name.
+
+The new media definition file should look like this:
+
+	# media definition file
+	# include with -mediadef=[this file]
+	# use the following syntax:
+	# all        det vcut ecut conti rho medium
+	# sphere z r det vcut ecut conti rho medium
+	all                  0 0.05 5.e2 1 0.673 Air
+	sphere  1730 6400000 0 0.05 5.e2 1 0.825 Ice
+	sphere  1530 6399800 1 0.05 5.e2 1 1.0   Ice
+	sphere -1080 6397190 0 0.05 5.e2 1 1.0   Standard Rock
+
+Assuming the Earth radius is 6400000 m, the bedrock starts at depth of 2810 m,
+and the detector center is at depth 1730 m, the sphere for Standard Rock goes
+through z=1730-2810=-1080 m, and its radius is 6400000-2810=6397190 m. The
+first 200 m of ice have smaller density, the factor is (200-35)/200=0.825.
+Atmospheric pressure at the South Pole is 682./1013.25=0.673 atm. Of course,
+if this configuration is used, -DCORR=35 option should not be used with ucr.
+
+A mistake in the e-pair production cross section was corrected (g1 was swapped
+with g2). This corrects the cross section by as much as 3%.
+
+
+Subject: Muon Propagation
+Date: Wed, 16 Jun 2004 14:00:00 0800 (PDT)
+
+mmc v 1.2.1
+
+In the expression for q_c of the abb parameterization of the bremsstrahlung
+cross section mass of the lepton was replaced with the muon mass. This only
+affects tau propagation with abb bremsstrahlung parameterization.
+
+
+Subject: Muon Propagation
+Date: Tue, 06 Jul 2004 18:00:00 0800 (PDT)
+
+mmc v 1.2.2
+
+The f2k input stream buffer arrays were replaced with vectors. Option MAXBUF
+was therefore removed. Most variables in class Amanda were made non-static.
+This class was modified to allow its use from other programs, also via jni.
+Directory i3m contains example of how to call Amanda functions from C. Files
+i3module.{c,h} are those used for icecube within the icetray framework.
+
+New package "gen" is added. It will eventually contain the simple Gaisser
+parameterization-based atmospheric lepton generator.
+
+
+Subject: Muon Propagation
+Date: Sat, 14 Aug 2004 20:00:00 0800 (PDT)
+
+mmc v 1.3.0
+
+Multiple updates to the i3m package. This code is now included into the
+icetray module of icecube as part of the C++ class. Manual pages created with
+ammc now have links to the i3m files. Compile i3m with "ammc -i3m".
+
+Exp-log substitution for the second coordinate of the Interpolate constructor
+is now performed correctly when selected (this was never used before).
+
+To propagate muons and taus through media with variable density without having
+to recreate tables for each density, treatments of decay and secondary showers
+have been separated. This potentially neglects density effects in the
+ionization losses and LPM energy evaluation. Option "-frho" enables such table
+recycling. Due to this, parameterization tables of this version are slightly
+larger and therefore incompatible with those of previous versions.
+
+New classes AtmFlux, NeutrinoTot, NeutrinoInt, CteqPDF, and EarthModel are
+added to the gen package. The main class AtmFlux can be used as an atmospheric
+lepton or E^(-g) neutrino spectrum generator (option "-gen"). It can also be
+used in combination with mmc muon/tau propagator to fully propagate generated
+leptons or those read from standard input (in f2k format, option "-prop")
+through Earth. In order to use correct density of Earth for muon/tau
+propagation, more than 1 medium must be defined (through the mediadef file).
+The last medium listed in the file will be the one which density is modified
+according to the preliminary Earth model.
+
+The cteq library must be compiled by running "ammc -ctq" and the library path
+set by sourcing "ammc -ctq" (if running from bash). The program will look for
+the necessary parameterization datafiles in this order: *neutrino*, *cteqPDF*.
+If neither is found, it will attempt to load the cteq library.
+
+A program almc (all muon monte carlo) was added to the web package. Its
+purpose is to display mmc-generated events. Use "ammc -p=gen/almc -r -raw
+-user" to run it. There are also two ways to run it as an applet: access it
+through the lepton name menu in webmmc (select all and hit "start", or pass a
+parameter string "opts" to webmmc. This parameter should be used to specify
+same options as when running in command-line mode (except spaces in the media
+names should be replaced with minus ('-') character.
+
+
+Subject: Muon Propagation
+Date: Wed, 01 Sep 2004 11:00:00 0800 (PDT)
+
+mmc v 1.3.1
+
+A simple geomagnetic cutoff model is implemented. Since it employs a constant
+cutoff value for all directions, it should only be used for studies of the
+systematical effects (just as the solar wind flux suppression implemented in
+the version 1.3.0).
+
+Also, a bug in class EarthModel and another in AtmFlux has been fixed. This
+affects AtmFlux only when used as a propagator.
+
+
+Subject: Muon Propagation
+Date: Wed, 22 Sep 2004 17:00:00 0800 (PDT)
+
+mmc v 1.3.2
+
+A bug is fixed in the EarthModel, which always set the density above bedrock
+to that of the last medium. The tracks originating outside the Earth and going
+away from it now have their length set to 0. Also, all neutrino tracks now
+have their length set to a value such as to put them on the Earth surface at
+the exit point.
+
+If in I3 mode, the user information (coordinates, time, and energy at points
+of entry, exit, and closest approach to the detector center) is now stored in
+the particle array.
+
+
+Subject: Muon Propagation
+Date: Wed, 17 Nov 2004 10:00:00 0800 (PST)
+
+mmc v 1.3.3
+
+Fixed an if(I3flag) bug in the Amanda class.
+
+Updated MMC homepage information (as of 9/27/4).
+
+Fixed the ebig/elow bug (as of 9/29/4). ebig was incorrectly set to bigEnergy
+for close to it values of elow. The minimum value of fraction ebig/elow=100 is
+maintained.
+
+
+Subject: Muon Propagation
+Date: Thu, 10 Mar 2005 22:00:00 0800 (PST)
+
+mmc v 1.3.4
+
+Ped found a bug in initAir (losses on Oxygen were severely underestimated). He
+also added parameterizations for salt and mineral oil (paraffin).
+
+Updated contact email (as of 2/25/05).
+
+
+Subject: Muon Propagation
+Date: Tue, 12 Apr 2005 14:00:00 0800 (PDT)
+
+mmc v 1.3.5
+
+Corrected the muon energy loss (average and deviation) coefficients for Air in
+gen/IntFlux (to account for the initAir bug).
+
+Implemented cuboid box geometry for both detector and media definitions (Ped).
+
+Web transfer of the media definition file is now supported.
+
+
+Subject: Muon Propagation
+Date: Tue, 19 Apr 2005 15:00:00 0800 (PDT)
+
+mmc v 1.3.6
+
+Two new parameterizations of the bremsstrahlung cross section were added:
+Petrukhin, Shestakov, and complete screening case (Tsai, from PDB). Option
+"-e" was added to propagate electrons instead of muons.
+
+
+Subject: Muon Propagation
+Date: Tue, 26 Apr 2005 10:00:00 0800 (PDT)
+
+mmc v 1.3.7
+
+Monopole propagation was added. Use "-monopole=[mass M in GeV]" to propagate
+monopoles of mass M instead of muons.
+
+Precision of the F_e evaluation in the epair cross section was improved for
+heavy particles. Ionization was corrected at very small gammas, photonuclear
+and abb bremsstrahlung cross sections were corrected for very large masses.
+
+
+Subject: Muon Propagation
+Date: Mon, 09 May 2005 17:00:00 0800 (PDT)
+
+mmc v 1.3.8
+
+Cylindrical geometry is extended to media definitions (Ped). Also, spherical
+detector geometry is added.
+
+
+Subject: Muon Propagation
+Date: Thu, 12 May 2005 20:00:00 0800 (PDT)
+
+mmc v 1.3.9
+
+Plane (half-space) and inverted media are implemented. Several minor geometry
+fixes. -tdir and mediadef paths starting with http:// (specified in a command
+line) are now recognized as www links.
+
+
+Subject: Muon Propagation
+Date: Wed, 14 Sep 2005 15:00:00 0800 (PDT)
+
+mmc v 1.4.0
+
+Added the setStderr( filename ) method to the class mmc/Output.java and the
+corresponding call method to the i3m. Use to redirect stderr output to a file.
+
+
+Subject: Muon Propagation
+Date: Tue, 25 Oct 2005 16:00:00 0800 (PDT)
+
+mmc v 1.4.1
+
+Minor elost issue solved (affects AtmFlux). ammc sed and java issues resolved.
+
+
+Subject: Muon Propagation
+Date: Thu, 10 Nov 2005 15:00:00 0800 (PDT)
+
+mmc v 1.4.2
+
+f2k EE and HI line printout was corrected. Zero-length particles are no longer
+propagated.
+
+
+Subject: Muon Propagation
+Date: Wed, 14 Dec 2005 00:00:00 0800 (PDT)
+
+mmc v 1.4.3
+
+i3m memory reference (DeleteGlobalRef) fix (thanks to Alex).
+
+CTEQ neutrino cross section reparameterization fix (thanks to Joakim). Delete
+the files .cteqPDF_*.data .*.gen_neutrino.*.data to update the cross section
+tables.
+
+
+Subject: Muon Propagation
+Date: Sat, 28 Oct 2006 19:00:00 0800 (CEST)
+
+mmc v 1.4.4
+
+Traversed Earth mass overburden used for neutrino propagation was fixed using
+a better approximation model (thanks to Klas for debugging this).
+
+Header #define statements were added to i3m/*.c files. ammc was fixed to make
+web jar executables with jdk 1.5.0.
+
+
+Subject: Muon Propagation
+Date: Fri, 03 Nov 2006 12:00:00 0800 (PST)
+
+mmc v 1.4.5
+
+Management of some local and global jni references was improved, as per Klas's
+suggestions (in the i3m code).
+
+
+Subject: Muon Propagation
+Date: Fri, 12 Jan 2007 07:00:00 0800 (PST)
+
+mmc v 1.4.6
+
+Added Antares water (thanks to Claudine Colnard).
+
+
+Subject: Muon Propagation
+Date: Tue, 27 Feb 2007 12:00:00 0800 (PST)
+
+mmc v 1.4.7
+
+MMC user block info is now filled correctly as part of the output Particles
+for use by external applications.
+
+
+Subject: Muon Propagation
+Date: Fri, 22 Jun 2007 12:00:00 0800 (PDT)
+
+mmc v 1.4.8
+
+More memory is made available to java at run time (using an -Xmx512M option).
+
+
+Subject: Muon Propagation
+Date: Tue, 24 Jun 2007 12:00:00 0800 (PDT)
+
+mmc v 1.4.9
+
+Propagation of particles from outside the Earth is fixed.
+
+
+Subject: Muon Propagation
+Date: Thu, 01 Nov 2007 23:00:00 0800 (CDT)
+
+mmc v 1.5.0
+
+Coordinates at the closest approach (CAP) and exit points and time at the CAP
+in the I3 user block were fixed. Elost was added to the I3 user block of the
+Particle class.
+
+
+Subject: Muon Propagation
+Date: Thu, 04 Sep 2008 08:00:00 0800 (CDT)
+
+mmc v 1.5.1
+
+stau particle definition introduced by Alex is committed to this version. New
+functions setStdout()/getStdout() were added to the mmc/Output.java; use them
+to redirect the stdout output into a string.
+
+Cross-section weighting can be enabled for Amanda by setting -rw=[index]. Use
+to over-sample near total energy loss due to a single interaction (index>0).
+
+
+Subject: Muon Propagation
+Date: Fri, 13 Feb 2009 12:00:00 0800 (CST)
+
+mmc v 1.5.2
+
+Added a new option: "-recc", which prints out the continuous energy losses.
+
+
+Subject: Muon Propagation
+Date: Tue, 21 Apr 2009 12:00:00 0800 (CDT)
+
+mmc v 1.5.3
+
+Allow "-recc" to work (correctly) with AtmFlux, extend this option to also
+print out muon segments as it travels between secondary interactions.
+
+
+Subject: Muon Propagation
+Date: Thu, 21 May 2009 09:00:00 0800 (CDT)
+
+mmc v 1.5.4
+
+Antares water medium definition fixed (thanks to Tareq). Added particle
+definitions important when using option "-recc" within the icetray.
+
+
+Subject: Muon Propagation
+Date: Tue, 08 Dec 2009 14:00:00 0800 (CST)
+
+mmc v 1.5.5
+
+Corrected units of particle length in AtmFlux prop mode. Fixed energy non-
+conservation in leptonic decay. Updated ammc to recognize new java locations.
+
+
+Subject: Muon Propagation
+Date: Mon, 11 Jan 2010 11:00:00 0800 (CST)
+
+mmc v 1.5.6
+
+Fixed event time formatting of the EM line (f2k output of generator mode).
+
+
+Subject: Muon Propagation
+Date: Thu, 22 Jul 2010 12:00:00 0800 (CDT)
+
+mmc v 1.5.7
+
+Changed the format of the mediadef file to allow setting of all of vcut, ecut,
+and cont for both propagation regions 1 and 2. Changed defaults of vcut and
+ecut to -1.0. The value of vCut is now computed as the max(vcut, ecut/E).
+Updated the example mediadef file (made with "ammc -mf") to work for IceCube.
+
+
+Subject: Muon Propagation
+Date: Thu, 10 May 2012 12:00:00 0800 (CDT)
+
+mmc v 1.5.8
+
+Changed integration method in IonizStochastic.java from integrateWithLog() to
+integrateWithSubstitution(,,,1). Thanks to the PROPOSAL team for discovering
+the numerical problem that is fixed by this modification.
+
+
+Subject: Muon Propagation
+Date: Mon, 18 Mar 2013 12:00:00 0800 (CDT)
+
+mmc v 1.5.9
+
+Fixed the randomness in the initial direction of the findLimit search, this
+stabilized the simulation result. Thanks to Jakob van Santen for fixing this.
+
+
+Subject: Muon Propagation
+Date: Tue, 20 Aug 2013 12:00:00 0800 (CDT)
+
+mmc v 1.6.0
+
+Radiation length used in Moliere scattering is now always computed with Tsai's
+formula for electrons.
+
+

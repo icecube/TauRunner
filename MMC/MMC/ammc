@@ -1,0 +1,491 @@
+#!/bin/sh
+
+# This script compiles and runs all programs in the mmc package
+# Change JDK_DIR to include the location of your java distribution
+# Change GCC_DIR to point to your gcc v 3.0 or higher distribution
+
+# Options not shown by "ammc": "-date"
+# Abbreviated and alternative option names:
+# ammc -c -ca -r -h -a -f -t -x -b -pdf -m -mf -w -hf -fl
+
+csh='sorry, shell "'"$0"'" is not supported, use bash instead' || exit
+
+STRDIR="$PWD"
+if test ""`basename $0` = ammc; then MMCDIR=`echo "$0" | sed 's/[^/]*$//'`; EXI=1; else MMCDIR=""; EXI=0; fi
+if test "$MMCDIR" = ""; then MMCDIR="$PWD"; else cd "$MMCDIR"; MMCDIR="$PWD"; fi
+STRDIR=`echo $STRDIR | sed 's;'$PWD'/*;.;'`
+
+JDK_DIR="$MMCDIR/j*dk1.* $HOME/j*dk1.* /usr/lib/jvm/java-* /usr/*/j*dk1.* /opt/j*dk1.* /opt/IBMJava* /usr/*/IBMJava* $JAVA_HOME/../j*dk1.*"
+GCC_DIR="$HOME/DIMA/gcc"
+
+NULL=/dev/null
+LANG=C; export LANG
+SHOW=0; for i in "$@"; do if test "_$i" = "_-show"; then SHOW=1; fi; done
+if test `uname` = OSF1; then JHOME=/usr/bin
+else JHOME=`for i in $JDK_DIR; do if test -e $i/bin/java; then echo $i; fi; done |
+sed '/j.*dk\|java/s-^.*/[^0-9]*\([0-9.]*\).*$-\1.0 \0/bin-; /IBMJava/s-^\(.*\)$-1.8.9 \1/bin-' | sort -n |
+if test "$SHOW" = "1"; then awk 'BEGIN {print "Java was found in:" > "/dev/stderr"} {print; print $2 > "/dev/stderr"}
+END {if(NR==0) print "Oops, java was not found" > "/dev/stderr"; printf "\n" > "/dev/stderr"}'; else cat; fi |
+tail -n 1 | awk '{print $2}'`
+if test "$JHOME" = ""; then JHOME=/usr/bin; fi; fi
+
+if test -e "$JHOME"/java; then
+CLASSPATH=mmc.jar:.
+PATH="$JHOME:$PATH"
+export CLASSPATH PATH
+else JHOME=none; fi
+
+JOPT=""; JVER=""
+for i in "$@"; do if test "_"`echo $i | sed -n 's/^-jre=.*$/-jre=/p'` = "_-jre="; then
+JOPT=$i; JVER=`echo $i | sed 's/^-jre=/-source 1.2 -target /'`; fi; done
+
+echr() { echo "$*" 1>&2; }
+exrt() { if test "$EXI" = 1; then exit $*; else echr ammc: cannot exit from the sourced file; fi; }
+jerr() { if test "$JHOME" = none; then echr '***ERROR*** unable to locate java'; exrt 1; fi; }
+remove() { rm -f "$@" > $NULL 2>&1; }
+compile() { jerr
+all=`echo $* | awk '{for(i=1;i<=NF;i++) a[$i]++} END {for(i in a) printf i" "}' | sed 's- $--'`
+echr Compiling $all`if test "$JVER" != ""; then echo " (using \"$JVER\")"; fi` ...
+if test "$all" = ""; then echr '***ERROR*** nothing to compile'; exrt 1; fi
+SRC=`echo "$all " | sed 's/\([^ ]\) /\1.java /g'`
+CLS=`echo "$all " | sed 's/\([^ ]\) /\1.class /g'`
+if test -d mmc; then remove $CLS */*.class mmc.jar; javac $JVER -O $SRC
+if test $? != 0; then echr '***ERROR*** compilation failed'; exrt 1; fi
+jar -cMf mmc.jar $CLS */*.class; remove $CLS */*.class
+else echr '***WARNING*** sources not found'
+for i in "$@"; do
+if test -e mmc.jar && test ""`jar -tf mmc.jar | sed -n 's/^'$i'.class/1/p'` = 1
+then echr Found compiled program $i
+else echr '***ERROR*** program '$i' not found'; exrt 1; fi; done; fi; }
+
+CONT=0; MAINPROG=tfa/Amanda
+for i in "$@"; do if test "_$i" = "_-a" || test "_$i" = "_-amanda"; then MAINPROG=tfa/Amanda; fi; done
+for i in "$@"; do if test "_$i" = "_-f" || test "_$i" = "_-frejus"; then MAINPROG=tfa/Frejus; fi; done
+for i in "$@"; do if test "_$i" = "_-t" || test "_$i" = "_-test"; then MAINPROG=tfa/Test; fi; done
+for i in "$@"; do if test "_$i" = "_-x" || test "_$i" = "_-flux"; then MAINPROG=gen/AtmFlux; fi; done
+for i in "$@"; do if test "_$i" = "_-b" || test "_$i" = "_-almc"; then MAINPROG=web/almc; fi; done
+for i in "$@"; do if test "_"`echo $i | sed -n 's/^-p=.*$/-p=/p'` = "_-p="
+then MAINPROG=`echo $i | sed 's/^-p=//; s/.java$//'`; fi; done
+VERSION=`if test -e mmc/Output.java; then sed -n '/version/s/^.*\"\(.*\)\".*$/\1/p' mmc/Output.java; else echo MMC; fi`
+
+for i in "$@"; do if test "_$i" = "_-h" || test "_$i" = "_-help"; then jerr
+if test "$MAINPROG" = tfa/Amanda; then
+echo; echo Use this program for F2000 stream processing in pipes
+elif test "$MAINPROG" = tfa/Frejus; then
+echo; echo Use this program for Frejus data processing in pipes; fi
+java "$MAINPROG" -help 2> $NULL; if test $? != 0; then
+echo; echo help for \"$MAINPROG\" is not available; echo; fi
+exrt; fi; done
+
+for i in "$@"; do if test "_$i" = "_-clean"; then
+remove -r *.class *.o *.*o *~ */*.class */*.*o */*~ .*.data *.data *.ps *.ps.gz *.pdf manual *.html *.TXT core *.tgz
+remove cteq6m.tbl i3m/.*.data i3m/i3moduleExample i3m/mmc.jar mmc_ns.jar mediadef
+if test -d mmc; then remove mmc.jar `ls */*.java 2> $NULL | sed 's-^.*/--g; s/.java//g'`; fi; CONT=1; fi; done
+
+for i in "$@"; do if test "_$i" = "_-hf" || test "_$i" = "_-hifi"; then
+if test -d mmc; then echr Generating high fidelity version of mmc ...
+else echr '***ERROR*** sources not found'; exrt 1; fi
+if test ""`echo $VERSION | sed 's/^.* v. [.0-9]*//; s/ //g'` = ""; then
+cat mmc/PhysicsModel.java | sed '/iprec/s/1.e-./5.e-7/; /num1/s/100/200/' > foo; mv foo mmc/PhysicsModel.java
+cat mmc/Output.java | sed '/in Java/s/";/ (hf)";/' > foo; mv foo mmc/Output.java
+cat mmc/Propagate.java | sed '/name+=/s/.data/_hf.data/' > foo; mv foo mmc/Propagate.java
+echr "
+This version of the program will take longer to initialize, since it computes
+the values for the parametrization tables with 5.e-7 precision. The tables are
+also somewhat larger, since more grid points are added for some integrals. The
+execution time after initialization should not be affected.
+"
+else echr '***ERROR*** option cannot be applied to this mmc version.'; exrt 1; fi
+CONT=1; fi; done
+
+for i in "$@"; do if test "_$i" = "_-fl" || test "_$i" = "_-float"; then
+if test -d mmc; then echr 'Generating float (lower precision) version of mmc ...'
+else echr '***ERROR*** sources not found'; exrt 1; fi
+if test ""`echo $VERSION | sed 's/^.* v. [.0-9]*//; s/ //g'` = ""; then
+cat mmc/MathModel.java | sed '/computerPrecision/s/1.e-10/1.e-5/' > foo; mv foo mmc/MathModel.java
+cat mmc/PhysicsModel.java | sed '/iprec/s/1.e-./1.e-4/' > foo; mv foo mmc/PhysicsModel.java
+for f in */*.java; do cat $f | sed 's/double/float/g; s/Double/Float/g;' |
+sed 's/\([^0-9[:alpha:]][0-9][0-9]*\.[0-9]*\(e[+-]*[0-9][0-9]*\)\?\)/\1f/g' |
+sed 's/\(Math\.log\)/(float)\1/g; s/\(Math\.exp\)/(float)\1/g;
+s/\(Math\.cos\)/(float)\1/g; s/\(Math\.sin\)/(float)\1/g;
+s/\(Math\.PI\)/(float)\1/g; s/\(Math\.acos\)/(float)\1/g;
+s/\(Math\.atan\)/(float)\1/g; s/\(Math\.sqrt\)/(float)\1/g;
+s/\(Math\.random\)/(float)\1/g; s/\(Math\.pow\)/(float)\1/g;' > foo; mv foo $f; done
+cat mmc/Output.java | sed '/in Java/s/f";/ (fl)";/' > foo; mv foo mmc/Output.java
+cat mmc/Propagate.java | sed '/name+=/s/.data/_fl.data/' > foo; mv foo mmc/Propagate.java
+echr "
+This version of MMC has all double variables replaced with floats. It should be
+faster than the default version. Raw data parametrization tables of the regular
+version are not compatible with this mmc fl version.
+"
+else echr '***ERROR*** option cannot be applied to this mmc version.'; exrt 1; fi
+CONT=1; fi; done
+
+for i in "$@"; do if test "_$i" = "_-ps" || test "_$i" = "_-pdf"; then
+if test -e README; then echr Creating printable readme.ps file ...
+else echr '***ERROR*** cannot find README file'; exrt 1; fi
+remove readme.ps readme.ps.gz readme.pdf
+a2ps -q README -o readme.ps -1 -B --borders=no --medium=letter &&
+ps2pdf readme.ps && gzip readme.ps
+CONT=1; fi; done
+
+for i in "$@"; do if test "_$i" = "_-mf" || test "_$i" = "_-mediadef"; then
+cat << EOF > mediadef
+	# media definition file (mmc version 1.2 and up)
+	# include with -mediadef=[this file].
+	# use the following syntax (from version 1.5.7):
+	# abbreviation: par[i]="vcut[i] ecut[i] cont[i]"
+	# all                  det par1 par2 rho medium
+	# sphere z r           det par1 par2 rho medium
+	# spheres assume Earth radius of 6371300 m,
+	# bedrock elevation 24 m, ice surface at 2834 m,
+	# detector center 1948 m below the ice surface.
+	# testbed extension  (Ped, version 1.3.5 and up)
+	# box x y z l w h      det par1 par2 rho medium
+	# center of the box: x,y,z; dimensions: l,w,h
+	# cyl z r l            det par1 par2 rho medium
+	# cylinder centered at z;   dimensions: r,l
+	# set r, l, w, or h to negative to invert media
+	# plane x y z nx ny nz det par1 par2 rho medium
+	# goes through x,y,z, n=(nx,ny,nz) exits medium
+	# last line defines the medium of the Earth core
+	all                 0 0.05 -1 1 -1 5.e2 0 0.673 Air
+	sphere 1948 6374134 0 0.05 -1 1 -1 5.e2 0 0.832 Ice
+	sphere 1748 6373934 1 0.05 -1 1 -1 5.e2 0 1.005 Ice
+	sphere -862 6371324 0 0.05 -1 1 -1 5.e2 0 1.0 Standard Rock
+EOF
+echo "mediadef file created. The following MMC settings should be used for IceCube:"
+echo "-raw -user -sdec -time -lpm -bs=1 -ph=3 -bb=2 -sh=2 -scat -mediadef=mediadef -frho"
+CONT=1; fi; done
+
+TGZD=0; for i in "$@"; do if test "_$i" = "_-date"; then TGZD=1; fi; done
+
+for i in "$@"; do if test "_$i" = "_-m" || test "_$i" = "_-manual"; then
+while true; do
+echo -n Creating a new archive `date`" ... "
+$0 -clean
+touch * */*
+cd ..
+remove mmc.tgz
+tar -czf mmc.tgz `echo $MMCDIR | sed 's-^.*/--'`
+cd $MMCDIR
+mv ../mmc.tgz .
+TGZ=`ls -l mmc.tgz | awk '{print $5}'`
+echo $TGZ
+if test $TGZD = 0; then break; fi
+if test `ls -la mmc.tgz | awk '{print $5}' | sed 's/^.*\(.\)/\1/' ` = "0"; then break; fi
+sleep 1
+done
+
+MMCLS=`if test -d mmc; then for i in tfa mmc web gen exa i3m ctq; do
+if test $i = "i3m" || test $i = "ctq"; then END=""; else END=".java"; fi
+echo '<tr><td colspan=3>&nbsp;</td></tr><tr><td></td><td>+ <font color="red">'$i'</font></td><td></td></tr>'
+cd $i; ls *.java *.c *.h 2> $NULL | awk '{printf $0" "}' | sed 's/.java//g' | awk '{
+a=int(NF/3); if(NF/3-a>0) a++
+for(i=1;i<=NF;i++){ if(i==1) print "<tr><td valign=\"top\">"
+printf "<a href=\"'$i'/%s'$END'\">%s</a><br>\n", $i, $i
+if(i==2*a || i==a) print "</td><td valign=\"top\">"
+if(i==NF) print "</td></tr>" }
+}'; cd $MMCDIR; done; else echo '<center><br><i>are not available</i></center>'; fi`
+
+cp README README.TXT
+$0 -ps
+cat HISTORY | awk 'BEGIN {RS="Subject: Muon Propagation\n"} {a[NR]=$0}
+END {for(i=NR; i>1; i--) printf "%s%s", RS, a[i]}' > HISTORY.TXT
+if test -d mmc; then echo Creating javadoc manual pages ...; jerr
+remove -r manual; mkdir manual; javadoc -d manual */*.java > $NULL 2>&1; fi
+SVERS=`echo $VERSION | sed 's/^.* v\. //'`
+
+mkdir tmp && cp web/* tmp
+cat tmp/web.java | grep -v 'new almc' > web/web.java
+cat tmp/textStream.java | sed '/almc begin/,/almc end/d; /gPrint/d' > web/textStream.java
+$0 $JOPT -c -p=web/web -jre=1.1 && mv mmc.jar mmc_ns.jar
+cp -f tmp/* web && remove -r tmp
+
+$0 $JOPT -ca && $0 -w
+cat << EOF > web.html
+<html>
+<head>
+<title>MUON PROPAGATION CODE IN JAVA</title>
+<style><!--
+font{cursor:default; font-size:14pt}
+//--></style>
+<script language="JavaScript1.2"><!--
+function init(){
+if(document.all) resizeBy(600-document.body.clientWidth, 670-document.body.clientHeight)
+else resizeBy(600-innerWidth, 660-innerHeight)
+}
+onload=init
+//--></script>
+</head>
+<body bgcolor="#000000" text="#00C0C0"><center>
+<font size=+1>Muon Propagation Code in Java</font><p>
+<applet archive="mmc.jar" code="web/web.class" width=580 height=600></applet>
+</center></body>
+</html>
+EOF
+
+cat web.html | sed 's/mmc\.jar/mmc_ns.jar/' > web_ns.html
+
+cat << EOF > index.html
+<html><head>
+<title>MUON PROPAGATION CODE IN JAVA</title>
+<style><!--
+a{text-decoration:none}
+//--></style>
+</head>
+<body bgcolor="#000000" text="#D0D0D0" link="#00D044" vlink="#00D044" alink="#D0D0D0">
+<table height="100%" width="100%"><tr><td valign="top">
+<center><font size=+1 color="#00C0C0">$VERSION</font></center><p>
+Please find Muon Monte Carlo (MMC) manual pages produced by javadoc <a href="manual/">here</a>.<p>
+Refer to the <a href="README.TXT">README</a> (<a href="readme.ps.gz">ps</a>/<a href="readme.pdf">pdf</a>) file for a short description of the program.<br>
+All changes are documented in the <a href="HISTORY.TXT">HISTORY</a> file.<br>
+You can download the latest version of the program at one of these locations:
+<a href="http://dima.lbl.gov/~dima/work/MUONPR/">LBNL, Berkeley</a> and
+<a href="http://icecube.wisc.edu/~dima/work/MUONPR/">UW, Madison</a>.<p>
+</td></tr>
+<tr><td align="right"><a href="mmc.tgz"><font color="gray">download here</font> <font color="red">-----&gt;</font> <font color="#00AAFF"><i>Current version:</i></font> <b>$SVERS</b> <font color="gray"><i>($TGZ bytes)</i></font><font color="red"> &lt;--</font></a><p>&nbsp;</td></tr>
+<tr><td valign="center"><center><font color="#000000"><form action="web.html" onSubmit='if(document.layers) (window.open("", "webmmc", "width=590,height=650")).resizeTo(600, 660); window.open(document.layers?"web_ns.html":"web.html", "webmmc", "width=600,height=660"); return false'><input type="submit" value="start webmmc here"></form></font></center></td></tr>
+<tr><td>&nbsp;<br>
+<center><font size=+1 color="#00C0C0">Sources</font></center>
+<table width="100%">
+$MMCLS
+</table><p>&nbsp;</tr></td>
+<tr><td valign="bottom"><div align="right">
+<a href="http://amanda.berkeley.edu/~dima/">my homepage</a><br>
+<a href="mailto:dima@amanda.berkeley.edu?subject=$VERSION">harass author here</a><br>
+</div></td></tr></table>
+</body></html>
+EOF
+CONT=1; fi; done
+
+ALRCMP=0
+for i in "$@"; do if test "_$i" = "_-ca" || test "_$i" = "_-compall"; then
+compile `ls tfa/*.java web/web.java gen/AtmFlux.java $STRDIR/*.java 2> $NULL | sed 's/.java//g'`
+ALRCMP=1
+CONT=1; fi; done
+
+for i in "$@"; do if test "_$i" = "_-c" || test "_$i" = "_-compile"; then
+if test $ALRCMP = "0"; then compile "$MAINPROG"; fi
+if test "$MAINPROG" = tfa/Amanda; then
+echo | time -p java "$MAINPROG" "$@"
+if test $? != 0; then echr '***ERROR*** table compilation failed'; exrt 1; fi
+java "$MAINPROG" -help
+elif test "$MAINPROG" = tfa/Frejus; then
+echo -n | time -p java "$MAINPROG" "$@"
+if test $? != 0; then echr '***ERROR*** table compilation failed'; exrt 1; fi
+fi; CONT=1; fi; done
+
+for i in "$@"; do if test "_$i" = "_-w" || test "_$i" = "_-webctq"; then
+. $0 -ctq && $0 -r -p=gen/CteqPDF && echr Cteq61 datafile created
+remove cteq6m.tbl ctq/libcteq.so
+exrt; fi; done
+
+GOPT="-O3"; for i in "$@"; do if test "_"`echo $i | sed -n 's/^-O.*$/-O/p'` = "_-O"; then GOPT=$i; fi; done
+STAT="-static"; for i in "$@"; do if test "_$i" = "_-nostat"; then STAT=""; fi; done
+
+setpth() { PATH="$GCC_DIR/bin:$PATH"; LD_LIBRARY_PATH="$GCC_DIR/lib:$LD_LIBRARY_PATH"; export PATH LD_LIBRARY_PATH; }
+
+for i in "$@"; do if test "_$i" = "_-gcj"; then
+setpth
+GCJVER=`gcj --version 2> $NULL`
+if test $? != 0; then echr '***ERROR*** cannot find gcj'; exrt 1; fi
+echr Compiling "$MAINPROG" with `echo "$GCJVER" | head -n 1` $GOPT $STAT ...
+if test `uname -m` = alpha; then IEEE="-mieee"; else IEEE=""; fi
+CLS=`echo "$MAINPROG" | sed 's-/-.-g'`
+if test ""`echo "$MAINPROG" | grep '^tfa/'` = ""; then
+ALL=`ls mmc/*.java tfa/*.java gen/*.java $MAINPROG.java 2> $NULL |
+awk '{for(i=1;i<=NF;i++) a[$i]++} END {for(i in a) printf i" "}' | sed 's- $--'`
+ALC=`echo $ALL | sed 's-\.java-\.class-g'`
+gcj -C $ALL &&
+gcj --main=$CLS -o "$MAINPROG" $ALC -fjni $GOPT $STAT --encoding=UTF-8 $IEEE -Dfile.encoding=C
+remove */*.class
+else gcj -o "$MAINPROG".o "$MAINPROG".java mmc/*.java $GOPT --encoding=UTF-8 $IEEE -c &&
+gcj --main=$CLS -o "$MAINPROG" "$MAINPROG".o $STAT -Dfile.encoding=C; fi
+if test -e "$MAINPROG"; then remove "$MAINPROG".o; mv $MAINPROG .
+else echr '***ERROR*** compilation failed'; exrt 1; fi
+CONT=1; fi; done
+
+jvhome() { if test "$JAVA_HOME" = ""; then
+if test `uname -m` = alpha; then JAVA_HOME=/usr/include/java
+else JAVA_HOME=`echo $JHOME | sed 's-/bin$--'`; fi; fi; }
+
+for i in "$@"; do if test "_$i" = "_-ctq"; then
+setpth
+jvhome
+if test `uname -m` = alpha; then gcc=cc; g77=f77; vc="-V"; vf="-what"
+INCLUDE="-I$JAVA_HOME -I$JAVA_HOME/alpha -pthread"
+FLAGS=""
+else gcc=gcc; g77=g77; vc="--version"; vf=$vc
+INCLUDE="-I$JAVA_HOME/include -I$JAVA_HOME/include/linux"
+FLAGS="-fPIC -Wl,-soname,cteq"; fi
+GCCVER=`eval $gcc $vc 2> $NULL`
+if test $? != 0; then echr '***ERROR*** cannot find '"$gcc"; exrt 1; fi
+G77VER=`eval $g77 $vf 2> $NULL`
+if test $? != 0; then echr '***ERROR*** cannot find '"$g77"; exrt 1; fi
+echr Compiling cteq library with `echo "$GCCVER" | head -n 1` and `echo "$G77VER" | head -n 1` ...
+cd ctq
+eval $gcc $INCLUDE -fPIC cteq.c -c -o cteq.o -c &&
+eval $g77 -fPIC Cteq61Pdf.f -o Cteq61Pdf.o -c &&
+eval $g77 -shared $FLAGS cteq.o Cteq61Pdf.o -o libcteq.so
+if test $? != 0; then echr '***ERROR*** compilation failed'; exrt 1
+else echr 'Compiled. Source "'"$0 -ctq"'" to set the library path'; fi
+remove *.o
+LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$PWD; export LD_LIBRARY_PATH
+cd $MMCDIR
+ln -sf ctq/cteq6m.tbl
+CONT=1; fi; done
+
+for i in "$@"; do if test "_$i" = "_-i3m"; then
+setpth
+jvhome
+if test `uname -m` = alpha; then gcc=cc; vc="-V"
+INCLUDE="-I$JAVA_HOME -I$JAVA_HOME/alpha -pthread"
+LIBS="-ljava -lverify -ljvm"
+else gcc=gcc; vc="--version"
+INCLUDE="-I$JAVA_HOME/include -I$JAVA_HOME/include/linux"
+if test ""`echo "$JAVA_HOME" | grep IBMJava` = ""; then
+lib2=`echo $JAVA_HOME/jre/lib/*/server`
+lib1=`echo $lib2 | sed 's-/server$--'`
+LDJAVA="$lib1:$lib2"
+LIBS="-L$lib1 -ljava -lverify -L$lib2 -ljvm"
+else LDJAVA="$JAVA_HOME/jre/bin:$JAVA_HOME/jre/bin/classic"
+LIBS="-L$JAVA_HOME/jre/bin -ljava -lhpi -L$JAVA_HOME/jre/bin/classic -ljvm"; fi; fi
+GCCVER=`eval $gcc $vc 2> $NULL`
+if test $? != 0; then echr '***ERROR*** cannot find '"$gcc"; exrt 1; fi
+echr Compiling i3module with `echo "$GCCVER" | head -n 1` ...
+cd i3m
+eval $gcc $INCLUDE i3module.c -o i3module.o -c &&
+eval $gcc i3moduleExample.c -o i3moduleExample.o -c &&
+eval $gcc i3module.o i3moduleExample.o $LIBS -o i3moduleExample
+if test $? != 0; then echr '***ERROR*** compilation failed'; exrt 1
+else echr 'Compiled. Source "'"$0 -i3m"'" to set the library path'; fi
+remove i3moduleExample.o
+LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$LDJAVA
+export LD_LIBRARY_PATH
+ln -sf ../mmc.jar
+cd $MMCDIR
+ln -sf ctq/libcteq.so
+CONT=1; fi; done
+
+for i in "$@"; do if test "_$i" = "_-delete"; then
+remove -r tfa web mmc exa gen ctq i3m *.java *.class *.o *.*o *~ README* HISTORY* *.ps *.ps.gz *.pdf manual *.html core mmc_ns.jar
+CONT=1; fi; done
+
+for i in "$@"; do if test "_"`echo $i | sed -n 's/^-test=.*$/-test=/p'` = "_-test="; then
+echo This script will test parameterizations.
+echo Values in the tables are relative errors.
+echo
+MAINPROG=tfa/Test
+TEST=`echo $i | sed 's/^-test=//'`
+if test $ALRCMP = "0"; then compile "$MAINPROG"; fi
+restore() { remove testfile.*; }
+finish() { echo Restoring files ...; restore; kill $$; }
+trap "finish" 2
+
+if test "$TEST" = "1"; then
+echo checking precision of parameterizations of cross sections
+echo
+
+for RND in 0.1 0.5 0.9; do
+for IND in 0.001 0.999; do
+echo -n RND=$RND IND=$IND .
+
+java "$MAINPROG" "$@" -proc=1 -intr=none -RND1=$IND -RND2=$RND > testfile.np 2> $NULL; echo -n .
+java "$MAINPROG" "$@" -proc=1 -intr=crs -RND1=$IND -RND2=$RND > testfile.pa 2> $NULL; echo .
+
+STEPS=5
+ENERGY=1
+for i in Ioniz Brems Photo Epair; do echo -n "   $i:  "
+awk '/^Energy / {i++; e[i]=$3} /'$i':/ {
+if(FILENAME=="testfile.np"){ a1[i]=$2; b1[i]=$3; c1[i]=$4; k=i }
+if(FILENAME=="testfile.pa"){ a2[i-k]=$2; b2[i-k]=$3; c2[i-k]=$4 }
+} END {
+ai=bi=ci='$STEPS'
+ae=be=ce=0
+for(i=1; i<=k; i++){
+  if(a1[i]*a2[i]!=0){ if(ai==0){ a=1-a1[i]/a2[i]; ai=0 } else{ a=0; ai--; } } else{ a=0; ai='$STEPS' }
+  if(b1[i]*b2[i]!=0){ if(bi==0){ b=1-b1[i]/b2[i]; bi=0 } else{ b=0; bi--; } } else{ b=0; bi='$STEPS' }
+  if(c1[i]*c2[i]!=0){ if(ci==0){ c=1-c1[i]/c2[i]; ci=0 } else{ c=0; ci--; } } else{ c=0; ci='$STEPS' }
+  if(a<0) a=-a; if(b<0) b=-b; if(c<0) c=-c
+  if(e[i]>'$ENERGY'){ if(a>ae) ae=a; if(b>be) be=b; if(c>ce) ce=c }
+} print ae, be, ce }' testfile.*
+done; done; done; restore
+
+elif test "$TEST" = 2; then
+echo checking precision of parameterizations of energy and tracking integrals
+echo
+
+for RND in 0.01 0.10 0.50 0.90 0.99; do
+for XFD in 0.01 0.10 0.50 0.90 0.99; do
+echo -n RND=$RND XFD=$XFD .
+
+java "$MAINPROG" "$@" -proc=2 -intr=crs -RND1=$RND -RND2=$XFD > testfile.np 2> $NULL; echo -n .
+java "$MAINPROG" "$@" -proc=2 -intr=all -RND1=$RND -RND2=$XFD > testfile.pa 2> $NULL; echo -n ". "
+
+STEPS=0
+ENERGY=0
+awk '/^Energy / { i++; e[i]=$3} $0!~/^Energy/ {
+if(FILENAME=="testfile.np"){ a1[i]=$1; b1[i]=$2; c1[i]=$3; d1[i]=$4; k=i }
+if(FILENAME=="testfile.pa"){ a2[i-k]=$1; b2[i-k]=$2; c2[i-k]=$3; d2[i-k]=$4 }
+} END {
+ai=bi=ci=di='$STEPS'
+ae=be=ce=de=0
+for(i=1; i<=k; i++){
+  if(a1[i]*a2[i]!=0){ if(ai==0){ a=1-a1[i]/a2[i]; ai=0 } else{ a=0; ai--; } } else{ a=0; ai='$STEPS' }
+  if(b1[i]*b2[i]!=0){ if(bi==0){ b=1-b1[i]/b2[i]; bi=0 } else{ b=0; bi--; } } else{ b=0; bi='$STEPS' }
+  if(c1[i]*c2[i]!=0){ if(ci==0){ c=1-c1[i]/c2[i]; ci=0 } else{ c=0; ci--; } } else{ c=0; ci='$STEPS' }
+  if(d1[i]*d2[i]!=0){ if(di==0){ d=1-d1[i]/d2[i]; di=0 } else{ d=0; di--; } } else{ d=0; di='$STEPS' }
+  if(a<0) a=-a; if(b<0) b=-b; if(c<0) c=-c; if(d<0) d=-d
+  if(e[i]>'$ENERGY'){ if(a>ae) ae=a; if(b>be) be=b; if(c>ce) ce=c; if(d>de) de=d }
+} print ae, be, ce, de }' testfile.*
+done; done; restore
+
+else echr '***ERROR*** test "'"$TEST"'"' is not defined; exrt 1; fi
+exrt; fi; done
+
+for i in "$@"; do if test "_$i" = "_-r" || test "_$i" = "_-run"; then
+jerr; java -Xmx512M "$MAINPROG" "$@"
+if test $? != 0; then echr '***ERROR*** program failed'; exrt 1; fi
+exrt; fi; done
+
+if test $CONT = "0"; then
+echo $VERSION
+echo
+if test "$JHOME" = none; then echo '***WARNING*** No suitable java installation was found'
+else echo This is a `uname -s -m` computer, java was found in \"$JHOME\"
+echo -n "testing java ... "; java -version 2>&1 | awk '{ if($0~/java version/) v=$3; print } END {
+  split(v,a,"[.\"]"); for(i=2; i<5; i++){ if(a[i]=="") a[i]=0; r*=10; r+=a[i] }
+  if(r<122){ printf "\n***WARNING*** Found java version %s is insufficient.\n", v
+  print "***WARNING*** Upgrade java to at least version \"1.2.2\"" } }'; fi
+cat << EOF
+
+Usage: "$0 [options]". Options are:
+       "-compile"  to compile the program
+       "-compall"  to compile everything
+       "-run"      to run the program
+       "-help"     for help
+       "-amanda"   to use program Amanda (default setting)
+       "-frejus"   to use program Frejus
+       "-test"     to use program Test
+       "-flux"     to use program AtmFlux
+       "-almc"     to use program web/almc
+       "-p=[name]" to select some other program
+       "-clean"    clean up distribution directory
+       "-delete"   delete everything except class and data files
+       "-ps"       generate printable readme.ps file
+       "-manual"   create javadoc manual pages
+       "-mediadef" create example media definition file
+       "-test=1"   test parameterizations of cross sections
+       "-test=2"   and of energy and tracking integrals
+       "-hifi"     generate high precision version of mmc
+       "-float"    replace doubles with floats (fl mmc)
+       "-gcj"      compile the program using gcj
+       "-O[0-3 s]" optimization level used by gcj
+       "-nostat"   use if compilation with gcj fails
+       "-jre=1.x"  jre target version used by javac
+       "-ctq/i3m"  compile the ctq/i3m module
+       "-webctq"   produce the cteq datafile
+       "-show"     show all found java installations
+EOF
+fi
