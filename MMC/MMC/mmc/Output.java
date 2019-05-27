@@ -155,9 +155,14 @@ public class Output{
      */
 
     protected void output(int wint, String comp, double de, double ef){
-	String str;
+	String str="";
+	if(wint==1) {
+            str=f(de);
+	    Output.out.println(str);
+	}
+	if(DEBUG) Output.err.print(str);
 	if(DEBUG || (HIST==1)){
-	    str=" . ";
+	    str="";
 	    if(wint==0){
 		if(comp=="conti") str+="lost continuously "+f(de)+" MeV over "+f(ef)+" cm up to "+f(p.r)+" cm\n";
 		else str+="muon with energy "+f(de)+" MeV traveled  "+f(ef)+" cm\n";
@@ -169,7 +174,8 @@ public class Output{
 		else if(wint==4) str+="photoed by "+comp;
 		else if(wint==5) str+="epaired by "+comp;
 		str+=" ... lost "+f(de)+" MeV, ef = "+f(ef)+" MeV, xf = "+f(p.r)+" cm\n";
-	    }
+	        str+=f(de);
+		}
 	    if(HIST==1) history.append(str);
 	    if(DEBUG) Output.err.print(str);
 	}
@@ -189,7 +195,7 @@ public class Output{
 		    history.append(str);
 		}
 	    }
-	}
+	} 
     }
 
     //----------------------------------------------------------------------------------------------------//

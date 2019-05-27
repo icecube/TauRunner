@@ -295,9 +295,12 @@ public class Frejus{
 		e=Double.parseDouble(t.nextToken());
 		x=Double.parseDouble(t.nextToken());
 		result=p.propagateTo(x*1.e2, e*1.e3);
-		line+=" "+Output.f(result>0?result*1.e-3:result*1.e-2);
-		if(timef) line+=" "+Output.f(p.p.t);
-		Output.out.println(line);
+		//line+=" "+Output.f(result>0?result*1.e-3:result*1.e-2);
+		String Stuff;
+		Stuff=Output.f(result>0?result*1.e-3:result*1.e-2);
+		//line+=" "+Output.f(result>0?result*1.e-3:result*1.e-2);
+  		//if(timef) line+=" "+Output.f(p.p.t);
+		Output.out.println(Stuff);
 	    }
 
 	}catch(Exception error){

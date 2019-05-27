@@ -38,7 +38,8 @@ public class Decay extends CrossSections implements DFunctionOfx{
      */
 
     public double e(double ernd, double arnd, double srnd, Output o){
-	if(p.l<0) return 0;
+	return p.e;
+        /*if(p.l<0) return 0;
 	double emax, x0, f0, el, lm, pl;
 	String out1="nu", out2="nu";
 	if(p.type==2){
@@ -112,7 +113,7 @@ public class Decay extends CrossSections implements DFunctionOfx{
 	    o.output(1, out2, En2, 0);
 	}
 	return el*(p.e/p.m)+pl*(p.p/p.m)*(2*arnd-1);
-    }
+   */ }
 
     //----------------------------------------------------------------------------------------------------//
 
