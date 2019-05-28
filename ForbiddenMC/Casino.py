@@ -224,7 +224,7 @@ class CasinoEvent(object):
         cmd = 'awk "BEGIN {{for(i=0; i<1; i++) print 100000000, {ein} }}" | {Dir}../MMC/MMC/ammc -run -frejus -tau -medi="Frejus rock" -radius=1e6 -vcut=1.e-3 -rho={rho} -scat -lpm -bs=1 -ph=3 -bb=2 -sh=1 -ebig=1e16 -seed=1223 -tdir={Dir}../MMC/tables/'.format(ein=e, rho=mult, Dir=base_path)
         #run MMC
         out = os.popen(cmd).read()
-        print(out)
+        #print(out)
 	#parse output
         index = out.find('\n')
         e_final = float(out[:index])/1e3            #MMC returns energy in MeV
