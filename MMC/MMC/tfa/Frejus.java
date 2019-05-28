@@ -227,39 +227,39 @@ public class Frejus{
 	    if(pflag) param+=" "+args[n];
 	}
 
-	Output.err.println(Output.version);
-	Output.err.println("Running \""+param+"\"");
+//	Output.err.println(Output.version);
+//	Output.err.println("Running \""+param+"\"");
 	if(bnum>0){
 	    pbad=bnum==1?pbad+" is":"s"+pbad+" are";
-	    Output.err.println("Warning: Parameter"+pbad+" not recognized");
+//	    Output.err.println("Warning: Parameter"+pbad+" not recognized");
 	}
 
 	if(bspar<1 || bspar>4){
-	    Output.err.println("Warning: bs is not a valid number");
+//	    Output.err.println("Warning: bs is not a valid number");
 	    bspar=1;
 	}
 	if(pncrs<1 || pncrs>4 || (pncrs==2 && !(type.equals("mu") || type.equals("tau")))){
-	    Output.err.println("Warning: ph is not a valid number");
+//	    Output.err.println("Warning: ph is not a valid number");
 	    pncrs=1;
 	}
 	if(((pncrs==1 || pncrs==2) && (pncbb<1 || pncbb>4)) ||
 	    (pncrs==3 && (pncbb<1 || pncbb>2)) || (pncrs==4 && pncbb!=1)){
-	    Output.err.println("Warning: bb is not a valid number");
+//	    Output.err.println("Warning: bb is not a valid number");
 	    pncbb=1;
 	}
 	if(((pncrs==1 || pncrs==2) && (pncsh!=1)) || ((pncrs>2) && (pncsh<1 || pncsh>2))){
-	    Output.err.println("Warning: sh is not a valid number");
+//	    Output.err.println("Warning: sh is not a valid number");
 	    pncsh=1;
 	}
 	if(romb<2 || romb>6){
-	    Output.err.println("Warning: romb is not a valid number");
+//	    Output.err.println("Warning: romb is not a valid number");
 	    romb=5;
 	}
 
 	PhysicsModel.elow=elow;
 	PhysicsModel.ebig=ebig;
 	Propagate p = new Propagate(med, ecut, vcut, type, rho);
-	Output.DEBUG=debug;
+//	Output.DEBUG=debug;
 	p.sdec=SDEC;           // To enable stopped muon decay
 	p.recc=RECC;           // To enable printout of continuous energy losses
 	p.contiCorr=conti;     // To randomize the continuous energy losses, use only for small vcut
@@ -275,12 +275,12 @@ public class Frejus{
 	p.s.ce=crsce;          // Cross section multiplicative modifier
 	p.s.cd=crscd;          // Cross section multiplicative modifier
 	Propagate.g=romb;
-	Output.raw=raw;
+//	Output.raw=raw;
 	p.interpolate(intr, ".frejus");
-	Output.err.println("Enter the following: energy in [GeV] and distance to travel x in [m].");
-	Output.err.println("The last entry in the output is the final energy in [GeV] (if > 0)");
-	Output.err.println("or distance traveled to the point of disappearance in [m] (if < 0).");
-	Output.err.println("          ---  *** Enter your parameters now ***  ---");
+//	Output.err.println("Enter the following: energy in [GeV] and distance to travel x in [m].");
+//	Output.err.println("The last entry in the output is the final energy in [GeV] (if > 0)");
+//	Output.err.println("or distance traveled to the point of disappearance in [m] (if < 0).");
+//	Output.err.println("          ---  *** Enter your parameters now ***  ---");
 
 	try{
 
@@ -304,7 +304,7 @@ public class Frejus{
 	    }
 
 	}catch(Exception error){
-	    Output.err.println("Program finished with exception: "+error.toString());
+//	    Output.err.println("Program finished with exception: "+error.toString());
 	    throw new mmcException("input error");
 	}
     }
