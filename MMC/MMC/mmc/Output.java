@@ -23,7 +23,7 @@ import java.net.URL;
 
 public class Output{
 
-    final public static String version="Muon Propagation Code in Java v. 1.6.0";
+    //final public static String version="Muon Propagation Code in Java v. 1.6.0";
 
     final public static int HISTSIZE=1000;
 
@@ -291,7 +291,7 @@ public class Output{
 		    if(raw) inr = new ObjectInputStream((new URL(name)).openStream());
 		    else throw new mmcException("cannot use this format for web transfers");
 		    inf=true;
-		    Output.err.println("Parametrization tables will be read in from the file "+name);
+		    //Output.err.println("Parametrization tables will be read in from the file "+name);
 		}
 		else throw new mmcException("cannot save file at this location");
 	    }
@@ -300,13 +300,13 @@ public class Output{
 		    if(raw) inr = new ObjectInputStream(fileIr = new FileInputStream(name));
 		    else ina = new LineNumberReader(fileIa = new FileReader(name));
 		    inf=true;
-		    Output.err.println("Parametrization tables will be read in from the file "+name);
+		    //Output.err.println("Parametrization tables will be read in from the file "+name);
 		}
 		else{
 		    if(raw) outr = new ObjectOutputStream(fileOr = new FileOutputStream(name));
 		    else outa = new PrintWriter(fileOa = new FileWriter(name));
 		    outf=true;
-		    Output.err.println("Parametrization tables will be saved to the file "+name);
+		    //Output.err.println("Parametrization tables will be saved to the file "+name);
 		}
 	    }
 	}catch(Exception error){

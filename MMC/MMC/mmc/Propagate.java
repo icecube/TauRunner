@@ -278,7 +278,7 @@ public class Propagate extends PhysicsModel{
 	double e_hi=ebig;
 	double e_low=p.low;
 
-	Output.err.println("Parameterizations apply in the energy range from "+Output.f(e_low)+" MeV to "+Output.f(e_hi)+" MeV");
+//	Output.err.println("Parameterizations apply in the energy range from "+Output.f(e_low)+" MeV to "+Output.f(e_hi)+" MeV");
 	if(w.indexOf("all")!=-1){
 	    w+=" crs trackE trackX";
 	    if(exactTime) w+=" trackT";
@@ -294,32 +294,32 @@ public class Propagate extends PhysicsModel{
 
 	s.i.c.jt=false;
 	if(w.indexOf("ionize")!=-1 && s.ci>0){
-	    Output.err.print("Parameterizing ionizE ... ");
+//	    Output.err.print("Parameterizing ionizE ... ");
 	    s.i.c.J = new Interpolate(num1, e_low, e_hi, s.i.c, g, true, false, true, g, false, false, true);
 	    s.i.c.jt=true;
-	    Output.err.println("done");
+//	    Output.err.println("done");
 	}
 
 	s.i.s.jt=false;
 	if(w.indexOf("ionizs")!=-1 && s.ci>0){
-	    Output.err.print("Parameterizing ionizS ... ");
+//	    Output.err.print("Parameterizing ionizS ... ");
 	    s.i.s.J = new Interpolate(num1, e_low, e_hi, num1, 0, 1, s.i.s, g, false, false, true, g, false, false, false, g, true, false, false);
 	    s.i.s.Jo = new Interpolate(num1, e_low, e_hi, s.i.s, g, false, false, true, g, true, false, false);
 	    s.i.s.jt=true;
-	    Output.err.println("done");
+//	    Output.err.println("done");
 	}
 
 	s.b.c.jt=false;
 	if(w.indexOf("bremse")!=-1 && s.cb>0){
-	    Output.err.print("Parameterizing bremsE ... ");
+//	    Output.err.print("Parameterizing bremsE ... ");
 	    s.b.c.J = new Interpolate(num1, e_low, e_hi, s.b.c, g, true, false, true, g, false, false, false);
 	    s.b.c.jt=true;
-	    Output.err.println("done");
+//	    Output.err.println("done");
 	}
 
 	s.b.s.jt=false;
 	if(w.indexOf("bremss")!=-1 && s.cb>0){
-	    Output.err.print("Parameterizing bremsS ... ");
+//	    Output.err.print("Parameterizing bremsS ... ");
 	    s.b.s.J = new Interpolate[m.num];
 	    s.b.s.Jo = new Interpolate[m.num];
 	    for(i=0; i<m.num; i++){
@@ -328,32 +328,32 @@ public class Propagate extends PhysicsModel{
 		s.b.s.Jo[i] = new Interpolate(num1, e_low, e_hi, s.b.s, g, false, false, true, g, true, false, false);
 	    }
 	    s.b.s.jt=true;
-	    Output.err.println("done");
+//	    Output.err.println("done");
 	}
 
 	s.n.jt=false;
 	if(w.indexOf("photop")!=-1 && s.cp>0){
-	    Output.err.print("Parameterizing photoP ... ");
+//	    Output.err.print("Parameterizing photoP ... ");
 	    s.n.J = new Interpolate[m.num];
 	    for(i=0; i<m.num; i++){
 		s.component=i;
 		s.n.J[i] = new Interpolate(num1, e_low, e_hi, num1, 0., 1., s.n, g, false, false, true, g, false, false, false, g, false, false, false);
 	    }
 	    s.n.jt=true;
-	    Output.err.println("done");
+//	    Output.err.println("done");
 	}
 
 	s.n.c.jt=false;
 	if(w.indexOf("photoe")!=-1 && s.cp>0){
-	    Output.err.print("Parameterizing photoE ... ");
+//	    Output.err.print("Parameterizing photoE ... ");
 	    s.n.c.J = new Interpolate(num1, e_low, e_hi, s.n.c, g, true, false, true, g, false, false, false);
 	    s.n.c.jt=true;
-	    Output.err.println("done");
+//	    Output.err.println("done");
 	}
 
 	s.n.s.jt=false;
 	if(w.indexOf("photos")!=-1 && s.cp>0){
-	    Output.err.print("Parameterizing photoS ... ");
+//	    Output.err.print("Parameterizing photoS ... ");
 	    s.n.s.J = new Interpolate[m.num];
 	    s.n.s.Jo = new Interpolate[m.num];
 	    for(i=0; i<m.num; i++){
@@ -362,32 +362,32 @@ public class Propagate extends PhysicsModel{
 		s.n.s.Jo[i] = new Interpolate(num1, e_low, e_hi, s.n.s, g, false, false, true, g, true, false, false);
 	    }
 	    s.n.s.jt=true;
-	    Output.err.println("done");
+//	    Output.err.println("done");
 	}
 
 	s.e.jt=false;
 	if(w.indexOf("epairp")!=-1 && s.ce>0){
-	    Output.err.print("Parameterizing epairP ... ");
+//	    Output.err.print("Parameterizing epairP ... ");
 	    s.e.J = new Interpolate[m.num];
 	    for(i=0; i<m.num; i++){
 		s.component=i;
 		s.e.J[i] = new Interpolate(num1, e_low, e_hi, num1, 0., 1., s.e, g, false, false, true, g, false, false, false, g, false, false, false);
 	    }
 	    s.e.jt=true;
-	    Output.err.println("done");
+//	    Output.err.println("done");
 	}
 
 	s.e.c.jt=false;
 	if(w.indexOf("epaire")!=-1 && s.ce>0){
-	    Output.err.print("Parameterizing epairE ... ");
+//	    Output.err.print("Parameterizing epairE ... ");
 	    s.e.c.J = new Interpolate(num1, e_low, e_hi, s.e.c, g, true, false, true, g, false, false, false);
 	    s.e.c.jt=true;
-	    Output.err.println("done");
+//	    Output.err.println("done");
 	}
 
 	s.e.s.jt=false;
 	if(w.indexOf("epairs")!=-1 && s.ce>0){
-	    Output.err.print("Parameterizing epairS ... ");
+//	    Output.err.print("Parameterizing epairS ... ");
 	    s.e.s.J = new Interpolate[m.num];
 	    s.e.s.Jo = new Interpolate[m.num];
 	    for(i=0; i<m.num; i++){
@@ -396,12 +396,12 @@ public class Propagate extends PhysicsModel{
 		s.e.s.Jo[i] = new Interpolate(num1, e_low, e_hi, s.e.s, g, false, false, true, g, true, false, false);
 	    }
 	    s.e.s.jt=true;
-	    Output.err.println("done");
+//	    Output.err.println("done");
 	}
 
 	this.jt=false;
 	if(w.indexOf("tracke")!=-1){
-	    Output.err.print("Parameterizing trackE ... ");
+//	    Output.err.print("Parameterizing trackE ... ");
 	    this.J = new Interpolate[2];
 	    this.Jdf = new Interpolate[2];
 	    pint=true; if(Math.abs(-I[1].integrateWithLog(p.low, p.low*10, this))<Math.abs(-I[1].integrateWithLog(ebig, ebig/10, this))) up=true; else up=false;
@@ -412,63 +412,63 @@ public class Propagate extends PhysicsModel{
 	    }
 	    this.jt=true;
 	    for(i=0; i<2; i++) if(!(up&&(i==1))) bigLow[i]=J[i].interpolate(p.low);
-	    if(up) Output.err.println("done");
-	    else Output.err.println("down");
+//	    if(up) Output.err.println("done");
+//	    else Output.err.println("down");
 	}
 
 	s.jt=false;
 	if(w.indexOf("trackx")!=-1){
-	    Output.err.print("Parameterizing trackX ... ");
+//	    Output.err.print("Parameterizing trackX ... ");
 	    s.df=false; s.J = new Interpolate(num3, e_low, e_hi, s, g, false, false, true, g, false, false, false);
 	    s.df=true; s.Jdf = new Interpolate(num3, e_low, e_hi, s, g, false, false, true, g, false, false, false);
 	    s.jt=true;
-	    Output.err.println("done");
+//	    Output.err.println("done");
 	}
 
 	p.jt=false;
 	if(w.indexOf("trackt")!=-1){
-	    Output.err.print("Parameterizing trackT ... ");
+//	    Output.err.print("Parameterizing trackT ... ");
 	    p.df=false; p.J = new Interpolate(num3, e_low, e_hi, p, g, false, false, true, g, false, false, false);
 	    p.df=true; p.Jdf = new Interpolate(num3, e_low, e_hi, p, g, false, false, true, g, false, false, false);
 	    p.jt=true;
-	    Output.err.println("done");
+//	    Output.err.println("done");
 	}
 
 	p.s.jt=false;
 	if(w.indexOf("molies")!=-1){
-	    Output.err.print("Parameterizing molieS ... ");
+//	    Output.err.print("Parameterizing molieS ... ");
 	    p.s.df=false; p.s.J = new Interpolate(num2, e_low, e_hi, p.s, g, false, false, true, g, false, false, false);
 	    p.s.df=true; p.s.Jdf = new Interpolate(num2, e_low, e_hi, p.s, g, false, false, true, g, false, false, false);
 	    p.s.jt=true;
-	    Output.err.println("done");
+//	    Output.err.println("done");
 	}
 
 	S.jt=false;
 	if(w.indexOf("gaussr")!=-1){
-	    Output.err.print("Parameterizing gaussR ... ");
+//	    Output.err.print("Parameterizing gaussR ... ");
 	    S.J = new Interpolate(num2, -5, 5, S, g, true, false, false, g, true, false, false);
 	    S.jt=true;
-	    Output.err.println("done");
+//	    Output.err.println("done");
 	}
 
 	l.e2lx.jt=false;
 	if(w.indexOf("en2ldx")!=-1){
-	    Output.err.print("Parameterizing en2ldX ... ");
+//	    Output.err.print("Parameterizing en2ldX ... ");
 	    l.e2lx.J = new Interpolate(num2, e_low, e_hi, l.e2lx, g, false, false, true, g, false, false, false);
 	    l.e2lx.jt=true;
-	    Output.err.println("done");
+//	    Output.err.println("done");
 	}
 
 	l.e2le.jt=false;
 	if(w.indexOf("en2lde")!=-1){
-	    Output.err.print("Parameterizing en2ldE ... ");
+//	    Output.err.print("Parameterizing en2ldE ... ");
 	    l.e2le.df=false; l.e2le.J = new Interpolate(num2, e_low, e_hi, l.e2le, g, false, false, true, g, false, false, false);
 	    l.e2le.df=true; l.e2le.Jdf = new Interpolate(num2, e_low, e_hi, l.e2le, g, false, false, true, g, false, false, false);
 	    l.e2le.jt=true;
-	    Output.err.println("done");
+//	    Output.err.println("done");
 	}
 
-	Output.err.println("Finished parameterizations");
+//	Output.err.println("Finished parameterizations");
     }
 
     //----------------------------------------------------------------------------------------------------//
