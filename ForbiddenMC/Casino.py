@@ -132,7 +132,7 @@ proton_mass = 0.938*units.GeV
 
 
 class CasinoEvent(object):
-    def __init__(self, particle_id, energy, position, distances, densities):
+    def __init__(self, particle_id, energy, position, distances, densities, index):
         ## need to add tree in an efficient way
 
         self.particle_id = particle_id
@@ -148,6 +148,8 @@ class CasinoEvent(object):
         self.region_index = 0
         self.region_distance = 0.0
         self.TotalDistance = np.sum(self.distances)
+        self.isCC = False
+        self.index = index
 
     def SetParticleProperties(self):
         if self.particle_id == "tau_neutrino":
@@ -314,7 +316,7 @@ class CasinoEvent(object):
 
 
 def RollDice(initial_neutrino_energy,
-             incoming_angle):
+             incoming_angle, index):
     global earththing, finaltaus
     t1 = time.time()
     region_distances, regions = GetDistancesPerSection(incoming_angle, earth_model_radii)
@@ -325,7 +327,7 @@ def RollDice(initial_neutrino_energy,
         densities.append(earth_model_densities[regions[i]] * units.gr/(units.cm**3))
     TotalDistance = np.sum(region_distances)
 
-    FirstEvent = CasinoEvent("tau_neutrino",initial_neutrino_energy,0.0,region_distances,densities)
+    FirstEvent = CasinoEvent("tau_neutrino",initial_neutrino_energy,0.0,region_distances,densities, index)
     EventCollection = [FirstEvent]
 
     while(not np.any(map(lambda e: (e.position >= TotalDistance) or (e.energy <= e.GetMass()), EventCollection))):
@@ -359,19 +361,41 @@ def RollDice(initial_neutrino_energy,
                 p_int_CC = event.GetTotalInteractionLength(density) / CC_lint
 
                 if(p2 <= p_int_CC):
-                    event.InteractParticle(nsq.NeutrinoCrossSections_Current.CC)
                     event.position += DistanceStep
                     event.region_distance += DistanceStep
+                    event.isCC = True
+                    return EventCollection
+                    #event.InteractParticle(nsq.NeutrinoCrossSections_Current.CC)
                 else:
                     event.InteractParticle(nsq.NeutrinoCrossSections_Current.NC)
                     event.position += DistanceStep
                     event.region_distance += DistanceStep
 
-	    elif(event.particle_id == 'tau'):
+	        elif(event.particle_id == 'tau'):
                 event.InteractParticle(interaction = nsq.NeutrinoCrossSections_Current.NC)
 
     return EventCollection
 
+cc_left = True
+propagated_stack = []
+while cc_left:
+    cc_stack = []
+    for i in range(nevents):
+        out = RollDice(eini[i], theta[i], i)[0]        
+        if (out.isCC):
+            cc_stack.append(out)
+        else:
+            ind = out.index
+            if (out.particle_id == 'tau'):
+                taus_e.append((eini[ind], out.energy, thetas[ind], cdf_indices[ind]))
+            else:
+                nus_e.append((eini[ind], out.energy, thetas[ind], cdf_indices[ind]))
+    if (len(cc_stack) > 0):
+        prop_params = [obj.energy for obj in cc_stack]
+        EventCollection = DoAllCCThings(cc_stack)
+        check_if_any_taus_exited()
+    else: 
+        cc_left = False
 
 
 #global finaltaus, earththing, initialization
