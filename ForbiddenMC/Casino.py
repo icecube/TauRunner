@@ -8,28 +8,42 @@ import nuSQUIDSpy as nsq
 import pickle
 import argparse
 from scipy.interpolate import interp1d
+import time
+import subprocess
+
+#finaltaus = 0
+#earththing = 0
+#initialization = 0
+#starttime = time.time()
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-s',dest='seed',type=int,help='just an integer seed to help with output file names')
-parser.add_argument('-e',dest='eini',type=float,help='initial nutau energy in GeV')
-parser.add_argument('-t', dest='theta', type=float, help='Incoming angle relative to Earth normal in radians (0 is through the core)')
 parser.add_argument('-n', dest='nevents', type=float, help='how many events do you want?')
 args = parser.parse_args()
 
-base_path = os.getcwd()+'/'
+#base_path = os.getcwd()+'/'
+base_path = '/data/user/apizzuto/ANITA/monte_carlo/TauDragon/ForbiddenMC/'
 
-if (not (args.seed or args.eini or args.theta or args.nevents)):
-    raise RuntimeError('You must specify a seed (-s), an initial energy (-e), incident angle (-t) and number of events to simulate (-n)') 
+if (not (args.seed or args.nevents)):
+    raise RuntimeError('You must specify a seed (-s) and number of events to simulate (-n)') 
 
 seed = args.seed
-eini = args.eini
-incoming_angle = args.theta
 nevents = int(args.nevents)
 
 units = nsq.Const()
 gr = nsq.GlashowResonanceCrossSection()
 dis = nsq.NeutrinoDISCrossSectionsFromTables()
 tds = nsq.TauDecaySpectra()
+
+# sample initial energies and incoming angles
+rand = np.random.RandomState(seed=seed)
+cos_thetas = rand.uniform(low=0., high=1.,size=nevents)
+thetas = np.arccos(cos_thetas)
+
+gzk_cdf = np.load(base_path+'../../gzk_cdf_phi_spline.npy').item()
+cdf_indices = rand.uniform(size=nevents)
+eini = gzk_cdf(cdf_indices)
+
 
 #cross sections from 1e8 - 1e16 GeV patched with nuSQUIDS 
 #temporary until EHE cross sections are added to nuSQUIDS
@@ -203,7 +217,7 @@ class CasinoEvent(object):
             self.history.append("Neutrino decayed???")
             return
         if self.particle_id == "tau":
-            self.energy = self.energy*np.random.choice(zz, p=TauDecayWeights)
+            self.energy = self.energy*rand.choice(zz, p=TauDecayWeights)
             self.particle_id = "tau_neutrino"
             self.SetParticleProperties()
             self.history.append("Tau decayed")
@@ -211,7 +225,9 @@ class CasinoEvent(object):
 
     def SampleFinalTauParams(self):
         #Should add more parameters here to alter energy loss models
-
+        global finaltaus, ntaus
+        ntaus+=1
+        t1 = time.time()
         #define parameters to pass to MMC
         e = self.energy/units.GeV                   #MMC takes initial energy in GeV
         den = self.GetCurrentDensity()*(units.cm**3)/units.gr   #convert density back to normal (not natural) units 
@@ -221,15 +237,26 @@ class CasinoEvent(object):
 	# -bs is the bremstrahlung model 
 	# -ph is the photonuclear model (Soyez)
 	# -bb 
-        cmd = 'awk "BEGIN {{for(i=0; i<1; i++) print {ein}, 100000000 }}" | {Dir}../MMC/MMC/ammc -run -frejus -tau -medi="Frejus rock" -radius=1e6 -vcut=1.e-3 -rho={rho} -scat -lpm -bs=1 -ph=3 -bb=2 -sh=1 -ebig=1e16 -seed=1223 -tdir={Dir}../MMC/tables/'.format(ein=e, rho=mult, Dir=base_path)
+        cmd = 'awk "BEGIN {{for(i=0; i<1; i++) print {ein}, 100000000 }}" | time {Dir}../MMC/MMC/ammc -run -frejus -tau -medi="Frejus rock" -radius=1e6 -vcut=1.e-3 -rho={rho} -scat -lpm -bs=1 -ph=3 -bb=2 -sh=1 -ebig=1e16 -seed=1223 -tdir={Dir}../MMC/tables/'.format(ein=e, rho=mult, Dir=base_path)
         #run MMC
-        out = os.popen(cmd).read()
+        t1 = time.time()
+        out = subprocess.check_output(cmd, shell = True)
+        print(out)
+        #t1 = time.time()
+        #out = out.stdout
+        #outstr = ''
+        #while True:
+        #    line = out.readline()
+        #    outstr += line
+        #    if not line:
+        #        break
+        finaltaus += time.time() - t1
         #print(out)
 	#parse output
-        index = out.find('\n')
-        e_final = float(out[:index])/1e3            #MMC returns energy in MeV
-        distance = abs(float(out[index+2:-2]))/1e3  #MMC returns distance in meters. converting to km here.
-
+        #index = out.find('\n')
+        #e_final = float(out[:index])/1e3            #MMC returns energy in MeV
+        #distance = abs(float(out[index+2:-1]))/1e3  #MMC returns distance in meters. converting to km here.
+        e_final, distance = self.energy/1e9, 0
         return(e_final, distance)
 
     def InteractParticle(self, interaction):
@@ -240,7 +267,7 @@ class CasinoEvent(object):
                 dNdEle = lambda y: DifferentialOutGoingLeptonDistribution(self.energy,self.energy*y,interaction = interaction)
             NeutrinoInteractionWeights = map(dNdEle,yy)
             NeutrinoInteractionWeights = NeutrinoInteractionWeights/np.sum(NeutrinoInteractionWeights)
-            self.energy = self.energy*np.random.choice(yy, p=NeutrinoInteractionWeights)
+            self.energy = self.energy*rand.choice(yy, p=NeutrinoInteractionWeights)
 
             if interaction == nsq.NeutrinoCrossSections_Current.CC:
                 self.particle_id = "tau"
@@ -288,8 +315,10 @@ class CasinoEvent(object):
 
 def RollDice(initial_neutrino_energy,
              incoming_angle):
-
+    global earththing, finaltaus
+    t1 = time.time()
     region_distances, regions = GetDistancesPerSection(incoming_angle, earth_model_radii)
+    earththing += time.time() - t1
     densities = []
     for i in range(len(region_distances)):
         region_distances[i] = region_distances[i] * units.km
@@ -305,7 +334,7 @@ def RollDice(initial_neutrino_energy,
             if(event.particle_id == 'tau_neutrino'):
 
                 #Determine how far you're going
-                p1 = np.random.random_sample()
+                p1 = rand.random_sample()
                 DistanceStep = event.GetProposedDistanceStep(event.GetCurrentDensity(), p1)
 
                 #Handle boundary conditions and rescale according to column density
@@ -325,7 +354,7 @@ def RollDice(initial_neutrino_energy,
                 density = event.GetCurrentDensity()
 
                 #now pick an interaction
-                p2 = np.random.random_sample()
+                p2 = rand.random_sample()
                 CC_lint = event.GetInteractionLength(density, interaction=nsq.NeutrinoCrossSections_Current.CC)
                 p_int_CC = event.GetTotalInteractionLength(density) / CC_lint
 
@@ -343,21 +372,37 @@ def RollDice(initial_neutrino_energy,
 
     return EventCollection
 
+
+
+#global finaltaus, earththing, initialization
+finaltaus = 0
+earththing = 0
+initialization = 0
+ntaus = 0
+starttime = time.time()
 eini = eini*units.GeV
 #print(np.log10(eini))
-CasinoGame = np.array([RollDice(eini, incoming_angle)[0] for i in xrange(nevents)])
-
+t0 = time.time()
+print(t0 - starttime)
+CasinoGame = np.array([RollDice(e, theta)[0] for (e, theta) in zip(eini, thetas)])
+print(time.time() - t0)
+print("Earth thing: {} ".format(earththing))
+print("Tau Params: {}".format(finaltaus))
 taus_e = []
 nus_e = []
+print("ntausi = {}".format(ntaus))
 
-for event in CasinoGame:
+
+for i, event in enumerate(CasinoGame):
     if (event.particle_id == 'tau'):
-        taus_e.append(event.energy)
+        taus_e.append((eini[i], event.energy, thetas[i], cdf_indices[i]))
     else:
-        nus_e.append(event.energy)
+        nus_e.append((eini[i], event.energy, thetas[i], cdf_indices[i]))
+
+
 print('taus')
 print(taus_e)
 print('nus')
 print(np.asarray(nus_e)/1e9)
-#np.save('/data/user/apizzuto/ANITA/TauDragon/ForbiddenMC/taus/taus_cosmogenic_'+str(seed)+'_'+str(eini/units.GeV)+'_'+str(incoming_angle)+'_GeV.npy', taus_e)
-#np.save('/data/user/apizzuto/ANITA/TauDragon/ForbiddenMC/nus/nus_cosmogenic_'+str(seed)+'_'+str(eini/units.GeV)+'_'+str(incoming_angle)+'_GeV.npy', nus_e)
+#np.save('/data/user/apizzuto/ANITA/monte_carlo/TauDragon/ForbiddenMC/taus/small_stats_taus_cosmogenic_'+str(seed)+'.npy', taus_e)
+#np.save('/data/user/apizzuto/ANITA/monte_carlo/TauDragon/ForbiddenMC/nus/small_stats_nus_cosmogenic_'+str(seed)+'.npy', nus_e)

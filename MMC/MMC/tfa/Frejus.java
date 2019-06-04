@@ -39,6 +39,9 @@ public class Frejus{
 	int romb=5;
 	boolean raw=false;
 	String intr="all";
+	String tdir="";
+	long seed=0;
+	boolean SEED=false;
 
 	int bnum=0;
 	String param="Frejus", pbad="";
@@ -72,7 +75,9 @@ public class Frejus{
 "                       -intr=[interpolate: \"all\", \"crs\" or \"\"]\n"+
 "                       -romb=[number of interpolation points]\n"+
 "                       -raw  save tables in raw format\n"+
-"                       -debug print debugging information to stderr\n");
+"                       -seed=[integer] sets random number generator seed\n"+
+"                       -debug print debugging information to stderr\n"+
+"                       -tdir=[dir] specify directory for paramet. tables\n");
 		return;
 	    }
 	    else if(args[n].equals("-tau")){
@@ -219,6 +224,17 @@ public class Frejus{
 	    else if(args[n].startsWith("-intr=")){
 		intr=args[n].substring(6).replace('-', ' ');
 	    }
+		else if(args[n].startsWith("-seed=")){
+        try{
+            seed=Long.parseLong(args[n].substring(6));
+        }catch(NumberFormatException error){
+            seed=0;
+        }
+		SEED=true;
+		}
+		else if(args[n].startsWith("-tdir")){
+		tdir=args[n].substring(6)+"/";
+		}
 	    else{
 		bnum++;
 		pbad+=(bnum>1?",":"")+" \""+args[n]+"\"";
@@ -275,8 +291,12 @@ public class Frejus{
 	p.s.ce=crsce;          // Cross section multiplicative modifier
 	p.s.cd=crscd;          // Cross section multiplicative modifier
 	Propagate.g=romb;
+	if(SEED){
+        // options+="HI  random number generator seed is set at "+seed+"\n";
+        Propagate.rand.setSeed(seed);
+    }
 //	Output.raw=raw;
-	p.interpolate(intr, ".frejus");
+	p.interpolate(intr, tdir+".frejus");
 //	Output.err.println("Enter the following: energy in [GeV] and distance to travel x in [m].");
 //	Output.err.println("The last entry in the output is the final energy in [GeV] (if > 0)");
 //	Output.err.println("or distance traveled to the point of disappearance in [m] (if < 0).");
