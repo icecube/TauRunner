@@ -235,10 +235,10 @@ class CasinoEvent(object):
         den = self.GetCurrentDensity()*(units.cm**3)/units.gr   #convert density back to normal (not natural) units 
         mult = den/2.7                              #This factor is passed to MMC which alters its default medium density paramater
         #this is the command that MMC gets
-	# -lpm turns on the LPM suppression of brems at high E. 
-	# -bs is the bremstrahlung model 
-	# -ph is the photonuclear model (Soyez)
-	# -bb 
+	    # -lpm turns on the LPM suppression of brems at high E. 
+	    # -bs is the bremstrahlung model 
+	    # -ph is the photonuclear model (Soyez)
+	    # -bb 
         cmd = 'awk "BEGIN {{for(i=0; i<1; i++) print {ein}, 100000000 }}" | time {Dir}../MMC/MMC/ammc -run -frejus -tau -medi="Frejus rock" -radius=1e6 -vcut=1.e-3 -rho={rho} -scat -lpm -bs=1 -ph=3 -bb=2 -sh=1 -ebig=1e16 -seed=1223 -tdir={Dir}../MMC/tables/'.format(ein=e, rho=mult, Dir=base_path)
         #run MMC
         t1 = time.time()
@@ -378,18 +378,22 @@ def RollDice(initial_neutrino_energy,
 
 cc_left = True
 propagated_stack = []
+inds_left = range(nevents)
 while cc_left:
     cc_stack = []
-    for i in range(nevents):
+    for j in range(len(inds_left) - 1, -1, -1):
+        i = inds_left[j]
         out = RollDice(eini[i], theta[i], i)[0]        
         if (out.isCC):
-            cc_stack.append(out)
+            cc_stack.append((out, eini[ind], out.energy, thetas[ind], cdf_indices[ind]))
         else:
             ind = out.index
             if (out.particle_id == 'tau'):
                 taus_e.append((eini[ind], out.energy, thetas[ind], cdf_indices[ind]))
+                del inds_left[j]
             else:
                 nus_e.append((eini[ind], out.energy, thetas[ind], cdf_indices[ind]))
+                del inds_left[j]
     if (len(cc_stack) > 0):
         prop_params = [obj.energy for obj in cc_stack]
         EventCollection = DoAllCCThings(cc_stack)
