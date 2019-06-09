@@ -19,6 +19,9 @@ import subprocess
 parser = argparse.ArgumentParser()
 parser.add_argument('-s',dest='seed',type=int,help='just an integer seed to help with output file names')
 parser.add_argument('-n', dest='nevents', type=float, help='how many events do you want?')
+parser.add_argument('-gzk', dest='gzk', default=False, action='store_true', help='do you want to propagate the GZK flux? if so, raise this flag, and raise your flag, and raise your flag, and raise it.. when i get older...')
+parser.add_argument('-e', dest='energy', type=float, help='if you want to simulate a specific energy, pass it here in GeV')
+parser.add_argument('-t', dest='theta', type=float, help='zenith angle in radians where 0 is through the core')
 args = parser.parse_args()
 
 #base_path = os.getcwd()+'/'
@@ -30,20 +33,26 @@ if (not (args.seed or args.nevents)):
 
 seed = args.seed
 nevents = int(args.nevents)
+isgzk = args.gzk
 
 units = nsq.Const()
 gr = nsq.GlashowResonanceCrossSection()
 dis = nsq.NeutrinoDISCrossSectionsFromTables()
 tds = nsq.TauDecaySpectra()
 
-# sample initial energies and incoming angles
-rand = np.random.RandomState(seed=seed)
-cos_thetas = rand.uniform(low=0., high=1.,size=nevents)
-thetas = np.arccos(cos_thetas)
+if(isgzk):
+  # sample initial energies and incoming angles
+  rand = np.random.RandomState(seed=seed)
+  cos_thetas = rand.uniform(low=0., high=1.,size=nevents)
+  thetas = np.arccos(cos_thetas)
 
-gzk_cdf = np.load(base_path+'./gzk_cdf_phi_spline.npy').item()
-cdf_indices = rand.uniform(size=nevents)
-eini = gzk_cdf(cdf_indices)
+  gzk_cdf = np.load(base_path+'./gzk_cdf_phi_spline.npy').item()
+  cdf_indices = rand.uniform(size=nevents)
+  eini = gzk_cdf(cdf_indices)
+
+else:
+    eini = args.e  
+    theta = arge.theta
 
 
 #cross sections from 1e8 - 1e16 GeV patched with nuSQUIDS 
@@ -453,9 +462,9 @@ for i, event in enumerate(CasinoGame):
         nus_e.append((eini[i], event.energy, thetas[i], cdf_indices[i]))
 
 
-print('taus')
-print(taus_e)
-print('nus')
-print(np.asarray(nus_e)/1e9)
-#np.save('/data/user/apizzuto/ANITA/monte_carlo/TauDragon/ForbiddenMC/taus/small_stats_taus_cosmogenic_'+str(seed)+'.npy', taus_e)
-#np.save('/data/user/apizzuto/ANITA/monte_carlo/TauDragon/ForbiddenMC/nus/small_stats_nus_cosmogenic_'+str(seed)+'.npy', nus_e)
+#print('taus')
+#print(taus_e)
+#print('nus')
+#print(np.asarray(nus_e)/1e9)
+np.save('/data/user/isafa/ANITA/features/TauDragon/ForbiddenMC/taus/small_stats_taus_cosmogenic_'+str(seed)+'.npy', taus_e)
+np.save('/data/user/isafa/ANITA/features/TauDragon/ForbiddenMC/nus/small_stats_nus_cosmogenic_'+str(seed)+'.npy', nus_e)
