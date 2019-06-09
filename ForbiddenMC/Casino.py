@@ -22,7 +22,8 @@ parser.add_argument('-n', dest='nevents', type=float, help='how many events do y
 args = parser.parse_args()
 
 #base_path = os.getcwd()+'/'
-base_path = '/data/user/apizzuto/ANITA/monte_carlo/TauDragon/ForbiddenMC/'
+base_path = '/data/user/isafa/ANITA/features/TauDragon/ForbiddenMC/'
+cross_section_path = '../cross_sections/'
 
 if (not (args.seed or args.nevents)):
     raise RuntimeError('You must specify a seed (-s) and number of events to simulate (-n)') 
@@ -49,8 +50,8 @@ eini = gzk_cdf(cdf_indices)
 #temporary until EHE cross sections are added to nuSQUIDS
 
 ######################################
-charged = np.load(base_path + 'nuXS_CC_8-16.npy')
-neutral = np.load(base_path + 'nuXS_NC_8-16.npy')
+charged = np.load(cross_section_path + 'nuXS_CC_8-16.npy')
+neutral = np.load(cross_section_path + 'nuXS_NC_8-16.npy')
 energies = np.logspace(17, 25, 500)
 energies = (energies[:-1] + energies[1:])/2
 
@@ -60,6 +61,9 @@ log_XS_NC = np.log10(neutral)
 
 f_NC = interp1d(log_e, log_XS_NC)
 f_CC = interp1d(log_e, log_XS_CC)
+
+dsdy_spline_CC = np.load(cross_section_path + 'dsigma_dy_CC.npy').item()
+dsdy_spline_NC = np.load(cross_section_path + 'dsigma_dy_NC.npy').item()
 
 #####################################
 
@@ -101,6 +105,22 @@ def TotalNeutrinoCrossSection(enu,
                               flavor = nsq.NeutrinoCrossSections_NeutrinoFlavor.tau,
                               neutype = nsq.NeutrinoCrossSections_NeutrinoType.neutrino,
                               interaction = nsq.NeutrinoCrossSections_Current.NC):
+        r'''
+        Calculates total neutrino cross section. returns the value of sigma_CC (or NC)
+	in natural units.
+        Parameters
+        ----------
+        enu:         float
+	    neutrino energy in eV
+        flavor:      nusquids obj
+	    nusquids object defining neutrino flavor. default is tau
+        interaction: nusquids obj
+	    nusquids object defining the interaction type (CC or NC). default is NC
+	Returns
+        -------
+        TotalCrossSection: float
+	    Total neutrino cross section at the given energy in natural units.
+        '''
 
     if(np.log10(enu) > log_e[0]):
 
@@ -112,13 +132,31 @@ def TotalNeutrinoCrossSection(enu,
 
         return dis.TotalCrossSection(enu,flavor,neutype,interaction)*(units.cm)**2
 
-def DifferentialOutGoingLeptonDistribution(enu_in,enu_out,
-                                       flavor = nsq.NeutrinoCrossSections_NeutrinoFlavor.tau,
-                                       neutype = nsq.NeutrinoCrossSections_NeutrinoType.neutrino,
-                                       interaction = nsq.NeutrinoCrossSections_Current.NC
-                                    ):
-    diff = dis.SingleDifferentialCrossSection(enu_in,enu_out,flavor,neutype,interaction)
+#def DifferentialOutGoingLeptonDistribution(enu_in,enu_out,
+#                                       flavor = nsq.NeutrinoCrossSections_NeutrinoFlavor.tau,
+#                                       neutype = nsq.NeutrinoCrossSections_NeutrinoType.neutrino,
+#                                       interaction = nsq.NeutrinoCrossSections_Current.NC
+#                                    ):
+#    diff = dis.SingleDifferentialCrossSection(enu_in,enu_out,flavor,neutype,interaction)
+#    return diff
+
+#interaction = 'CC'
+
+def DifferentialOutGoingLeptonDistribution(ein, eout, interaction=interaction):
+    if(interaction==nsq.NeutrinoCrossSections_Current.CC):
+        if (np.log10(eout) < 3. or np.log10(eout) > np.log10(ein)):
+            diff = 0.
+        else:
+            diff = 10**dsdy_spline_CC(np.log10(ein), np.log10(eout))[0][0]/ein
+    elif(interaction==nsq.NeutrinoCrossSections_Current.NC):
+        if (np.log10(eout) < 3. or np.log10(eout) > np.log10(ein)):
+            diff = 0.
+        else:
+            diff = 10**dsdy_spline_NC(np.log10(ein), np.log10(eout))[0][0]/ein
+        
     return diff
+
+
 
 Etau = 100.
 zz = np.linspace(0.0,1.0,500)[1:-1]
@@ -139,7 +177,7 @@ class CasinoEvent(object):
         self.energy = energy
         self.position = position
         self.SetParticleProperties()
-        self.history = ["Event created as " + particle_id]
+        self.history = [""]
         self.distances = distances
         self.densities = densities
         self.nCC = 0
@@ -227,9 +265,6 @@ class CasinoEvent(object):
 
     def SampleFinalTauParams(self):
         #Should add more parameters here to alter energy loss models
-        global finaltaus, ntaus
-        ntaus+=1
-        t1 = time.time()
         #define parameters to pass to MMC
         e = self.energy/units.GeV                   #MMC takes initial energy in GeV
         den = self.GetCurrentDensity()*(units.cm**3)/units.gr   #convert density back to normal (not natural) units 
@@ -241,19 +276,7 @@ class CasinoEvent(object):
 	    # -bb 
         cmd = 'awk "BEGIN {{for(i=0; i<1; i++) print {ein}, 100000000 }}" | time {Dir}../MMC/MMC/ammc -run -frejus -tau -medi="Frejus rock" -radius=1e6 -vcut=1.e-3 -rho={rho} -scat -lpm -bs=1 -ph=3 -bb=2 -sh=1 -ebig=1e16 -seed=1223 -tdir={Dir}../MMC/tables/'.format(ein=e, rho=mult, Dir=base_path)
         #run MMC
-        t1 = time.time()
         out = subprocess.check_output(cmd, shell = True)
-        print(out)
-        #t1 = time.time()
-        #out = out.stdout
-        #outstr = ''
-        #while True:
-        #    line = out.readline()
-        #    outstr += line
-        #    if not line:
-        #        break
-        finaltaus += time.time() - t1
-        #print(out)
 	#parse output
         #index = out.find('\n')
         #e_final = float(out[:index])/1e3            #MMC returns energy in MeV
@@ -316,11 +339,8 @@ class CasinoEvent(object):
 
 
 def RollDice(initial_neutrino_energy,
-             incoming_angle, index):
-    global earththing, finaltaus
-    t1 = time.time()
+             incoming_angle, index=0):
     region_distances, regions = GetDistancesPerSection(incoming_angle, earth_model_radii)
-    earththing += time.time() - t1
     densities = []
     for i in range(len(region_distances)):
         region_distances[i] = region_distances[i] * units.km
@@ -379,6 +399,7 @@ def RollDice(initial_neutrino_energy,
 cc_left = True
 propagated_stack = []
 inds_left = range(nevents)
+
 while cc_left:
     cc_stack = []
     for j in range(len(inds_left) - 1, -1, -1):
@@ -402,24 +423,11 @@ while cc_left:
         cc_left = False
 
 
-#global finaltaus, earththing, initialization
-finaltaus = 0
-earththing = 0
-initialization = 0
-ntaus = 0
-starttime = time.time()
 eini = eini*units.GeV
 #print(np.log10(eini))
-t0 = time.time()
-print(t0 - starttime)
 CasinoGame = np.array([RollDice(e, theta)[0] for (e, theta) in zip(eini, thetas)])
-print(time.time() - t0)
-print("Earth thing: {} ".format(earththing))
-print("Tau Params: {}".format(finaltaus))
 taus_e = []
 nus_e = []
-print("ntausi = {}".format(ntaus))
-
 
 for i, event in enumerate(CasinoGame):
     if (event.particle_id == 'tau'):
