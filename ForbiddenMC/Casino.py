@@ -41,7 +41,7 @@ rand = np.random.RandomState(seed=seed)
 cos_thetas = rand.uniform(low=0., high=1.,size=nevents)
 thetas = np.arccos(cos_thetas)
 
-gzk_cdf = np.load(base_path+'../../gzk_cdf_phi_spline.npy').item()
+gzk_cdf = np.load(base_path+'./gzk_cdf_phi_spline.npy').item()
 cdf_indices = rand.uniform(size=nevents)
 eini = gzk_cdf(cdf_indices)
 
@@ -122,15 +122,15 @@ def TotalNeutrinoCrossSection(enu,
 	    Total neutrino cross section at the given energy in natural units.
         '''
 
-    if(np.log10(enu) > log_e[0]):
+	if(np.log10(enu) > log_e[0]):
 
-        if(interaction == nsq.NeutrinoCrossSections_Current.NC):
-            return((10**f_NC(np.log10(enu)))*(units.cm)**2)
-        else:
-            return((10**f_CC(np.log10(enu)))*(units.cm)**2)
-    else:
+            if(interaction == nsq.NeutrinoCrossSections_Current.NC):
+                return((10**f_NC(np.log10(enu)))*(units.cm)**2)
+            else:
+                return((10**f_CC(np.log10(enu)))*(units.cm)**2)
+	else:
 
-        return dis.TotalCrossSection(enu,flavor,neutype,interaction)*(units.cm)**2
+	    return dis.TotalCrossSection(enu,flavor,neutype,interaction)*(units.cm)**2
 
 #def DifferentialOutGoingLeptonDistribution(enu_in,enu_out,
 #                                       flavor = nsq.NeutrinoCrossSections_NeutrinoFlavor.tau,
@@ -142,7 +142,7 @@ def TotalNeutrinoCrossSection(enu,
 
 #interaction = 'CC'
 
-def DifferentialOutGoingLeptonDistribution(ein, eout, interaction=interaction):
+def DifferentialOutGoingLeptonDistribution(ein, eout, interaction):
     if(interaction==nsq.NeutrinoCrossSections_Current.CC):
         if (np.log10(eout) < 3. or np.log10(eout) > np.log10(ein)):
             diff = 0.
@@ -274,22 +274,35 @@ class CasinoEvent(object):
 	    # -bs is the bremstrahlung model 
 	    # -ph is the photonuclear model (Soyez)
 	    # -bb 
-        cmd = 'awk "BEGIN {{for(i=0; i<1; i++) print {ein}, 100000000 }}" | time {Dir}../MMC/MMC/ammc -run -frejus -tau -medi="Frejus rock" -radius=1e6 -vcut=1.e-3 -rho={rho} -scat -lpm -bs=1 -ph=3 -bb=2 -sh=1 -ebig=1e16 -seed=1223 -tdir={Dir}../MMC/tables/'.format(ein=e, rho=mult, Dir=base_path)
+#        cmd = 'awk "BEGIN {{for(i=0; i<1; i++) print {ein}, 100000000 }}" | time {Dir}../MMC/MMC/ammc -run -frejus -tau -medi="Frejus rock" -radius=1e6 -vcut=1.e-3 -rho={rho} -scat -lpm -bs=1 -ph=3 -bb=2 -sh=1 -ebig=1e16 -seed=1223 -tdir={Dir}../MMC/tables/'.format(ein=e, rho=mult, Dir=base_path)
+#        #run MMC
+#        out = subprocess.check_output(cmd, shell = True)
+#	#parse output
+#        #index = out.find('\n')
+#        #e_final = float(out[:index])/1e3            #MMC returns energy in MeV
+#        #distance = abs(float(out[index+2:-1]))/1e3  #MMC returns distance in meters. converting to km here.
+#        e_final, distance = self.energy/1e9, 0
+#	print('input energy')
+#	print(np.log10(e))
+#	print(mult)
+        cmd = 'awk "BEGIN {{for(i=0; i<1; i++) print {ein}, 1000000000 }}" | {Dir}../MMC/MMC/ammc -run -frejus -tau -medi="Frejus rock" -radius=1e6 -vcut=1.e-3 -rho={rho} -scat -lpm -bs=1 -ph=3 -bb=2 -sh=1 -ebig=1e16 -seed=1223 -tdir={Dir}../MMC/tables/'.format(ein=e, rho=mult, Dir=base_path)
         #run MMC
-        out = subprocess.check_output(cmd, shell = True)
+        out = os.popen(cmd).read()
+        #print(out)
 	#parse output
-        #index = out.find('\n')
-        #e_final = float(out[:index])/1e3            #MMC returns energy in MeV
-        #distance = abs(float(out[index+2:-1]))/1e3  #MMC returns distance in meters. converting to km here.
-        e_final, distance = self.energy/1e9, 0
+        index = out.find('\n')
+        e_final = float(out[:index])/1e3            #MMC returns energy in MeV
+#        print('tau mmc')
+#	print(np.log10(e_final))
+	distance = abs(float(out[index+2:-2]))/1e3  #MMC returns distance in meters. converting to km here.
+
+
         return(e_final, distance)
 
     def InteractParticle(self, interaction):
         if self.particle_id == "tau_neutrino":
-            if self.energy/units.GeV > 1e12:
-                dNdEle = lambda y: DifferentialOutGoingLeptonDistribution(1e12*units.GeV,1e12*units.GeV*y,interaction = interaction)
-            else:
-                dNdEle = lambda y: DifferentialOutGoingLeptonDistribution(self.energy,self.energy*y,interaction = interaction)
+            
+	    dNdEle = lambda y: DifferentialOutGoingLeptonDistribution(self.energy/units.GeV,self.energy*y/units.GeV,interaction = interaction)
             NeutrinoInteractionWeights = map(dNdEle,yy)
             NeutrinoInteractionWeights = NeutrinoInteractionWeights/np.sum(NeutrinoInteractionWeights)
             self.energy = self.energy*rand.choice(yy, p=NeutrinoInteractionWeights)
@@ -349,7 +362,7 @@ def RollDice(initial_neutrino_energy,
 
     FirstEvent = CasinoEvent("tau_neutrino",initial_neutrino_energy,0.0,region_distances,densities, index)
     EventCollection = [FirstEvent]
-
+#    print(densities)
     while(not np.any(map(lambda e: (e.position >= TotalDistance) or (e.energy <= e.GetMass()), EventCollection))):
         for event in EventCollection:
 
@@ -358,7 +371,6 @@ def RollDice(initial_neutrino_energy,
                 #Determine how far you're going
                 p1 = rand.random_sample()
                 DistanceStep = event.GetProposedDistanceStep(event.GetCurrentDensity(), p1)
-
                 #Handle boundary conditions and rescale according to column density
                 has_exited = False
                 while (event.region_distance + DistanceStep >= event.GetRegionDistance()) and (has_exited==False):
@@ -379,24 +391,28 @@ def RollDice(initial_neutrino_energy,
                 p2 = rand.random_sample()
                 CC_lint = event.GetInteractionLength(density, interaction=nsq.NeutrinoCrossSections_Current.CC)
                 p_int_CC = event.GetTotalInteractionLength(density) / CC_lint
-
+		
                 if(p2 <= p_int_CC):
                     event.position += DistanceStep
                     event.region_distance += DistanceStep
                     event.isCC = True
-                    return EventCollection
-                    #event.InteractParticle(nsq.NeutrinoCrossSections_Current.CC)
+                    #return EventCollection
+                    event.InteractParticle(nsq.NeutrinoCrossSections_Current.CC)
+#		    print('charged current')
+#		    print(np.log10(event.energy/units.GeV))
                 else:
                     event.InteractParticle(nsq.NeutrinoCrossSections_Current.NC)
                     event.position += DistanceStep
                     event.region_distance += DistanceStep
-
-	        elif(event.particle_id == 'tau'):
+#		    print('neutral current')
+#		    print(np.log10(event.energy/units.GeV))
+	    elif(event.particle_id == 'tau'):
                 event.InteractParticle(interaction = nsq.NeutrinoCrossSections_Current.NC)
-
+#		print('tau propagated')
+#		print(np.log10(event.energy/units.GeV))
     return EventCollection
 
-cc_left = True
+'''cc_left = True
 propagated_stack = []
 inds_left = range(nevents)
 
@@ -421,10 +437,11 @@ while cc_left:
         check_if_any_taus_exited()
     else: 
         cc_left = False
-
+'''
 
 eini = eini*units.GeV
-#print(np.log10(eini))
+#print('initial energy')
+#print(np.log10(eini/units.GeV))
 CasinoGame = np.array([RollDice(e, theta)[0] for (e, theta) in zip(eini, thetas)])
 taus_e = []
 nus_e = []
