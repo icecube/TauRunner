@@ -26,7 +26,7 @@ args = parser.parse_args()
 
 #base_path = os.getcwd()+'/'
 base_path = '/data/user/isafa/ANITA/features/TauDragon/ForbiddenMC/'
-cross_section_path = '../cross_sections/'
+cross_section_path = '/data/user/isafa/ANITA/features/TauDragon/cross_sections/'
 
 if (not (args.seed or args.nevents)):
     raise RuntimeError('You must specify a seed (-s) and number of events to simulate (-n)') 
@@ -40,19 +40,20 @@ gr = nsq.GlashowResonanceCrossSection()
 dis = nsq.NeutrinoDISCrossSectionsFromTables()
 tds = nsq.TauDecaySpectra()
 
+rand = np.random.RandomState(seed=seed)
+
 if(isgzk):
   # sample initial energies and incoming angles
-  rand = np.random.RandomState(seed=seed)
   cos_thetas = rand.uniform(low=0., high=1.,size=nevents)
   thetas = np.arccos(cos_thetas)
 
-  gzk_cdf = np.load(base_path+'./gzk_cdf_phi_spline.npy').item()
+  gzk_cdf = np.load(base_path+'gzk_cdf_phi_spline.npy').item()
   cdf_indices = rand.uniform(size=nevents)
   eini = gzk_cdf(cdf_indices)
 
 else:
-    eini = args.e  
-    theta = arge.theta
+    eini = np.ones(nevents)*args.energy
+    thetas = np.ones(nevents)*args.theta
 
 
 #cross sections from 1e8 - 1e16 GeV patched with nuSQUIDS 
@@ -303,7 +304,7 @@ class CasinoEvent(object):
         e_final = float(out[:index])/1e3            #MMC returns energy in MeV
 #        print('tau mmc')
 #	print(np.log10(e_final))
-	distance = abs(float(out[index+2:-2]))/1e3  #MMC returns distance in meters. converting to km here.
+	distance = abs(float(out[index+2:-1]))/1e3  #MMC returns distance in meters. converting to km here.
 
 
         return(e_final, distance)
@@ -455,11 +456,19 @@ CasinoGame = np.array([RollDice(e, theta)[0] for (e, theta) in zip(eini, thetas)
 taus_e = []
 nus_e = []
 
-for i, event in enumerate(CasinoGame):
-    if (event.particle_id == 'tau'):
-        taus_e.append((eini[i], event.energy, thetas[i], cdf_indices[i]))
-    else:
-        nus_e.append((eini[i], event.energy, thetas[i], cdf_indices[i]))
+if(isgzk):
+    for i, event in enumerate(CasinoGame):
+        if (event.particle_id == 'tau'):
+	    taus_e.append((eini[i], event.energy, thetas[i], cdf_indices[i]))
+	else:
+	    nus_e.append((eini[i], event.energy, thetas[i], cdf_indices[i]))
+
+else:
+    for i, event in enumerate(CasinoGame):
+        if (event.particle_id == 'tau'):
+	    taus_e.append((eini[i], event.energy, thetas[i]))
+	else:
+	    nus_e.append((eini[i], event.energy, thetas[i]))
 
 
 #print('taus')
