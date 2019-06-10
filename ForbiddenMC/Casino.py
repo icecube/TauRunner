@@ -44,15 +44,16 @@ rand = np.random.RandomState(seed=seed)
 
 if(isgzk):
   # sample initial energies and incoming angles
-  cos_thetas = rand.uniform(low=0., high=1.,size=nevents)
-  thetas = np.arccos(cos_thetas)
+  #cos_thetas = rand.uniform(low=0., high=1.,size=nevents)
+  #thetas = np.arccos(cos_thetas)
+  thetas = np.zeros(nevents)
 
   gzk_cdf = np.load(base_path+'gzk_cdf_phi_spline.npy').item()
   cdf_indices = rand.uniform(size=nevents)
-  eini = gzk_cdf(cdf_indices)
-
+  #eini = gzk_cdf(cdf_indices)*units.GeV
+  eini = np.ones(nevents)*1e9*units.GeV
 else:
-    eini = np.ones(nevents)*args.energy
+    eini = np.ones(nevents)*args.energy*units.GeV
     thetas = np.ones(nevents)*args.theta
 
 
@@ -166,7 +167,57 @@ def DifferentialOutGoingLeptonDistribution(ein, eout, interaction):
         
     return diff
 
+def check_taundaries(objects, distances):
+    for i, obj in enumerate(objects):
+        Ladv = distances[i]*units.km
+        #Handle boundary cases, but don't scale by density anywhere
+        has_exited = False
+        while (obj.region_distance + Ladv >= obj.GetRegionDistance()) and (has_exited==False):
+    	    try:
+		Ladv -= (obj.GetRegionDistance() - obj.region_distance)
+		obj.position += obj.GetRegionDistance() - obj.region_distance
+		obj.GetDensityRatio()
+		obj.region_distance = 0.
+		obj.region_index += 1
+	    except:
+		has_exited = True
+        if has_exited:
+	    obj.position = obj.TotalDistance
+        obj.region_distance += Ladv
+        obj.position += Ladv
 
+    return(objects)
+
+def DoAllCCThings(objects):
+    final_values= []
+    efinal, distance = [], []
+    e = [obj.energy/units.GeV for obj in objects]                                   #MMC takes initial energy in GeV 
+    mult = [obj.GetCurrentDensity()*(units.cm**3)/units.gr/2.7 for obj in objects]  #convert density back to normal (not natural) units 
+    sort = sorted(zip(mult, e))
+    sorted_mult = np.asarray(zip(*sort)[0])
+    sorted_e    = np.asarray(zip(*sort)[1])
+    split = np.append(np.append([-1], np.where(sorted_mult[:-1] != sorted_mult[1:])[0]), len(sorted_mult))    
+    print(split) 
+    for i in range(len(split)-1):
+        multis = sorted_mult[split[i]+1:split[i+1]+1]
+        eni = sorted_e[split[i]+1:split[i+1]+1]
+        print(len(eni))
+	arg = '{} {}'.format(eni, multis[0]).replace('\n', '').replace('[','').replace(']','')
+	process = subprocess.Popen('/data/user/isafa/ANITA/features/TauDragon/ForbiddenMC/propagate_taus.sh '+arg, stdout=subprocess.PIPE, shell=True)
+        for line in process.stdout:
+            final_values.append(float(line.replace('\n','')))
+    print('im out!!!!')
+    final_energies = np.asarray(final_values)[::2]
+    final_distances = np.abs(np.asarray(final_values)[1::2])/1e3
+    print(len(final_energies)+len(final_distances))
+    objects = np.asarray(zip(*sorted(zip(mult, objects)))[1])
+    print(final_energies.shape)
+    print(final_energies) 
+    for i, obj in enumerate(objects):
+	obj.energy = final_energies[i]*units.GeV/1e3
+
+    objects = check_taundaries(objects, final_distances)
+    return(objects)
 
 Etau = 100.
 zz = np.linspace(0.0,1.0,500)[1:-1]
@@ -273,12 +324,12 @@ class CasinoEvent(object):
             self.history.append("Tau decayed")
             return
 
-    def SampleFinalTauParams(self):
+#    def SampleFinalTauParams(self):
         #Should add more parameters here to alter energy loss models
         #define parameters to pass to MMC
-        e = self.energy/units.GeV                   #MMC takes initial energy in GeV
-        den = self.GetCurrentDensity()*(units.cm**3)/units.gr   #convert density back to normal (not natural) units 
-        mult = den/2.7                              #This factor is passed to MMC which alters its default medium density paramater
+#        e = self.energy/units.GeV                   #MMC takes initial energy in GeV
+#        den = self.GetCurrentDensity()*(units.cm**3)/units.gr   #convert density back to normal (not natural) units 
+#        mult = den/2.7                              #This factor is passed to MMC which alters its default medium density paramater
         #this is the command that MMC gets
 	    # -lpm turns on the LPM suppression of brems at high E. 
 	    # -bs is the bremstrahlung model 
@@ -295,19 +346,19 @@ class CasinoEvent(object):
 #	print('input energy')
 #	print(np.log10(e))
 #	print(mult)
-        cmd = 'awk "BEGIN {{for(i=0; i<1; i++) print {ein}, 1000000000 }}" | {Dir}../MMC/MMC/ammc -run -frejus -tau -medi="Frejus rock" -radius=1e6 -vcut=1.e-3 -rho={rho} -scat -lpm -bs=1 -ph=3 -bb=2 -sh=1 -ebig=1e16 -seed=1223 -tdir={Dir}../MMC/tables/'.format(ein=e, rho=mult, Dir=base_path)
+#        cmd = 'awk "BEGIN {{for(i=0; i<1; i++) print {ein}, 1000000000 }}" | {Dir}../MMC/MMC/ammc -run -frejus -tau -medi="Frejus rock" -radius=1e6 -vcut=1.e-3 -rho={rho} -scat -lpm -bs=1 -ph=3 -bb=2 -sh=1 -ebig=1e16 -seed=1223 -tdir={Dir}../MMC/tables/'.format(ein=e, rho=mult, Dir=base_path)
         #run MMC
-        out = os.popen(cmd).read()
+#        out = os.popen(cmd).read()
         #print(out)
 	#parse output
-        index = out.find('\n')
-        e_final = float(out[:index])/1e3            #MMC returns energy in MeV
+#        index = out.find('\n')
+#        e_final = float(out[:index])/1e3            #MMC returns energy in MeV
 #        print('tau mmc')
 #	print(np.log10(e_final))
-	distance = abs(float(out[index+2:-1]))/1e3  #MMC returns distance in meters. converting to km here.
+#	distance = abs(float(out[index+2:-1]))/1e3  #MMC returns distance in meters. converting to km here.
 
 
-        return(e_final, distance)
+#        return(e_final, distance)
 
     def InteractParticle(self, interaction):
         if self.particle_id == "tau_neutrino":
@@ -362,7 +413,7 @@ class CasinoEvent(object):
 
 
 def RollDice(initial_neutrino_energy,
-             incoming_angle, index=0):
+             incoming_angle, index):
     region_distances, regions = GetDistancesPerSection(incoming_angle, earth_model_radii)
     densities = []
     for i in range(len(region_distances)):
@@ -372,12 +423,13 @@ def RollDice(initial_neutrino_energy,
 
     FirstEvent = CasinoEvent("tau_neutrino",initial_neutrino_energy,0.0,region_distances,densities, index)
     EventCollection = [FirstEvent]
-#    print(densities)
-    while(not np.any(map(lambda e: (e.position >= TotalDistance) or (e.energy <= e.GetMass()), EventCollection))):
+
+    CCcounter, NCcounter = 0,0
+    while(not np.any(map(lambda e: (e.position >= TotalDistance) or (e.energy <= e.GetMass()) or (e.isCC), EventCollection))):
         for event in EventCollection:
-
+	    if (event.isCC):
+		print("WHY THE FUCK AM I HERE")
             if(event.particle_id == 'tau_neutrino'):
-
                 #Determine how far you're going
                 p1 = rand.random_sample()
                 DistanceStep = event.GetProposedDistanceStep(event.GetCurrentDensity(), p1)
@@ -401,38 +453,53 @@ def RollDice(initial_neutrino_energy,
                 p2 = rand.random_sample()
                 CC_lint = event.GetInteractionLength(density, interaction=nsq.NeutrinoCrossSections_Current.CC)
                 p_int_CC = event.GetTotalInteractionLength(density) / CC_lint
-		
                 if(p2 <= p_int_CC):
                     event.position += DistanceStep
                     event.region_distance += DistanceStep
-                    event.isCC = True
-                    #return EventCollection
-                    event.InteractParticle(nsq.NeutrinoCrossSections_Current.CC)
+                #    event.position = TotalDistance
+		    event.isCC = True
+                    event.particle_id = "tau"
+                    event.SetParticleProperties()
+		 #   CCcounter += 1
+		    #event.InteractParticle(nsq.NeutrinoCrossSections_Current.CC)
 #		    print('charged current')
-#		    print(np.log10(event.energy/units.GeV))
                 else:
                     event.InteractParticle(nsq.NeutrinoCrossSections_Current.NC)
                     event.position += DistanceStep
                     event.region_distance += DistanceStep
+		 #   NCcounter += 1
 #		    print('neutral current')
 #		    print(np.log10(event.energy/units.GeV))
+		if(event.isCC):
+		    continue
 	    elif(event.particle_id == 'tau'):
                 event.InteractParticle(interaction = nsq.NeutrinoCrossSections_Current.NC)
 #		print('tau propagated')
 #		print(np.log10(event.energy/units.GeV))
+    #print("NC Counter: {}".format(NCcounter))
+    #print("CC counter: {}".format(CCcounter))
     return EventCollection
 
-'''cc_left = True
+cc_left = True
 propagated_stack = []
 inds_left = range(nevents)
 
+taus_e = []
+nus_e = []
+counter = 0
+iter_energies = eini
 while cc_left:
+    print(counter)
+    counter+=1
     cc_stack = []
     for j in range(len(inds_left) - 1, -1, -1):
+	#print(j)
         i = inds_left[j]
-        out = RollDice(eini[i], theta[i], i)[0]        
+	#print(i)
+        out = RollDice(iter_energies[i], thetas[i], i)[0]
+	#print(out.isCC)        
         if (out.isCC):
-            cc_stack.append((out, eini[ind], out.energy, thetas[ind], cdf_indices[ind]))
+            cc_stack.append(out)
         else:
             ind = out.index
             if (out.particle_id == 'tau'):
@@ -442,14 +509,25 @@ while cc_left:
                 nus_e.append((eini[ind], out.energy, thetas[ind], cdf_indices[ind]))
                 del inds_left[j]
     if (len(cc_stack) > 0):
-        prop_params = [obj.energy for obj in cc_stack]
+	print(len(cc_stack))
+        #prop_params = [obj.energy for obj in cc_stack]
         EventCollection = DoAllCCThings(cc_stack)
-        check_if_any_taus_exited()
+        for event in EventCollection:
+	    if (event.position >= event.TotalDistance):
+                taus_e.append((eini[event.index], event.energy, thetas[event.index], cdf_indices[event.index]))
+		delinds = np.argwhere(np.asarray(inds_left) == event.index)[0]
+		print(delinds)
+		print(event.index)
+		print(inds_left)
+                del inds_left[delinds[0]]
+	    else:
+                event.DecayParticle()
+		iter_energies[event.index] = event.energy
     else: 
         cc_left = False
-'''
 
-eini = eini*units.GeV
+
+'''
 #print('initial energy')
 #print(np.log10(eini/units.GeV))
 CasinoGame = np.array([RollDice(e, theta)[0] for (e, theta) in zip(eini, thetas)])
@@ -470,10 +548,10 @@ else:
 	else:
 	    nus_e.append((eini[i], event.energy, thetas[i]))
 
-
-#print('taus')
-#print(taus_e)
-#print('nus')
-#print(np.asarray(nus_e)/1e9)
-np.save('/data/user/isafa/ANITA/features/TauDragon/ForbiddenMC/taus/small_stats_taus_cosmogenic_'+str(seed)+'.npy', taus_e)
-np.save('/data/user/isafa/ANITA/features/TauDragon/ForbiddenMC/nus/small_stats_nus_cosmogenic_'+str(seed)+'.npy', nus_e)
+'''
+print('taus')
+print(taus_e)
+print('nus')
+print(np.asarray(nus_e)/1e9)
+#np.save('/data/user/isafa/ANITA/features/TauDragon/ForbiddenMC/taus/small_stats_taus_cosmogenic_'+str(seed)+'.npy', taus_e)
+#np.save('/data/user/isafa/ANITA/features/TauDragon/ForbiddenMC/nus/small_stats_nus_cosmogenic_'+str(seed)+'.npy', nus_e)
