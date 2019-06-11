@@ -15,7 +15,7 @@ parser.add_argument('-n', dest='nevents', type=float, help='how many events do y
 parser.add_argument('-gzk', dest='gzk', default=False, action='store_true', help='do you want to propagate the GZK flux? if so, raise this flag, and raise your flag, and raise your flag, and raise it.. when i get older...')
 parser.add_argument('-e', dest='energy', type=float, help='if you want to simulate a specific energy, pass it here in GeV')
 parser.add_argument('-t', dest='theta', type=float, help='zenith angle in radians where 0 is through the core')
-parser.add_argyment('-p', dest='path' , type=str, help='path to script')
+parser.add_argument('-p', dest='path' , type=str, help='path to script')
 args = parser.parse_args()
 
 if (not (args.seed or args.nevents)):
