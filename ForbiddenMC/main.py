@@ -105,7 +105,7 @@ while cc_left:
                 del inds_left[j]
     if (len(cc_stack) > 0):
         if debug:
-            message += "{} events passed to MMC in loop iteration {}".format(len(cc_stack), counter)
+            message += "{} events passed to MMC in loop iteration {}\n".format(len(cc_stack), counter)
         EventCollection = DoAllCCThings(cc_stack)
         for event in EventCollection:
             if (event.position >= event.TotalDistance):

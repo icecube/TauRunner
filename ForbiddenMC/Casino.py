@@ -52,6 +52,19 @@ def GetDistancesPerSection(theta, radii):
         return dists, sects
 
 def check_taundaries(objects, distances):
+    r'''
+        Propagates Tau leptons while checking boundary conditions
+        Parameters
+        ----------
+        objects: list
+            list of CasinoEvents
+        distances: list
+            list of the proposed increased distance step
+        Returns
+        -------
+        objects:
+            list of CasinoEvents after propagation
+        '''
     for i, obj in enumerate(objects):
         Ladv = distances[i]*units.km
         #Handle boundary cases, but don't scale by density anywhere
@@ -74,6 +87,18 @@ def check_taundaries(objects, distances):
     return(objects)
 
 def DoAllCCThings(objects):
+    r'''
+    Calling MMC requires overhead, so handle all MMC calls per iterations
+    over the injected events at once
+    Parameters
+    ----------
+    objects: list
+        List of CasinoEvents that need to have tau losses sampled
+    Returns
+    -------
+    objects: list
+        List of CasinoEvents after Tau Losses have been calculated    
+    '''
     final_values= []
     efinal, distance = [], []
     e = [obj.energy/units.GeV for obj in objects]                                   #MMC takes initial energy in GeV 
@@ -82,23 +107,16 @@ def DoAllCCThings(objects):
     sorted_mult = np.asarray(zip(*sort)[0])
     sorted_e    = np.asarray(zip(*sort)[1])
     split = np.append(np.append([-1], np.where(sorted_mult[:-1] != sorted_mult[1:])[0]), len(sorted_mult))    
-    #print(split) 
     for i in range(len(split)-1):
         multis = sorted_mult[split[i]+1:split[i+1]+1]
         eni = sorted_e[split[i]+1:split[i+1]+1]
-        #print(len(eni))
 	arg = '{} {}'.format(eni, multis[0]).replace('\n', '').replace('[','').replace(']','')
-	#print(arg)
 	process = subprocess.Popen('/data/user/isafa/ANITA/features/TauDragon/ForbiddenMC/propagate_taus.sh '+arg, stdout=subprocess.PIPE, shell=True)
         for line in process.stdout:
             final_values.append(float(line.replace('\n','')))
     final_energies = np.asarray(final_values)[::2]
     final_distances = np.abs(np.asarray(final_values)[1::2])/1e3
     objects = np.asarray(zip(*sorted(zip(mult, objects)))[1])
-    #if(final_energies.shape != final_distances.shape):
-	#print(arg)
-        #print(final_values)
-    #print(final_distances.shape) 
     for i, obj in enumerate(objects):
 	obj.energy = final_energies[i]*units.GeV/1e3
 
@@ -151,9 +169,7 @@ class CasinoEvent(object):
 	    self.region_distance = self.position - cumsum[self.region_index -1]
 	else:
 	    self.region_distance = self.position
-	#print('region index and distance \n \n')
-	#print(self.region_index)
-	#print(self.region_distance)
+    
     def SetParticleProperties(self):
         if self.particle_id == "tau_neutrino":
             self.mass = 0.0
@@ -237,10 +253,6 @@ class CasinoEvent(object):
             dNdEle = lambda y: self.CrossSection.DifferentialOutGoingLeptonDistribution(self.energy/units.GeV,self.energy*y/units.GeV,interaction = interaction)
             NeutrinoInteractionWeights = map(dNdEle,yy)
 	    NeutrinoInteractionWeights = NeutrinoInteractionWeights/np.sum(NeutrinoInteractionWeights)
- #	    if(np.any(np.sum(NeutrinoInteractionWeights)) == np.isnan()):
-#	    print('deez weights')
-#	    print(NeutrinoInteractionWeights)
-#	    print(self.energy)
 	    self.energy = self.energy*self.CrossSection.rand.choice(yy, p=NeutrinoInteractionWeights)
            	   
             if interaction == nsq.NeutrinoCrossSections_Current.CC:
