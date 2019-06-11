@@ -33,14 +33,14 @@ CrossSection = CrossSections.CrossSections(cross_section_path, seed)
 
 if(isgzk):
   # sample initial energies and incoming angles
-  #cos_thetas = rand.uniform(low=0., high=1.,size=nevents)
-  #thetas = np.arccos(cos_thetas)
-  thetas = np.zeros(nevents)
+  cos_thetas = rand.uniform(low=0., high=1.,size=nevents)
+  thetas = np.arccos(cos_thetas)
+  #thetas = np.zeros(nevents)
 
   gzk_cdf = np.load(base_path+'gzk_cdf_phi_spline.npy').item()
   cdf_indices = CrossSection.rand.uniform(size=nevents)
-  #eini = gzk_cdf(cdf_indices)*units.GeV
-  eini = np.ones(nevents)*1e9*units.GeV
+  eini = gzk_cdf(cdf_indices)*units.GeV
+  #eini = np.ones(nevents)*1e9*units.GeV
 else:
     eini = np.ones(nevents)*args.energy*units.GeV
     thetas = np.ones(nevents)*args.theta
