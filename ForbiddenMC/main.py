@@ -8,7 +8,6 @@ units = nsq.Const()
 dis = nsq.NeutrinoDISCrossSectionsFromTables()
 tds = nsq.TauDecaySpectra()
 
-
 parser = argparse.ArgumentParser()
 parser.add_argument('-s',dest='seed',type=int,help='just an integer seed to help with output file names')
 parser.add_argument('-n', dest='nevents', type=float, help='how many events do you want?')
@@ -59,6 +58,7 @@ if(isgzk):
     message+="Sampled {} events from the GZK flux\n".format(nevents)
 else:
     # Use a monochromatic flux
+    cdf_indices = np.ones(nevents)
     eini = np.ones(nevents)*args.energy*units.GeV
     thetas = np.ones(nevents)*args.theta
     if debug:
@@ -125,13 +125,13 @@ if save:
     if isgzk:
         fluxtype = "cosmogenic"
     else:
-        fluxtype = "monochromatic_{}".format(args.energy)
+        fluxtype = "monochromatic_{}_{}".format(args.energy, args.theta)
     try:
         os.mkdir(savedir + 'nus/')
         os.mkdir(savedir + 'taus/')
         if debug:
             message += "Created subdirectories for nus and taus\n"
-    except FileExistsError:
+    except OSError as e:
         if debug:
             message += "Subdirectories already existed\n"
     np.save(savedir + 'nus/' + 'nus_{}_seed_{}.npy'.format(fluxtype, seed), nus_e)
