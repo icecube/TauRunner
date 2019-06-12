@@ -20,9 +20,9 @@ parser.add_argument('-save', dest='save', default=False, action='store_true', he
 parser.add_argument('-savedir', dest='savedir', type=str, default='./', help="If saving output, where would you like to save output?")
 args = parser.parse_args()
 
-if (not (args.seed or args.nevents)):
+if ((args.seed == None) or (args.nevents == None)):
     raise RuntimeError('You must specify a seed (-s) and number of events to simulate (-n)') 
-if (not (args.gzk) and not (args.theta and args.energy)):
+if (not (args.gzk) and (args.theta==None and args.energy==None)):
     raise RuntimeError('You must either pick an energy and theta or use the GZK flux, bud')
 
 base_path = os.path.join(args.path,'')
@@ -78,7 +78,7 @@ inds_left = range(nevents)
 taus_e = []
 nus_e = []
 counter = 0
-iter_energies = eini
+iter_energies = list(eini)[:]
 iter_positions = list(np.zeros(nevents))
 
 # Run the algorithm
@@ -89,7 +89,9 @@ while cc_left:
     cc_stack = []
     low_en_cc = []
     for j in range(len(inds_left) - 1, -1, -1):
+    #for i in inds_left[::-1]:
         i = inds_left[j]
+        print("lookin at {}".format(i))
         EventObject = CasinoEvent("tau_neutrino",iter_energies[i], thetas[i], iter_positions[i], i, CrossSection, seed+i)
         out = RollDice(EventObject)       
         if (out.isCC):
@@ -102,6 +104,8 @@ while cc_left:
                 cc_stack.append(out)
         else:
             ind = out.index
+            if ind != i:
+                print ("THIS IS A WRONG INDEX {} {}".format(ind, i))
             if (out.particle_id == 'tau'):
                 taus_e.append((eini[ind], out.energy, thetas[ind], cdf_indices[ind]))
                	iter_positions[out.index] = out.position
@@ -113,6 +117,7 @@ while cc_left:
     if (len(cc_stack) > 0):
         if debug:
             message += "{} events passed to MMC in loop iteration {}\n".format(len(cc_stack), counter)
+            print("{} events passed to MMC in loop iteration {}\n".format(len(cc_stack), counter))
         EventCollection = DoAllCCThings(cc_stack)
         for event in EventCollection:
             if (event.position >= event.TotalDistance):
@@ -127,6 +132,11 @@ while cc_left:
     else: 
         if len(low_en_cc) == 0:
             cc_left = False
+
+print("INDICES LEFT: {}".format(inds_left))
+nus_e = np.array(nus_e, dtype = [('Eini', float), ('Eout',float), ('Theta', float), ('CDF_index', float)])
+taus_e = np.array(taus_e, dtype = [('Eini', float), ('Eout',float), ('Theta', float), ('CDF_index', float)])
+#print(np.array(iter_positions) / units.km)
 
 if save:
     if isgzk:
@@ -150,7 +160,8 @@ else:
         print(message)
     try:
         from tabulate import tabulate
-        headers = ["Energy In", "Energy Out", "Theta", "CDF Index"]
+        #headers = ["Energy In", "Energy Out", "Theta", "CDF Index"]
+        headers = list(nus_e.dtype.names)
         nus_table = tabulate(nus_e, headers, tablefmt="fancy_grid")
         taus_table = tabulate(taus_e, headers, tablefmt="fancy_grid")
         print(nus_table)

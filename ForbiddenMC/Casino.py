@@ -106,15 +106,34 @@ def DoAllCCThings(objects):
     sorted_e    = np.asarray(zip(*sort)[1])
     split = np.append(np.append([-1], np.where(sorted_mult[:-1] != sorted_mult[1:])[0]), len(sorted_mult))    
     for i in range(len(split)-1):
+        print("SPLIT LENGTH: {}".format(len(sorted_mult[split[i]+1:split[i+1]+1])))
         multis = sorted_mult[split[i]+1:split[i+1]+1]
         eni = sorted_e[split[i]+1:split[i+1]+1]
-	arg = '{} {}'.format(eni, multis[0]).replace('\n', '').replace('[','').replace(']','')
-	process = subprocess.Popen('/data/user/isafa/ANITA/features/TauDragon/ForbiddenMC/propagate_taus.sh '+arg, stdout=subprocess.PIPE, shell=True)
-        for line in process.stdout:
+        #eni_str = " ".join(str(x) for x in eni)
+        #arg = '{} {}'.format(eni_str, multis[0]).replace('\n', '')
+        #if len(sorted_mult[split[i]+1:split[i+1]+1]) > 1000:
+        #    print "ARG = " + arg
+        #    print len(arg.split(' '))
+        #print len(arg.encode('utf-8'))
+        #process = subprocess.Popen('/data/user/isafa/ANITA/features/TauDragon/ForbiddenMC/propagate_taus.sh '+arg, stdout=subprocess.PIPE, shell=True)
+        eni_str = [str(x) for x in eni]
+        eni_str.append(str(multis[0]))
+        eni_str.insert(0, '/data/user/isafa/ANITA/features/TauDragon/ForbiddenMC/propagate_taus.sh')
+        process = subprocess.check_output(eni_str)
+        #for line in process.stdout:
+        #print(process)
+        #print(process.split('\n')[:-1])
+        for line in process.split('\n')[:-1]:
+            #print(line)
             final_values.append(float(line.replace('\n','')))
     final_energies = np.asarray(final_values)[::2]
     final_distances = np.abs(np.asarray(final_values)[1::2])/1e3
     objects = np.asarray(zip(*sorted(zip(mult, objects)))[1])
+    #print 'ARG: ' + arg + '\n\n\n'
+    #print final_values
+    #print(final_energies.shape)
+    #print(final_distances.shape)
+    #print(len(objects))
     for i, obj in enumerate(objects):
 	obj.energy = final_energies[i]*units.GeV/1e3
 
