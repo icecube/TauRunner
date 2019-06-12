@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 import os, sys
 os.environ['HDF5_DISABLE_VERSION_CHECK']='2'
 import numpy as np

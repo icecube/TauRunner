@@ -1,5 +1,3 @@
-#!/usr/bin/env python
-
 from Casino import *
 units = nsq.Const()
 dis = nsq.NeutrinoDISCrossSectionsFromTables()

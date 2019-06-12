@@ -1,9 +1,9 @@
-#!usr/bin/env python
+#!/usr/bin/env python
 
-from Casino import *
-import Casino
-import CrossSections
-import argparse, os
+import os, sys
+import argparse
+import nuSQUIDSpy as nsq
+
 units = nsq.Const()
 dis = nsq.NeutrinoDISCrossSectionsFromTables()
 tds = nsq.TauDecaySpectra()
@@ -25,13 +25,20 @@ if (not (args.seed or args.nevents)):
 if (not (args.gzk) and not (args.theta and args.energy)):
     raise RuntimeError('You must either pick an energy and theta or use the GZK flux, bud')
 
+base_path = os.path.join(args.path,'')
+sys.path.append(base_path)
+
+from Casino import *
+import Casino
+from CrossSections import *
+import CrossSections
+
 seed = args.seed
 debug = args.debug
 if debug:
     message = ''
 nevents = int(args.nevents)
 isgzk = args.gzk
-base_path = args.path
 save = args.save
 savedir = os.path.join(args.savedir, '')
 #base_path = '/data/user/isafa/ANITA/features/TauDragon/ForbiddenMC/'
