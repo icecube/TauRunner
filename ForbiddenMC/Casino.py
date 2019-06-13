@@ -195,9 +195,6 @@ def DoAllCCThings(objects):
         num_args = len(eni)/max_arg
         if len(eni) % max_arg != 0:
             eni_str.append([str(eni[num_args * max_arg + x]) for x in range(max_arg*num_args, len(eni))])
-        print '\n'
-        print len(eni_str[0])
-        print len(sorted_obj)
         for kk in range(len(eni_str)):
             eni_str[kk].append(str(multis[0]))
             eni_str[kk].insert(0, '/data/user/isafa/ANITA/features/TauDragon/ForbiddenMC/propagate_taus.sh')

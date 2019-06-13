@@ -96,7 +96,7 @@ while cc_left:
     #for i in inds_left[::-1]:
         i = inds_left[j]
 #        print("lookin at {}".format(i))
-        EventObject = CasinoEvent("tau_neutrino",iter_energies[i], thetas[i], iter_positions[i], i, seed+i)
+        EventObject = CasinoEvent("tau_neutrino",iter_energies[i], thetas[i], iter_positions[i], i, np.random.randint(low=1e9))
         out = RollDice(EventObject)       
         if (out.isCC):
             if(out.energy/units.GeV <= 1e5):
@@ -121,7 +121,7 @@ while cc_left:
     if (len(cc_stack) > 0):
         if debug:
             message += "{} events passed to MMC in loop iteration {}\n".format(len(cc_stack), counter)
-            print("{} events passed to MMC in loop iteration {}\n".format(len(cc_stack), counter))
+            #print("{} events passed to MMC in loop iteration {}\n".format(len(cc_stack), counter))
         EventCollection = DoAllCCThings(cc_stack)
         for event in EventCollection:
             if (event.position >= event.TotalDistance):
