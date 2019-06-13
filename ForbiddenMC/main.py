@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
 import os, sys
+os.environ['HDF5_DISABLE_VERSION_CHECK']='2'
+import os, sys
 import argparse
 import nuSQUIDSpy as nsq
 
@@ -27,11 +29,12 @@ if (not (args.gzk) and (args.theta==None and args.energy==None)):
 
 base_path = os.path.join(args.path,'')
 sys.path.append(base_path)
+print(sys.path[-1])
 
 from Casino import *
 import Casino
-from CrossSections import *
-import CrossSections
+#from CrossSections import *
+#import CrossSections
 
 seed = args.seed
 debug = args.debug
@@ -41,13 +44,14 @@ nevents = int(args.nevents)
 isgzk = args.gzk
 save = args.save
 savedir = os.path.join(args.savedir, '')
+
 #base_path = '/data/user/isafa/ANITA/features/TauDragon/ForbiddenMC/'
 cross_section_path = base_path+'../cross_sections/'
 
 #Initialize cross section class
-CrossSection = CrossSections.CrossSections(cross_section_path, seed)
-if debug:
-    message+="Initialized Cross Secions\n"
+#CrossSection = CrossSections.CrossSections(cross_section_path, seed)
+#if debug:
+#    message+="Initialized Cross Secions\n"
 
 rand = np.random.RandomState(seed=seed)
 
@@ -92,7 +96,7 @@ while cc_left:
     #for i in inds_left[::-1]:
         i = inds_left[j]
         print("lookin at {}".format(i))
-        EventObject = CasinoEvent("tau_neutrino",iter_energies[i], thetas[i], iter_positions[i], i, CrossSection, seed+i)
+        EventObject = CasinoEvent("tau_neutrino",iter_energies[i], thetas[i], iter_positions[i], i, seed+i)
         out = RollDice(EventObject)       
         if (out.isCC):
             if(out.energy/units.GeV <= 1e5):

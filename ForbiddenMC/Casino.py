@@ -7,13 +7,94 @@ from scipy.interpolate import interp1d
 import time
 import subprocess
 import nuSQUIDSpy as nsq
-import CrossSections
-from CrossSections import *
+#import CrossSections
+#from CrossSections import *
 
 units = nsq.Const()
 gr = nsq.GlashowResonanceCrossSection()
 dis = nsq.NeutrinoDISCrossSectionsFromTables()
 tds = nsq.TauDecaySpectra()
+
+
+#cross sections from 1e8 - 1e16 GeV patched with nuSQUIDS 
+#temporary until EHE cross sections are added to nuSQUIDS
+
+#rand = np.random.RandomState(seed=seed)
+
+######################################
+cross_section_path = sys.path[-1]+'../cross_sections/'
+charged = np.load(cross_section_path + 'nuXS_CC_8-16.npy')
+neutral = np.load(cross_section_path + 'nuXS_NC_8-16.npy')
+energies = np.logspace(17, 25, 500)
+energies = (energies[:-1] + energies[1:])/2
+
+log_e = np.log10(energies)
+log_XS_CC = np.log10(charged)
+log_XS_NC = np.log10(neutral)
+
+f_NC = interp1d(log_e, log_XS_NC)
+f_CC = interp1d(log_e, log_XS_CC)
+
+dsdy_spline_CC = np.load(cross_section_path + 'dsigma_dy_CC.npy').item()
+dsdy_spline_CC_lowe = np.load(cross_section_path + 'dsigma_dy_CC_lowE.npy').item()
+dsdy_spline_NC = np.load(cross_section_path + 'dsigma_dy_NC.npy').item()
+dsdy_spline_NC_lowe = np.load(cross_section_path + 'dsigma_dy_NC_lowE.npy').item()
+
+#####################################
+
+def TotalNeutrinoCrossSection(enu,
+		      flavor = nsq.NeutrinoCrossSections_NeutrinoFlavor.tau,
+		      neutype = nsq.NeutrinoCrossSections_NeutrinoType.neutrino,
+		      interaction = nsq.NeutrinoCrossSections_Current.NC):
+	r'''
+	Calculates total neutrino cross section. returns the value of sigma_CC (or NC)
+	in natural units.
+	Parameters
+	----------
+	enu:         float
+	    neutrino energy in eV
+	flavor:      nusquids obj
+	    nusquids object defining neutrino flavor. default is tau
+	interaction: nusquids obj
+	    nusquids object defining the interaction type (CC or NC). default is NC
+	Returns
+	-------
+	TotalCrossSection: float
+	    Total neutrino cross section at the given energy in natural units.
+	'''
+
+	if(np.log10(enu) > log_e[0]):
+
+	    if(interaction == nsq.NeutrinoCrossSections_Current.NC):
+		return((10**f_NC(np.log10(enu)))*(units.cm)**2)
+            else:
+                return((10**f_CC(np.log10(enu)))*(units.cm)**2)
+	else:
+	    return dis.TotalCrossSection(enu,flavor,neutype,interaction)*(units.cm)**2
+
+def DifferentialOutGoingLeptonDistribution(ein, eout, interaction):
+	if(np.log10(ein) < 0):
+	    diff = 0
+	    return diff
+        if(interaction==nsq.NeutrinoCrossSections_Current.CC):
+            if (np.log10(eout) >= np.log10(ein)):
+                diff = 0.
+		return diff
+            elif(np.log10(eout) < 3.):
+		diff = 10**dsdy_spline_CC_lowe(np.log10(ein), np.log10(eout))[0][0]/ein 
+	    else:
+                diff = 10**dsdy_spline_CC(np.log10(ein), np.log10(eout))[0][0]/ein
+        elif(interaction==nsq.NeutrinoCrossSections_Current.NC):
+            if (np.log10(eout) >= np.log10(ein)):
+                diff = 0.
+		return diff
+            elif( np.log10(eout) <= 3.):
+	        diff = 10**dsdy_spline_NC_lowe(np.log10(ein), np.log10(eout))[0][0]/ein
+	    else:
+                diff = 10**dsdy_spline_NC(np.log10(ein), np.log10(eout))[0][0]/ein
+
+        return diff
+
 
 earth_model_radii = np.flip([6371., 6367.1774, 6355.7096, 6346.7902, 5960.7076, 5719.8838, 3479.8402, 1221.9578], axis=0)
 #earth_model_densities = np.flip([2.6076200000000003, 2.9090978337728903, 3.4256762971354524, 3.900144943911578,
@@ -152,19 +233,19 @@ proton_mass = 0.938*units.GeV
 
 
 class CasinoEvent(object):
-    def __init__(self, particle_id, energy, incoming_angle, position, index, CrossSection, seed):
+    def __init__(self, particle_id, energy, incoming_angle, position, index, seed):
 	#Set Initial Values
         self.particle_id = particle_id
         self.energy = energy
         self.position = position
         self.SetParticleProperties()
-        self.history = [""]
-        self.nCC = 0
-        self.nNC = 0
-        self.ntdecay = 0
+#        self.history = [""]
+#        self.nCC = 0
+#        self.nNC = 0
+#        self.ntdecay = 0
         self.region_index = 0
         self.region_distance = 0.0
-        self.CrossSection = CrossSection	
+        #self.CrossSection = CrossSection	
         self.isCC = False
         self.index = index
        	self.rand = np.random.RandomState(seed=seed)
@@ -236,7 +317,7 @@ class CasinoEvent(object):
     def GetInteractionLength(self,density,interaction):
         if self.particle_id == "tau_neutrino":
             # this should be actually divided by average of proton and neutron mass
-            return proton_mass/(self.CrossSection.TotalNeutrinoCrossSection(self.energy, interaction = interaction)*density)
+            return proton_mass/(TotalNeutrinoCrossSection(self.energy, interaction = interaction)*density)
         if self.particle_id == "tau":
             # here we need the total tau cross section
             #return TotalNeutrinoCrossSection(self.energy)*density/(proton_mass)
@@ -255,33 +336,33 @@ class CasinoEvent(object):
 
     def DecayParticle(self):
         if self.particle_id == "tau_neutrino":
-            self.history.append("Neutrino decayed???")
+            #self.history.append("Neutrino decayed???")
             return
         if self.particle_id == "tau":
-            self.energy = self.energy*self.CrossSection.rand.choice(zz, p=TauDecayWeights)
+            self.energy = self.energy*self.rand.choice(zz, p=TauDecayWeights)
             self.particle_id = "tau_neutrino"
             self.SetParticleProperties()
-            self.history.append("Tau decayed")
+            #self.history.append("Tau decayed")
             return
 
     def InteractParticle(self, interaction):
         if self.particle_id == "tau_neutrino":
   	    #Sample energy lost
-            dNdEle = lambda y: self.CrossSection.DifferentialOutGoingLeptonDistribution(self.energy/units.GeV,self.energy*y/units.GeV,interaction = interaction)
+            dNdEle = lambda y: DifferentialOutGoingLeptonDistribution(self.energy/units.GeV,self.energy*y/units.GeV,interaction = interaction)
             NeutrinoInteractionWeights = map(dNdEle,yy)
 	    NeutrinoInteractionWeights = NeutrinoInteractionWeights/np.sum(NeutrinoInteractionWeights)
-	    self.energy = self.energy*self.CrossSection.rand.choice(yy, p=NeutrinoInteractionWeights)
+	    self.energy = self.energy*self.rand.choice(yy, p=NeutrinoInteractionWeights)
            	   
             if interaction == nsq.NeutrinoCrossSections_Current.CC:
 		self.isCC = True
                 self.particle_id = "tau"
                 self.SetParticleProperties()
- 		self.nCC += 1
+ 		#self.nCC += 1
 
             elif interaction == nsq.NeutrinoCrossSections_Current.NC:
 	        self.particle_id = "tau_neutrino"
                 self.SetParticleProperties()
-                self.nNC += 1
+                #self.nNC += 1
             
 	    return
 
@@ -320,6 +401,9 @@ def RollDice(event):
 
     while(not np.any((event.position >= event.TotalDistance) or (event.energy <= event.GetMass()) or (event.isCC))):
             if(event.particle_id == 'tau_neutrino'):
+		if(event.energy/units.GeV <= 1e3):
+		    event.position = event.TotalDistance
+		    continue
                 #Determine how far you're going
                 p1 = event.rand.random_sample()
                 DistanceStep = event.GetProposedDistanceStep(event.GetCurrentDensity(), p1)
