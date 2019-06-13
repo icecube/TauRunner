@@ -29,7 +29,7 @@ if (not (args.gzk) and (args.theta==None and args.energy==None)):
 
 base_path = os.path.join(args.path,'')
 sys.path.append(base_path)
-print(sys.path[-1])
+#print(sys.path[-1])
 
 from Casino import *
 import Casino
@@ -95,7 +95,7 @@ while cc_left:
     for j in range(len(inds_left) - 1, -1, -1):
     #for i in inds_left[::-1]:
         i = inds_left[j]
-        print("lookin at {}".format(i))
+#        print("lookin at {}".format(i))
         EventObject = CasinoEvent("tau_neutrino",iter_energies[i], thetas[i], iter_positions[i], i, seed+i)
         out = RollDice(EventObject)       
         if (out.isCC):
@@ -137,7 +137,7 @@ while cc_left:
         if len(low_en_cc) == 0:
             cc_left = False
 
-print("INDICES LEFT: {}".format(inds_left))
+#print("INDICES LEFT: {}".format(inds_left))
 nus_e = np.array(nus_e, dtype = [('Eini', float), ('Eout',float), ('Theta', float), ('CDF_index', float)])
 taus_e = np.array(taus_e, dtype = [('Eini', float), ('Eout',float), ('Theta', float), ('CDF_index', float)])
 #print(np.array(iter_positions) / units.km)

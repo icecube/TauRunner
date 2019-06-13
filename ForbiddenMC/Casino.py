@@ -182,43 +182,30 @@ def DoAllCCThings(objects):
     efinal, distance = [], []
     e = [obj.energy/units.GeV for obj in objects]                                   #MMC takes initial energy in GeV 
     mult = [obj.GetCurrentDensity()*(units.cm**3)/units.gr/2.7 for obj in objects]  #convert density back to normal (not natural) units 
-    sort = sorted(zip(mult, e))
+    sort = sorted(zip(mult, e, objects))
     sorted_mult = np.asarray(zip(*sort)[0])
     sorted_e    = np.asarray(zip(*sort)[1])
+    sorted_obj = np.asarray(zip(*sort)[2])
     split = np.append(np.append([-1], np.where(sorted_mult[:-1] != sorted_mult[1:])[0]), len(sorted_mult))    
     for i in range(len(split)-1):
-        print("SPLIT LENGTH: {}".format(len(sorted_mult[split[i]+1:split[i+1]+1])))
+    #    print("SPLIT LENGTH: {}".format(len(sorted_mult[split[i]+1:split[i+1]+1])))
         multis = sorted_mult[split[i]+1:split[i+1]+1]
         eni = sorted_e[split[i]+1:split[i+1]+1]
-        #eni_str = " ".join(str(x) for x in eni)
-        #arg = '{} {}'.format(eni_str, multis[0]).replace('\n', '')
-        #if len(sorted_mult[split[i]+1:split[i+1]+1]) > 1000:
-        #    print "ARG = " + arg
-        #    print len(arg.split(' '))
-        #print len(arg.encode('utf-8'))
-        #process = subprocess.Popen('/data/user/isafa/ANITA/features/TauDragon/ForbiddenMC/propagate_taus.sh '+arg, stdout=subprocess.PIPE, shell=True)
         eni_str = [str(x) for x in eni]
         eni_str.append(str(multis[0]))
         eni_str.insert(0, '/data/user/isafa/ANITA/features/TauDragon/ForbiddenMC/propagate_taus.sh')
         process = subprocess.check_output(eni_str)
-        #for line in process.stdout:
-        #print(process)
-        #print(process.split('\n')[:-1])
         for line in process.split('\n')[:-1]:
-            #print(line)
             final_values.append(float(line.replace('\n','')))
-    final_energies = np.asarray(final_values)[::2]
+    final_energies = np.asarray(final_values)[::2]        
     final_distances = np.abs(np.asarray(final_values)[1::2])/1e3
-    objects = np.asarray(zip(*sorted(zip(mult, objects)))[1])
-    #print 'ARG: ' + arg + '\n\n\n'
-    #print final_values
-    #print(final_energies.shape)
-    #print(final_distances.shape)
-    #print(len(objects))
-    for i, obj in enumerate(objects):
+    for i, obj in enumerate(sorted_obj):
+        if obj.energy/units.GeV < final_energies[i]/1e3:
+            print("WHAT THE ACTUAL FUCK")
+	    print(np.log10(obj.energy/units.GeV), np.log10(final_energies[i]/1e3) )
 	obj.energy = final_energies[i]*units.GeV/1e3
 
-    objects = check_taundaries(objects, final_distances)
+    objects = check_taundaries(sorted_obj, final_distances)
     return(objects)
 
 Etau = 100.
