@@ -188,22 +188,26 @@ def DoAllCCThings(objects):
     sorted_obj = np.asarray(zip(*sort)[2])
     split = np.append(np.append([-1], np.where(sorted_mult[:-1] != sorted_mult[1:])[0]), len(sorted_mult))    
     for i in range(len(split)-1):
-    #    print("SPLIT LENGTH: {}".format(len(sorted_mult[split[i]+1:split[i+1]+1])))
         multis = sorted_mult[split[i]+1:split[i+1]+1]
         eni = sorted_e[split[i]+1:split[i+1]+1]
-        eni_str = [str(x) for x in eni]
-        eni_str.append(str(multis[0]))
-        eni_str.insert(0, '/data/user/isafa/ANITA/features/TauDragon/ForbiddenMC/propagate_taus.sh')
-        process = subprocess.check_output(eni_str)
-        for line in process.split('\n')[:-1]:
-            final_values.append(float(line.replace('\n','')))
+        max_arg = 5000
+        eni_str = [[str(eni[y*max_arg + x]) for x in range(max_arg)] for y in range(len(eni)/max_arg)]
+        num_args = len(eni)/max_arg
+        if len(eni) % max_arg != 0:
+            eni_str.append([str(eni[num_args * max_arg + x]) for x in range(max_arg*num_args, len(eni))])
+        print '\n'
+        print len(eni_str[0])
+        print len(sorted_obj)
+        for kk in range(len(eni_str)):
+            eni_str[kk].append(str(multis[0]))
+            eni_str[kk].insert(0, '/data/user/isafa/ANITA/features/TauDragon/ForbiddenMC/propagate_taus.sh')
+            process = subprocess.check_output(eni_str[kk])
+            for line in process.split('\n')[:-1]:
+                final_values.append(float(line.replace('\n','')))
     final_energies = np.asarray(final_values)[::2]        
     final_distances = np.abs(np.asarray(final_values)[1::2])/1e3
     for i, obj in enumerate(sorted_obj):
-        if obj.energy/units.GeV < final_energies[i]/1e3:
-            print("WHAT THE ACTUAL FUCK")
-	    print(np.log10(obj.energy/units.GeV), np.log10(final_energies[i]/1e3) )
-	obj.energy = final_energies[i]*units.GeV/1e3
+        obj.energy = final_energies[i]*units.GeV/1e3
 
     objects = check_taundaries(sorted_obj, final_distances)
     return(objects)
