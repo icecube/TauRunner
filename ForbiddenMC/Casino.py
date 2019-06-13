@@ -194,7 +194,7 @@ def DoAllCCThings(objects):
         eni_str = [[str(eni[y*max_arg + x]) for x in range(max_arg)] for y in range(len(eni)/max_arg)]
         num_args = len(eni)/max_arg
         if len(eni) % max_arg != 0:
-            eni_str.append([str(eni[num_args * max_arg + x]) for x in range(max_arg*num_args, len(eni))])
+            eni_str.append([str(eni[x]) for x in range(max_arg*num_args, len(eni))])
         for kk in range(len(eni_str)):
             eni_str[kk].append(str(multis[0]))
             eni_str[kk].insert(0, '/data/user/isafa/ANITA/features/TauDragon/ForbiddenMC/propagate_taus.sh')
