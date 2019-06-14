@@ -20,6 +20,7 @@ parser.add_argument('-p', dest='path' , type=str, help='path to script')
 parser.add_argument('-d', dest='debug', default=False, action='store_true', help='Do you want to print out debug statments? If so, raise this flag') 
 parser.add_argument('-save', dest='save', default=False, action='store_true', help='Do you want to save the output or print the output? If save, raise this flag')
 parser.add_argument('-savedir', dest='savedir', type=str, default='./', help="If saving output, where would you like to save output?")
+parser.add_argument('-onlytau', dest='onlytau', default=False, action='store_true', help='Only save the taus and not neutrinos if this flag is raised')
 args = parser.parse_args()
 
 if ((args.seed == None) or (args.nevents == None)):
@@ -62,7 +63,7 @@ if(isgzk):
   #thetas = np.zeros(nevents)
 
   gzk_cdf = np.load(base_path+'gzk_cdf_phi_spline.npy').item()
-  cdf_indices = CrossSection.rand.uniform(size=nevents)
+  cdf_indices = rand.uniform(size=nevents)
   eini = gzk_cdf(cdf_indices)*units.GeV
   #eini = np.ones(nevents)*1e9*units.GeV
   if debug:
@@ -114,10 +115,13 @@ while cc_left:
                 taus_e.append((eini[ind], out.energy, thetas[ind], cdf_indices[ind]))
                	iter_positions[out.index] = out.position
                 del inds_left[j]
+                del out
             else:
-                nus_e.append((eini[ind], out.energy, thetas[ind], cdf_indices[ind]))
+                if not args.onlytau:
+                    nus_e.append((eini[ind], out.energy, thetas[ind], cdf_indices[ind]))
                	iter_positions[out.index] = out.position
                 del inds_left[j]
+                del out
     if (len(cc_stack) > 0):
         if debug:
             message += "{} events passed to MMC in loop iteration {}\n".format(len(cc_stack), counter)
@@ -129,10 +133,12 @@ while cc_left:
                 delinds = np.argwhere(np.asarray(inds_left) == event.index)[0]
                 iter_positions[event.index] = event.position
                 del inds_left[delinds[0]]
+                del event
             else:
                 event.DecayParticle()
                 iter_positions[event.index] = event.position
                 iter_energies[event.index] = event.energy
+                del event
     else: 
         if len(low_en_cc) == 0:
             cc_left = False
@@ -155,7 +161,8 @@ if save:
     except OSError as e:
         if debug:
             message += "Subdirectories already existed\n"
-    np.save(savedir + 'nus/' + 'nus_{}_seed_{}.npy'.format(fluxtype, seed), nus_e)
+    if not args.onlytau:
+        np.save(savedir + 'nus/' + 'nus_{}_seed_{}.npy'.format(fluxtype, seed), nus_e)
     np.save(savedir + 'taus/' + 'taus_{}_seed_{}.npy'.format(fluxtype, seed), taus_e)
     if debug:
         print(message)
