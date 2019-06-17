@@ -21,6 +21,10 @@ parser.add_argument('-d', dest='debug', default=False, action='store_true', help
 parser.add_argument('-save', dest='save', default=False, action='store_true', help='Do you want to save the output or print the output? If save, raise this flag')
 parser.add_argument('-savedir', dest='savedir', type=str, default='./', help="If saving output, where would you like to save output?")
 parser.add_argument('-onlytau', dest='onlytau', default=False, action='store_true', help='Only save the taus and not neutrinos if this flag is raised')
+parser.add_argument('spectrum', dest='spectrum', default=False, action='store_true', help='Inject an E^-2 spectrum in a specific bin')
+parser.add_argument('spectral_index', dest='spectral_index', default=-2., type=float, help='Spectral index within the bin')
+parser.add_argument('low', dest='low', type=float, default=1e3, help='lower bound if using an injected spectrum')
+parser.add_argument('high', dest='high', type=float, default=1e6, help='upper bound if using an injected spectrum')
 args = parser.parse_args()
 
 if ((args.seed == None) or (args.nevents == None)):
@@ -54,6 +58,12 @@ cross_section_path = base_path+'../cross_sections/'
 #if debug:
 #    message+="Initialized Cross Secions\n"
 
+def rndm(a, b, g, size=1):
+    #Random spectrum function. g is gamma+1 (use -1 for E^-2)
+    r = np.random.random(size=size)
+    ag, bg = a**g, b**g
+    return (ag + (bg - ag)*r)**(1./g)
+
 rand = np.random.RandomState(seed=seed)
 
 if(isgzk):
@@ -68,6 +78,10 @@ if(isgzk):
   #eini = np.ones(nevents)*1e9*units.GeV
   if debug:
     message+="Sampled {} events from the GZK flux\n".format(nevents)
+elif spectrum:
+  cos_thetas = rand.uniform(low=0., high=1.,size=nevents)
+  thetas = np.arccos(cos_thetas)
+  eini = rndm(args.low, args.high, args.spectral_index + 1, size=nevents)
 else:
     # Use a monochromatic flux
     cdf_indices = np.ones(nevents)
