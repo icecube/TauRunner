@@ -14,6 +14,8 @@ parser = argparse.ArgumentParser()
 parser.add_argument('-s',dest='seed',type=int,help='just an integer seed to help with output file names')
 parser.add_argument('-n', dest='nevents', type=float, help='how many events do you want?')
 parser.add_argument('-gzk', dest='gzk', default=False, action='store_true', help='do you want to propagate the GZK flux? if so, raise this flag, and raise your flag, and raise your flag, and raise it.. when i get older...')
+parser.add_argument('-murase', dest='murase', default=False, action='store_true', help='if propagating the GZK flux, do you want to use the Kohta model? If so, raise this flag')
+parser.add_argument('-alosio', dest='alosio', default=False, action='store_true', help='raise this flag to use the Alosio GZK model')
 parser.add_argument('-e', dest='energy', type=float, help='if you want to simulate a specific energy, pass it here in GeV')
 parser.add_argument('-t', dest='theta', type=float, help='zenith angle in radians where 0 is through the core')
 parser.add_argument('-p', dest='path' , type=str, help='path to script')
@@ -71,10 +73,18 @@ if(isgzk):
   cos_thetas = rand.uniform(low=0., high=1.,size=nevents)
   thetas = np.arccos(cos_thetas)
   #thetas = np.zeros(nevents)
-
-  gzk_cdf = np.load(base_path+'gzk_cdf_phi_spline.npy').item()
-  cdf_indices = rand.uniform(size=nevents)
-  eini = gzk_cdf(cdf_indices)*units.GeV
+  if not args.murase and not args.alosio:
+    gzk_cdf = np.load(base_path+'gzk_cdf_phi_spline.npy').item()
+    cdf_indices = rand.uniform(size=nevents)
+    eini = gzk_cdf(cdf_indices)*units.GeV
+  elif args.murase:
+    gzk_cdf = np.load(base_path+'gzk_cdf_phi_spline_kohta.npy').item()
+    cdf_indices = rand.uniform(size=nevents)
+    eini = gzk_cdf(cdf_indices)*units.GeV
+  else:
+    gzk_cdf = np.load(base_path+'gzk_cdf_phi_spline_alosio.npy').item()
+    cdf_indices = rand.uniform(size=nevents)
+    eini = gzk_cdf(cdf_indices)*units.GeV / 1e9
   #eini = np.ones(nevents)*1e9*units.GeV
   if debug:
     message+="Sampled {} events from the GZK flux\n".format(nevents)
@@ -166,6 +176,10 @@ taus_e = np.array(taus_e, dtype = [('Eini', float), ('Eout',float), ('Theta', fl
 if save:
     if isgzk:
         fluxtype = "cosmogenic"
+        if args.murase:
+            fluxtype += "_murase"
+        elif args.alosio:
+            fluxtype += "_alosio"
     else:
         fluxtype = "monochromatic_{}_{}".format(args.energy, args.theta)
     try:

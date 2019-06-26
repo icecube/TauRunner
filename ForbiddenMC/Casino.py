@@ -96,11 +96,33 @@ def DifferentialOutGoingLeptonDistribution(ein, eout, interaction):
         return diff
 
 
-earth_model_radii = np.flip([6371., 6367.1774, 6355.7096, 6346.7902, 5960.7076, 5719.8838, 3479.8402, 1221.9578], axis=0)
+earth_model_radii = np.flip([6371., 6369., 6367.1774, 6355.7096, 6346.7902, 5960.7076, 5719.8838, 3479.8402, 1221.9578], axis=0)
 #earth_model_densities = np.flip([2.6076200000000003, 2.9090978337728903, 3.4256762971354524, 3.900144943911578,
 #    4.989777873466213, 11.239115022426343, 12.98114208759252])
-earth_model_densities = np.flip([1.360016, 2.6076200000000003, 2.9090978337728903, 3.4256762971354524, 3.900144943911578,
+earth_model_densities = np.flip([1.0, 1.360016, 2.6076200000000003, 2.9090978337728903, 3.4256762971354524, 3.900144943911578,
     4.989777873466213, 11.239115022426343, 12.98114208759252], axis=0)
+
+def outer_shell(theta, r1, r2):
+    r'''
+    Manually add an outer layer of ice to the detector.
+    This is especially important for earth skimming trajectories
+    Parameters
+    -----------
+    theta: float
+        incoming nadir
+    r1: float
+        radius of inner shell
+    r2: float
+        radius of outer shell
+    Returns
+    --------
+    l:  float
+        distance travelled in the new layer
+    '''
+    if theta == np.pi / 2.:
+        return np.sqrt(r2**2 - r1**2)
+    else:
+        return -1*np.cos(theta) * (r1 - np.sqrt(r1**2 + (r2**2 - r1**2) / (np.cos(theta)**2))) 
 
 def GetDistancesPerSection(theta, radii):
         r'''
@@ -116,7 +138,7 @@ def GetDistancesPerSection(theta, radii):
             distance traveled in each section of uniform density,
             along with the index of the region in an additional dimension
         '''
-        radii = np.sort(radii)
+        radii = np.sort(radii)[:-1]
         closest_approach = radii[-1] * np.sin(theta)
         smallest_sect = np.min(np.where(closest_approach < radii))
         dists = []
@@ -128,6 +150,8 @@ def GetDistancesPerSection(theta, radii):
         dists = np.append(dists, np.flip(dists[:-1], axis=0))
         sects = list(range(len(radii) - 1, smallest_sect, -1)) + \
                     list(range(smallest_sect, len(radii)))
+        dists = np.insert(dists, 0, outer_shell(theta, radii[-1], 6371.))
+        sects.insert(0, len(radii) ) #Set outer shell density to that of ice
         return dists, sects
 
 def check_taundaries(objects, distances):
