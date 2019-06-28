@@ -221,7 +221,7 @@ def DoAllCCThings(objects):
             eni_str.append([str(eni[x]) for x in range(max_arg*num_args, len(eni))])
         for kk in range(len(eni_str)):
             eni_str[kk].append(str(multis[0]))
-            eni_str[kk].insert(0, '/data/user/isafa/ANITA/features/TauDragon/ForbiddenMC/propagate_taus.sh')
+            eni_str[kk].insert(0, '/data/user/apizzuto/ANITA/monte_carlo/TauDragon/ForbiddenMC/propagate_taus.sh')
             process = subprocess.check_output(eni_str[kk])
             for line in process.split('\n')[:-1]:
                 final_values.append(float(line.replace('\n','')))
@@ -245,7 +245,7 @@ proton_mass = 0.938*units.GeV
 
 
 class CasinoEvent(object):
-    def __init__(self, particle_id, energy, incoming_angle, position, index, seed):
+    def __init__(self, particle_id, energy, incoming_angle, position, index, seed, buff=0.):
 	#Set Initial Values
         self.particle_id = particle_id
         self.energy = energy
@@ -260,16 +260,27 @@ class CasinoEvent(object):
         #self.CrossSection = CrossSection	
         self.isCC = False
         self.index = index
+        self.buff = buff
        	self.rand = np.random.RandomState(seed=seed)
 
 	#Calculate densities along the chord length
 	#and total distance
 	region_lengths, regions = GetDistancesPerSection(incoming_angle, earth_model_radii)
         densities = []
+        while self.buff > 0:
+            if region_lengths[-1] > self.buff:
+                region_lengths[-1] -= self.buff
+                self.buff = 0
+            else:
+                self.buff -= region_lengths[-1]
+                region_lengths = np.delete(region_lengths, -1)
+                del regions[-1]
+
         for i in range(len(region_lengths)):
             region_lengths[i] = region_lengths[i] * units.km
             densities.append(earth_model_densities[regions[i]] * units.gr/(units.cm**3))
-        
+        #print(np.array(region_lengths) / units.km)   
+        #print(np.array(densities) / units.gr * units.cm**3)     
 	self.region_lengths = region_lengths
         self.densities = densities
 	self.TotalDistance = np.sum(region_lengths)
@@ -279,7 +290,7 @@ class CasinoEvent(object):
 	    self.region_distance = self.position - cumsum[self.region_index -1]
 	else:
 	    self.region_distance = self.position
-    
+
     def SetParticleProperties(self):
         if self.particle_id == "tau_neutrino":
             self.mass = 0.0

@@ -27,6 +27,7 @@ parser.add_argument('-spectrum', dest='spectrum', default=False, action='store_t
 parser.add_argument('-spectral_index', dest='spectral_index', default=-2., type=float, help='Spectral index within the bin')
 parser.add_argument('-low', dest='low', type=float, default=1e3, help='lower bound if using an injected spectrum')
 parser.add_argument('-high', dest='high', type=float, default=1e6, help='upper bound if using an injected spectrum')
+parser.add_argument('-buff', dest='buff', type=float, default=0., help="Simulate to a finite distance outside of the detector (in km)")
 args = parser.parse_args()
 
 if ((args.seed == None) or (args.nevents == None)):
@@ -122,7 +123,7 @@ while cc_left:
     #for i in inds_left[::-1]:
         i = inds_left[j]
 #        print("lookin at {}".format(i))
-        EventObject = CasinoEvent("tau_neutrino",iter_energies[i], thetas[i], iter_positions[i], i, np.random.randint(low=1e9))
+        EventObject = CasinoEvent("tau_neutrino",iter_energies[i], thetas[i], iter_positions[i], i, np.random.randint(low=1e9), buff = args.buff)
         out = RollDice(EventObject)       
         if (out.isCC):
             if(out.energy/units.GeV <= 1e5):
