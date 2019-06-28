@@ -154,40 +154,6 @@ def GetDistancesPerSection(theta, radii):
         sects.insert(0, len(radii) ) #Set outer shell density to that of ice
         return dists, sects
 
-def check_taundaries(objects, distances):
-    r'''
-        Propagates Tau leptons while checking boundary conditions
-        Parameters
-        ----------
-        objects: list
-            list of CasinoEvents
-        distances: list
-            list of the proposed increased distance step
-        Returns
-        -------
-        objects:
-            list of CasinoEvents after propagation
-        '''
-    for i, obj in enumerate(objects):
-        Ladv = distances[i]*units.km
-        #Handle boundary cases, but don't scale by density anywhere
-        has_exited = False
-        while (obj.region_distance + Ladv >= obj.GetTotalRegionLength()) and (has_exited==False):
-    	    try:
-		Ladv -= (obj.GetTotalRegionLength() - obj.region_distance)
-		obj.position += obj.GetTotalRegionLength() - obj.region_distance
-		obj.GetDensityRatio()
-		obj.region_distance = 0.
-		obj.region_index += 1
-	    except:
-		has_exited = True
-        if has_exited:
-	    obj.position = obj.TotalDistance    
-        else:
-            obj.region_distance += Ladv
-            obj.position += Ladv
-
-    return(objects)
 
 def DoAllCCThings(objects):
     r'''
@@ -204,13 +170,13 @@ def DoAllCCThings(objects):
     '''
     final_values= []
     efinal, distance = [], []
-    e = [obj.energy/units.GeV for obj in objects]                                   #MMC takes initial energy in GeV 
-    mult = [obj.GetCurrentDensity()*(units.cm**3)/units.gr/2.7 for obj in objects]  #convert density back to normal (not natural) units 
+    e = [obj[0]/units.GeV for obj in objects]                                #MMC takes initial energy in GeV 
+    mult = [obj[-1]*(units.cm**3)/units.gr/2.7 for obj in objects]           #convert density back to normal (not natural) units 
     sort = sorted(zip(mult, e, objects))
     sorted_mult = np.asarray(zip(*sort)[0])
     sorted_e    = np.asarray(zip(*sort)[1])
     sorted_obj = np.asarray(zip(*sort)[2])
-    split = np.append(np.append([-1], np.where(sorted_mult[:-1] != sorted_mult[1:])[0]), len(sorted_mult))    
+    split = np.append(np.append([-1], np.where(sorted_mult[:-1] != sorted_mult[1:])[0]), len(sorted_mult))
     for i in range(len(split)-1):
         multis = sorted_mult[split[i]+1:split[i+1]+1]
         eni = sorted_e[split[i]+1:split[i+1]+1]
@@ -225,13 +191,13 @@ def DoAllCCThings(objects):
             process = subprocess.check_output(eni_str[kk])
             for line in process.split('\n')[:-1]:
                 final_values.append(float(line.replace('\n','')))
-    final_energies = np.asarray(final_values)[::2]        
+    final_energies = np.asarray(final_values)[::2]
     final_distances = np.abs(np.asarray(final_values)[1::2])/1e3
     for i, obj in enumerate(sorted_obj):
-        obj.energy = final_energies[i]*units.GeV/1e3
-
-    objects = check_taundaries(sorted_obj, final_distances)
-    return(objects)
+        obj[0] = final_energies[i]*units.GeV/1e3
+        obj[4] = final_distances[i]
+#    objects = check_taundaries(sorted_obj, final_distances)
+    return(sorted_obj)
 
 Etau = 100.
 zz = np.linspace(0.0,1.0,500)[1:-1]
@@ -245,12 +211,13 @@ proton_mass = 0.938*units.GeV
 
 
 class CasinoEvent(object):
-    def __init__(self, particle_id, energy, incoming_angle, position, index, seed, buff=0.):
+    def __init__(self, particle_id, energy, incoming_angle, position, index, seed, tauposition, buff=0.):
 	#Set Initial Values
         self.particle_id = particle_id
         self.energy = energy
         self.position = position
         self.SetParticleProperties()
+        self.tauposition = tauposition
 #        self.history = [""]
 #        self.nCC = 0
 #        self.nNC = 0
@@ -263,9 +230,9 @@ class CasinoEvent(object):
         self.buff = buff
        	self.rand = np.random.RandomState(seed=seed)
 
-	#Calculate densities along the chord length
-	#and total distance
-	region_lengths, regions = GetDistancesPerSection(incoming_angle, earth_model_radii)
+        #Calculate densities along the chord length
+        #and total distance
+        region_lengths, regions = GetDistancesPerSection(incoming_angle, earth_model_radii)
         densities = []
         while self.buff > 0:
             if region_lengths[-1] > self.buff:
@@ -281,15 +248,15 @@ class CasinoEvent(object):
             densities.append(earth_model_densities[regions[i]] * units.gr/(units.cm**3))
         #print(np.array(region_lengths) / units.km)   
         #print(np.array(densities) / units.gr * units.cm**3)     
-	self.region_lengths = region_lengths
+        self.region_lengths = region_lengths
         self.densities = densities
-	self.TotalDistance = np.sum(region_lengths)
-	cumsum = np.cumsum(self.region_lengths)
-	self.region_index = np.min(np.where(cumsum > self.position))
-	if(self.position > self.region_lengths[0]):
-	    self.region_distance = self.position - cumsum[self.region_index -1]
-	else:
-	    self.region_distance = self.position
+        self.TotalDistance = np.sum(region_lengths)
+        cumsum = np.cumsum(self.region_lengths)
+        self.region_index = np.min(np.where(cumsum > self.position))
+        if(self.position > self.region_lengths[0]):
+            self.region_distance = self.position - cumsum[self.region_index -1]
+        else:
+            self.region_distance = self.position
 
     def SetParticleProperties(self):
         if self.particle_id == "tau_neutrino":
@@ -355,7 +322,7 @@ class CasinoEvent(object):
         return current_density / next_density
 
     def SampleNeutrinoLoss(self):
-	return
+        return
 
     def DecayParticle(self):
         if self.particle_id == "tau_neutrino":
@@ -367,6 +334,40 @@ class CasinoEvent(object):
             self.SetParticleProperties()
             #self.history.append("Tau decayed")
             return
+
+    def check_taundaries(self, tau_position):
+        r'''
+        Propagates Tau leptons while checking boundary conditions
+        Parameters
+        ----------
+        objects: list
+            list of CasinoEvents
+        distances: list
+            list of the proposed increased distance step
+        Returns
+        -------
+        objects:
+            list of CasinoEvents after propagation
+        '''
+        if tau_position is None:
+            raise Exception('Your tau has not moved. Something is wrong')
+        Ladv = tau_position*units.km
+        #Handle boundary cases, but don't scale by density anywhere
+        has_exited = False
+        while (self.region_distance + Ladv >= self.GetTotalRegionLength()) and (has_exited==False):
+            try:
+                Ladv -= (self.GetTotalRegionLength() - self.region_distance)
+                self.position += self.GetTotalRegionLength() - self.region_distance
+                self.GetDensityRatio()
+                self.region_distance = 0.
+                self.region_index += 1
+            except:
+                has_exited = True
+        if has_exited:
+            self.position = self.TotalDistance
+        else:
+            self.region_distance += Ladv
+            self.position += Ladv
 
     def InteractParticle(self, interaction):
         if self.particle_id == "tau_neutrino":
@@ -423,46 +424,50 @@ class CasinoEvent(object):
 def RollDice(event):
 
     while(not np.any((event.position >= event.TotalDistance) or (event.energy <= event.GetMass()) or (event.isCC))):
-            if(event.particle_id == 'tau_neutrino'):
-		if(event.energy/units.GeV <= 1e3):
-		    event.position = event.TotalDistance
-		    continue
-                #Determine how far you're going
-                p1 = event.rand.random_sample()
-                DistanceStep = event.GetProposedDistanceStep(event.GetCurrentDensity(), p1)
-                #Handle boundary conditions and rescale according to column density
-                has_exited = False
-                while (event.region_distance + DistanceStep >= event.GetTotalRegionLength()) and (has_exited==False):
-                    try:
-                        DistanceStep -= (event.GetTotalRegionLength() - event.region_distance)
-                        DistanceStep *= event.GetDensityRatio()
-                        event.position += event.GetTotalRegionLength() - event.region_distance
-                        event.region_distance = 0.
-                        event.region_index += 1
-                    except:
-                        has_exited = True
-                if has_exited:
-                    event.position = event.TotalDistance
-                    continue
-                density = event.GetCurrentDensity()
+        if(event.particle_id == 'tau_neutrino'):
+            if(event.energy/units.GeV <= 1e3):
+                event.position = event.TotalDistance
+                continue
+            #Determine how far you're going
+            p1 = event.rand.random_sample()
+            DistanceStep = event.GetProposedDistanceStep(event.GetCurrentDensity(), p1)
+            #Handle boundary conditions and rescale according to column density
+            has_exited = False
+            while (event.region_distance + DistanceStep >= event.GetTotalRegionLength()) and (has_exited==False):
+                try:
+                    DistanceStep -= (event.GetTotalRegionLength() - event.region_distance)
+                    DistanceStep *= event.GetDensityRatio()
+                    event.position += event.GetTotalRegionLength() - event.region_distance
+                    event.region_distance = 0.
+                    event.region_index += 1
+                except:
+                    has_exited = True
+            if has_exited:
+                event.position = event.TotalDistance
+                continue
+            density = event.GetCurrentDensity()
 
-                #now pick an interaction
-                p2 = event.rand.random_sample()
-                CC_lint = event.GetInteractionLength(density, interaction=nsq.NeutrinoCrossSections_Current.CC)
-                p_int_CC = event.GetTotalInteractionLength(density) / CC_lint
-            
-	        if(p2 <= p_int_CC):
-                    event.InteractParticle(nsq.NeutrinoCrossSections_Current.CC)
-   	            event.position += DistanceStep
-                    event.region_distance += DistanceStep
-                else:
-                    event.InteractParticle(nsq.NeutrinoCrossSections_Current.NC)
-                    event.position += DistanceStep
-                    event.region_distance += DistanceStep
-		if(event.isCC):
-		    continue
-	    elif(event.particle_id == 'tau'):
-		print("i'm not supposed to be here and you should delete these couple of lines")
-                event.InteractParticle(interaction = nsq.NeutrinoCrossSections_Current.NC)
+            #now pick an interaction
+            p2 = event.rand.random_sample()
+            CC_lint = event.GetInteractionLength(density, interaction=nsq.NeutrinoCrossSections_Current.CC)
+            p_int_CC = event.GetTotalInteractionLength(density) / CC_lint
+
+            if(p2 <= p_int_CC):
+                event.InteractParticle(nsq.NeutrinoCrossSections_Current.CC)
+                event.position += DistanceStep
+                event.region_distance += DistanceStep
+            else:
+                event.InteractParticle(nsq.NeutrinoCrossSections_Current.NC)
+                event.position += DistanceStep
+                event.region_distance += DistanceStep
+            if(event.isCC):
+                continue
+        elif(event.particle_id == 'tau'):
+            event.check_taundaries(event.tauposition)
+            if(event.position >= event.TotalDistance):
+                return event
+                continue
+            else:
+                event.DecayParticle()
     return event
 

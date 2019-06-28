@@ -111,41 +111,46 @@ nus_e = []
 counter = 0
 iter_energies = list(eini)[:]
 iter_positions = list(np.zeros(nevents))
+iter_particleID = ['tau_neutrino']*nevents
+iter_TauPosition = list(np.zeros(nevents))
 
 # Run the algorithm
-while cc_left:
+while inds_left:
+    print("Loop number {}".format(counter + 1))
     counter += 1
     if debug:
         message+="Beginning Loop Number {}\n".format(counter)
     cc_stack = []
-    low_en_cc = []
+    low_en_cc = 0
     for j in range(len(inds_left) - 1, -1, -1):
     #for i in inds_left[::-1]:
         i = inds_left[j]
 #        print("lookin at {}".format(i))
-        EventObject = CasinoEvent("tau_neutrino",iter_energies[i], thetas[i], iter_positions[i], i, np.random.randint(low=1e9), buff = args.buff)
+        EventObject = CasinoEvent(iter_particleID[i],iter_energies[i], thetas[i], iter_positions[i], i, np.random.randint(low=1e9), iter_TauPosition[i], buff = args.buff)
         out = RollDice(EventObject)       
         if (out.isCC):
             if(out.energy/units.GeV <= 1e5):
                 out.DecayParticle()
-                iter_positions[out.index] = out.position
-                iter_energies[out.index] = out.energy 
-                low_en_cc.append(out)
+                iter_positions[int(out.index)] = float(out.position)
+                iter_energies[int(out.index)] = float(out.energy)
+                del out 
+                low_en_cc += 1
             else:
-                cc_stack.append(out)
+                cc_stack.append((float(out.energy), float(out.position), int(out.index), str(out.particle_id), 0, float(out.GetCurrentDensity())))
+                del out
         else:
-            ind = out.index
+            ind = int(out.index)
             if ind != i:
                 print ("THIS IS A WRONG INDEX {} {}".format(ind, i))
             if (out.particle_id == 'tau'):
-                taus_e.append((eini[ind], out.energy, thetas[ind], cdf_indices[ind]))
-               	iter_positions[out.index] = out.position
+                taus_e.append((eini[ind], float(out.energy), thetas[ind], cdf_indices[ind]))
+               	iter_positions[out.index] = float(out.position)
                 del inds_left[j]
                 del out
             else:
                 if not args.onlytau:
-                    nus_e.append((eini[ind], out.energy, thetas[ind], cdf_indices[ind]))
-               	iter_positions[out.index] = out.position
+                    nus_e.append((eini[ind], float(out.energy), thetas[ind], cdf_indices[ind]))
+               	iter_positions[int(out.index)] = float(out.position)
                 del inds_left[j]
                 del out
     if (len(cc_stack) > 0):
@@ -154,19 +159,20 @@ while cc_left:
             #print("{} events passed to MMC in loop iteration {}\n".format(len(cc_stack), counter))
         EventCollection = DoAllCCThings(cc_stack)
         for event in EventCollection:
-            if (event.position >= event.TotalDistance):
-                taus_e.append((eini[event.index], event.energy, thetas[event.index], cdf_indices[event.index]))
-                delinds = np.argwhere(np.asarray(inds_left) == event.index)[0]
-                iter_positions[event.index] = event.position
-                del inds_left[delinds[0]]
-                del event
-            else:
-                event.DecayParticle()
-                iter_positions[event.index] = event.position
-                iter_energies[event.index] = event.energy
-                del event
-    else: 
-        if len(low_en_cc) == 0:
+            #if (event.position >= event.TotalDistance):
+            #    taus_e.append((eini[event.index], event.energy, thetas[event.index], cdf_indices[event.index]))
+            #    delinds = np.argwhere(np.asarray(inds_left) == event.index)[0]
+            #    iter_positions[event.index] = event.position
+            #    del inds_left[delinds[0]]
+            #    del event
+            #else:
+            iter_positions[int(event[2])] = float(event[1])
+            iter_energies[int(event[2])] = float(event[0])
+            iter_particleID[int(event[2])] = 'tau'
+            iter_TauPosition[int(event[2])] = float(event[4])
+            del event
+    else:   
+        if low_en_cc == 0:
             cc_left = False
 
 #print("INDICES LEFT: {}".format(inds_left))
