@@ -121,7 +121,7 @@ while inds_left:
     if debug:
         message+="Beginning Loop Number {}\n".format(counter)
     cc_stack = []
-    low_en_cc = 0
+    #low_en_cc = 0
     for j in range(len(inds_left) - 1, -1, -1):
     #for i in inds_left[::-1]:
         i = inds_left[j]
@@ -129,15 +129,15 @@ while inds_left:
         EventObject = CasinoEvent(iter_particleID[i],iter_energies[i], thetas[i], iter_positions[i], i, np.random.randint(low=1e9), iter_TauPosition[i], buff = args.buff)
         out = RollDice(EventObject)       
         if (out.isCC):
-            if(out.energy/units.GeV <= 1e5):
-                out.DecayParticle()
-                iter_positions[int(out.index)] = float(out.position)
-                iter_energies[int(out.index)] = float(out.energy)
-                del out 
-                low_en_cc += 1
-            else:
-                cc_stack.append((float(out.energy), float(out.position), int(out.index), str(out.particle_id), 0, float(out.GetCurrentDensity())))
-                del out
+            #if(out.energy/units.GeV <= 1e5):
+            #    out.DecayParticle()
+            #    iter_positions[int(out.index)] = float(out.position)
+            #    iter_energies[int(out.index)] = float(out.energy)
+            #    del out 
+            #    low_en_cc += 1
+            #else:
+            cc_stack.append((float(out.energy), float(out.position), int(out.index), str(out.particle_id), 0, float(out.GetCurrentDensity())))
+            del out
         else:
             ind = int(out.index)
             if ind != i:
@@ -171,9 +171,9 @@ while inds_left:
             iter_particleID[int(event[2])] = 'tau'
             iter_TauPosition[int(event[2])] = float(event[4])
             del event
-    else:   
-        if low_en_cc == 0:
-            cc_left = False
+    #else:   
+    #    if low_en_cc == 0:
+    #        cc_left = False
 
 #print("INDICES LEFT: {}".format(inds_left))
 nus_e = np.array(nus_e, dtype = [('Eini', float), ('Eout',float), ('Theta', float), ('CDF_index', float)])
