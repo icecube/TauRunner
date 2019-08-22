@@ -13,53 +13,52 @@ tds = nsq.TauDecaySpectra()
 parser = argparse.ArgumentParser()
 parser.add_argument('-s',dest='seed',type=int,help='just an integer seed to help with output file names')
 parser.add_argument('-n', dest='nevents', type=float, help='how many events do you want?')
-parser.add_argument('-gzk', dest='gzk', default=False, action='store_true', help='do you want to propagate the GZK flux? if so, raise this flag, and raise your flag, and raise your flag, and raise it.. when i get older...')
-parser.add_argument('-murase', dest='murase', default=False, action='store_true', help='if propagating the GZK flux, do you want to use the Kohta model? If so, raise this flag')
-parser.add_argument('-alosio', dest='alosio', default=False, action='store_true', help='raise this flag to use the Alosio GZK model')
 parser.add_argument('-e', dest='energy', type=float, help='if you want to simulate a specific energy, pass it here in GeV')
-parser.add_argument('-t', dest='theta', type=float, help='zenith angle in radians where 0 is through the core')
-parser.add_argument('-p', dest='path' , type=str, help='path to script')
+parser.add_argument('-t', dest='theta', type=float, help='nadir angle in radians (0 is through the core)')
+parser.add_argument('-gzk', dest='gzk', default=None, help='do you want to propagate the GZK flux? if so, pass the file containing the CDF spline here')
+parser.add_argument('-p', dest='path' , type=str, default = './', help='Path to script. Default assumes you are running from within the same directory')
 parser.add_argument('-d', dest='debug', default=False, action='store_true', help='Do you want to print out debug statments? If so, raise this flag') 
-parser.add_argument('-save', dest='save', default=False, action='store_true', help='Do you want to save the output or print the output? If save, raise this flag')
-parser.add_argument('-savedir', dest='savedir', type=str, default='./', help="If saving output, where would you like to save output?")
-parser.add_argument('-onlytau', dest='onlytau', default=False, action='store_true', help='Only save the taus and not neutrinos if this flag is raised')
-parser.add_argument('-spectrum', dest='spectrum', default=False, action='store_true', help='Inject an E^-2 spectrum in a specific bin')
-parser.add_argument('-spectral_index', dest='spectral_index', default=-2., type=float, help='Spectral index within the bin')
-parser.add_argument('-low', dest='low', type=float, default=1e3, help='lower bound if using an injected spectrum')
-parser.add_argument('-high', dest='high', type=float, default=1e6, help='upper bound if using an injected spectrum')
-parser.add_argument('-buff', dest='buff', type=float, default=0., help="Simulate to a finite distance outside of the detector (in km)")
+#parser.add_argument('-save', dest='save', default=False, action='store_true', help='Do you want to save the output or print the output? If save, raise this flag')
+parser.add_argument('-save', dest='save', type=str, default=None, help="If saving output, provide a path here")
+#parser.add_argument('-onlytau', dest='onlytau', default=False, action='store_true', help='Only save the taus and not neutrinos if this flag is raised')
+#parser.add_argument('-spectrum', dest='spectrum', default=False, action='store_true', help='Inject an E^-2 spectrum in a specific bin')
+parser.add_argument('-spectrum', dest='spectrum', default=None, type=float, help='Inject a Spectrum')
+parser.add_argument('--range', dest='range', nargs='+', help='Range for injected spectrum in format "low high"')
+#parser.add_argument('-high', dest='high', type=float, default=1e6, help='upper bound if using an injected spectrum')
+parser.add_argument('-buff', dest='buff', type=float, default=0., help="Simulate to a finite distance beneath the edge of the Earth (in km)")
 args = parser.parse_args()
 
 if ((args.seed == None) or (args.nevents == None)):
     raise RuntimeError('You must specify a seed (-s) and number of events to simulate (-n)') 
-if (not (args.gzk) and (args.theta==None and args.energy==None) and (not args.spectrum)):
-    raise RuntimeError('You must either pick an energy and theta or use the GZK flux, bud')
+if (args.gzk == None and (args.theta==None and args.energy==None) and (not args.spectrum)):
+    raise RuntimeError('You must either pick an energy and theta or use the GZK flux')
 
 base_path = os.path.join(args.path,'')
 sys.path.append(base_path)
-#print(sys.path[-1])
+nevents = int(args.nevents)
 
 from Casino import *
 import Casino
-#from CrossSections import *
-#import CrossSections
 
 seed = args.seed
 debug = args.debug
 if debug:
     message = ''
-nevents = int(args.nevents)
-isgzk = args.gzk
-save = args.save
-savedir = os.path.join(args.savedir, '')
 
-#base_path = '/data/user/isafa/ANITA/features/TauDragon/ForbiddenMC/'
+if args.gzk is not None:
+    if not os.path.isfile(args.gzk):
+        raise RuntimeError("GZK CDF Spline file does not exist")
+    else:
+        gzk = args.gzk
+
+if args.save is not None:
+    savedir = os.path.join(args.save, '')
+    if not os.path.isdir(savedir):
+        raise RuntimeError("Directory to save output is not a valid directory")
+else:
+    savedir = None
+
 cross_section_path = base_path+'../cross_sections/'
-
-#Initialize cross section class
-#CrossSection = CrossSections.CrossSections(cross_section_path, seed)
-#if debug:
-#    message+="Initialized Cross Secions\n"
 
 def rndm(a, b, g, size=1):
     #Random spectrum function. g is gamma+1 (use -1 for E^-2)
@@ -69,24 +68,12 @@ def rndm(a, b, g, size=1):
 
 rand = np.random.RandomState(seed=seed)
 
-if(isgzk):
+if args.gzk is not None:
   # sample initial energies and incoming angles from GZK parameterization
   cos_thetas = rand.uniform(low=0., high=1.,size=nevents)
   thetas = np.arccos(cos_thetas)
-  #thetas = np.zeros(nevents)
-  if not args.murase and not args.alosio:
-    gzk_cdf = np.load(base_path+'gzk_cdf_phi_spline.npy').item()
-    cdf_indices = rand.uniform(size=nevents)
-    eini = gzk_cdf(cdf_indices)*units.GeV
-  elif args.murase:
-    gzk_cdf = np.load(base_path+'gzk_cdf_phi_spline_kohta.npy').item()
-    cdf_indices = rand.uniform(size=nevents)
-    eini = gzk_cdf(cdf_indices)*units.GeV
-  else:
-    gzk_cdf = np.load(base_path+'gzk_cdf_phi_spline_alosio.npy').item()
-    cdf_indices = rand.uniform(size=nevents)
-    eini = gzk_cdf(cdf_indices)*units.GeV / 1e9
-  #eini = np.ones(nevents)*1e9*units.GeV
+  gzk_cdf = np.load(gzk).item()
+  eini = gzk_cdf(cdf_indices)*units.GeV
   if debug:
     message+="Sampled {} events from the GZK flux\n".format(nevents)
 elif args.spectrum:
@@ -116,32 +103,21 @@ iter_TauPosition = list(np.zeros(nevents))
 
 # Run the algorithm
 while inds_left:
-    print("Loop number {}".format(counter + 1))
     counter += 1
     if debug:
         message+="Beginning Loop Number {}\n".format(counter)
     cc_stack = []
-    #low_en_cc = 0
     for j in range(len(inds_left) - 1, -1, -1):
-    #for i in inds_left[::-1]:
         i = inds_left[j]
-#        print("lookin at {}".format(i))
         EventObject = CasinoEvent(iter_particleID[i],iter_energies[i], thetas[i], iter_positions[i], i, np.random.randint(low=1e9), iter_TauPosition[i], buff = args.buff)
         out = RollDice(EventObject)       
         if (out.isCC):
-            #if(out.energy/units.GeV <= 1e5):
-            #    out.DecayParticle()
-            #    iter_positions[int(out.index)] = float(out.position)
-            #    iter_energies[int(out.index)] = float(out.energy)
-            #    del out 
-            #    low_en_cc += 1
-            #else:
             cc_stack.append((float(out.energy), float(out.position), int(out.index), str(out.particle_id), 0, float(out.GetCurrentDensity())))
             del out
         else:
             ind = int(out.index)
             if ind != i:
-                print ("THIS IS A WRONG INDEX {} {}".format(ind, i))
+                message += "Index mismatch: {} {}".format(ind, i)
             if (out.particle_id == 'tau'):
                 taus_e.append((eini[ind], float(out.energy), thetas[ind], cdf_indices[ind]))
                	iter_positions[out.index] = float(out.position)
@@ -156,37 +132,21 @@ while inds_left:
     if (len(cc_stack) > 0):
         if debug:
             message += "{} events passed to MMC in loop iteration {}\n".format(len(cc_stack), counter)
-            #print("{} events passed to MMC in loop iteration {}\n".format(len(cc_stack), counter))
         EventCollection = DoAllCCThings(cc_stack)
         for event in EventCollection:
-            #if (event.position >= event.TotalDistance):
-            #    taus_e.append((eini[event.index], event.energy, thetas[event.index], cdf_indices[event.index]))
-            #    delinds = np.argwhere(np.asarray(inds_left) == event.index)[0]
-            #    iter_positions[event.index] = event.position
-            #    del inds_left[delinds[0]]
-            #    del event
-            #else:
             iter_positions[int(event[2])] = float(event[1])
             iter_energies[int(event[2])] = float(event[0])
             iter_particleID[int(event[2])] = 'tau'
             iter_TauPosition[int(event[2])] = float(event[4])
             del event
-    #else:   
-    #    if low_en_cc == 0:
-    #        cc_left = False
 
-#print("INDICES LEFT: {}".format(inds_left))
+
 nus_e = np.array(nus_e, dtype = [('Eini', float), ('Eout',float), ('Theta', float), ('CDF_index', float)])
 taus_e = np.array(taus_e, dtype = [('Eini', float), ('Eout',float), ('Theta', float), ('CDF_index', float)])
-#print(np.array(iter_positions) / units.km)
 
 if save:
     if isgzk:
         fluxtype = "cosmogenic"
-        if args.murase:
-            fluxtype += "_murase"
-        elif args.alosio:
-            fluxtype += "_alosio"
     else:
         fluxtype = "monochromatic_{}_{}".format(args.energy, args.theta)
     try:
