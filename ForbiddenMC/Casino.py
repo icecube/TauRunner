@@ -7,8 +7,6 @@ from scipy.interpolate import interp1d
 import time
 import subprocess
 import nuSQUIDSpy as nsq
-#import CrossSections
-#from CrossSections import *
 
 units = nsq.Const()
 gr = nsq.GlashowResonanceCrossSection()
@@ -16,11 +14,8 @@ dis = nsq.NeutrinoDISCrossSectionsFromTables()
 tds = nsq.TauDecaySpectra()
 
 
-#cross sections from 1e8 - 1e16 GeV patched with nuSQUIDS 
+#cross sections patched with nuSQUIDS 
 #temporary until EHE cross sections are added to nuSQUIDS
-
-#rand = np.random.RandomState(seed=seed)
-
 ######################################
 cross_section_path = sys.path[-1]+'../cross_sections/'
 charged = np.load(cross_section_path + 'nuXS_CC_8-16.npy')
@@ -73,6 +68,23 @@ def TotalNeutrinoCrossSection(enu,
 	    return dis.TotalCrossSection(enu,flavor,neutype,interaction)*(units.cm)**2
 
 def DifferentialOutGoingLeptonDistribution(ein, eout, interaction):
+	r'''
+	Calculates Differential neutrino cross section. returns the value of d$\sigma$/dy
+	in natural units.
+	Parameters
+	----------
+	ein:         float
+	    incoming lepton energy in eV
+	eout:         float
+	    outgoing lepton energy in eV
+	interaction: nusquids obj
+	    nusquids object defining the interaction type (CC or NC).
+	Returns
+	-------
+	diff: float
+	    d$\sigma$/dy at the given energies in natural units.
+	'''
+
 	if(np.log10(ein) < 0):
 	    diff = 0
 	    return diff
@@ -95,10 +107,12 @@ def DifferentialOutGoingLeptonDistribution(ein, eout, interaction):
 
         return diff
 
+#########################################################
+#####  Earth Model Handling. Here we define PREM ########
+####   and handling of ice layers/detector       ########
+#########################################################
 
 earth_model_radii = np.flip([6371., 6369., 6367.1774, 6355.7096, 6346.7902, 5960.7076, 5719.8838, 3479.8402, 1221.9578], axis=0)
-#earth_model_densities = np.flip([2.6076200000000003, 2.9090978337728903, 3.4256762971354524, 3.900144943911578,
-#    4.989777873466213, 11.239115022426343, 12.98114208759252])
 earth_model_densities = np.flip([1.0, 1.360016, 2.6076200000000003, 2.9090978337728903, 3.4256762971354524, 3.900144943911578,
     4.989777873466213, 11.239115022426343, 12.98114208759252], axis=0)
 
@@ -154,6 +168,9 @@ def GetDistancesPerSection(theta, radii):
         sects.insert(0, len(radii) ) #Set outer shell density to that of ice
         return dists, sects
 
+###########################################
+##### Earth Model handling ends here ######
+###########################################
 
 def DoAllCCThings(objects):
     r'''
@@ -171,7 +188,8 @@ def DoAllCCThings(objects):
     final_values= []
     efinal, distance = [], []
     e = [obj[0]/units.GeV for obj in objects]                                #MMC takes initial energy in GeV 
-    mult = [obj[-1]*(units.cm**3)/units.gr/2.7 for obj in objects]           #convert density back to normal (not natural) units 
+    mult = [obj[-1]*(units.cm**3)/units.gr/2.7 for obj in objects]           #convert density back to normal (not natural) units - 
+									     # - factor of 2.7 because thats the default rho in MMC - mult will scale it 
     sort = sorted(zip(mult, e, objects))
     sorted_mult = np.asarray(zip(*sort)[0])
     sorted_e    = np.asarray(zip(*sort)[1])
@@ -199,6 +217,10 @@ def DoAllCCThings(objects):
 #    objects = check_taundaries(sorted_obj, final_distances)
     return(sorted_obj)
 
+##########################################################
+############## Tau Decay Parameterization ################
+##########################################################
+
 Etau = 100.
 zz = np.linspace(0.0,1.0,500)[1:-1]
 dNTaudz = lambda z: tds.TauDecayToAll(Etau, Etau*z)
@@ -207,8 +229,8 @@ TauDecayWeights = TauDecayWeights/np.sum(TauDecayWeights)
 
 yy = np.linspace(0.0,1.0,300)[1:-1]
 
+##########################################################
 proton_mass = 0.938*units.GeV
-
 
 class CasinoEvent(object):
     def __init__(self, particle_id, energy, incoming_angle, position, index, seed, tauposition, buff=0.):
@@ -219,12 +241,11 @@ class CasinoEvent(object):
         self.SetParticleProperties()
         self.tauposition = tauposition
 #        self.history = [""]
-#        self.nCC = 0
-#        self.nNC = 0
-#        self.ntdecay = 0
+        self.nCC = 0
+        self.nNC = 0
+        self.ntdecay = 0
         self.region_index = 0
         self.region_distance = 0.0
-        #self.CrossSection = CrossSection	
         self.isCC = False
         self.index = index
         self.buff = buff
@@ -246,8 +267,6 @@ class CasinoEvent(object):
         for i in range(len(region_lengths)):
             region_lengths[i] = region_lengths[i] * units.km
             densities.append(earth_model_densities[regions[i]] * units.gr/(units.cm**3))
-        #print(np.array(region_lengths) / units.km)   
-        #print(np.array(densities) / units.gr * units.cm**3)     
         self.region_lengths = region_lengths
         self.densities = densities
         self.TotalDistance = np.sum(region_lengths)
@@ -321,9 +340,6 @@ class CasinoEvent(object):
         next_density = self.densities[self.region_index + 1]
         return current_density / next_density
 
-    def SampleNeutrinoLoss(self):
-        return
-
     def DecayParticle(self):
         if self.particle_id == "tau_neutrino":
             #self.history.append("Neutrino decayed???")
@@ -337,7 +353,7 @@ class CasinoEvent(object):
 
     def check_taundaries(self, tau_position):
         r'''
-        Propagates Tau leptons while checking boundary conditions
+        Propagates Tau leptons while checking boundary conditions i.e if tau exits earth
         Parameters
         ----------
         objects: list
@@ -381,12 +397,12 @@ class CasinoEvent(object):
 		self.isCC = True
                 self.particle_id = "tau"
                 self.SetParticleProperties()
- 		#self.nCC += 1
+ 		self.nCC += 1
 
             elif interaction == nsq.NeutrinoCrossSections_Current.NC:
 	        self.particle_id = "tau_neutrino"
                 self.SetParticleProperties()
-                #self.nNC += 1
+                self.nNC += 1
             
 	    return
 
