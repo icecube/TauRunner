@@ -233,8 +233,33 @@ yy = np.linspace(0.0,1.0,300)[1:-1]
 proton_mass = 0.938*units.GeV
 
 class CasinoEvent(object):
+     r'''
+     This is the class that contains all relevant event information stored in an object.
+     '''
     def __init__(self, particle_id, energy, incoming_angle, position, index, seed, tauposition, buff=0.):
-	#Set Initial Values
+        r'''
+        Class initializer. This function sets all initial conditions based on the particle's incoming angle, energy, ID, and position.
+
+        Parameters
+        ----------
+        particle_id:    string
+            The particle can either be "tau" or "tau_neutrino". That is defined here.
+	energy:         float
+	    Initial energy in eV.
+	incoming_angle: float
+	    The incident angle with respect to nadir in radians
+	position:       float
+	    Position of the particle along the trajectory in natural units (initial should be 0)
+        index:          int
+	    This parameter is purely for bookkeeping purposes.
+        seed:           int
+	    Seed corresponding to the random number generator. to ensure both randomness and reproducibility.
+	tauposition:    float
+	    I don't remember what this is.
+	buff:           float
+	    If you don't want to simulate to earth emergence, set this buffer to a positive number and simulation will stop short at buff km.
+        '''	
+        #Set Initial Values
         self.particle_id = particle_id
         self.energy = energy
         self.position = position
@@ -278,6 +303,9 @@ class CasinoEvent(object):
             self.region_distance = self.position
 
     def SetParticleProperties(self):
+        r'''
+        Sets particle properties, either when initializing or after an interaction.
+        '''
         if self.particle_id == "tau_neutrino":
             self.mass = 0.0
             self.lifetime = np.inf
@@ -286,21 +314,47 @@ class CasinoEvent(object):
             self.lifetime = 1.*units.sec
 
     def GetParticleId(self):
+        r'''
+        Returns the current particle ID        
+	'''
         return self.particle_id
 
     def GetLifetime(self):
+	r'''
+	Returns the current particle's lifetime
+	'''
         return self.lifetime
 
     def GetMass(self):
+	r'''
+	Returns the current particle's mass
+	'''
         return self.mass
 
     def GetBoostFactor(self):
+	r'''
+	Returns the current particle's boost factor
+	'''
         if self.mass > 0.:
             return self.energy/self.mass
         else:
             return np.inf
 
     def GetProposedDistanceStep(self, density, p):
+	r'''
+	Calculates the free-streaming distance of your neutrino based on the density of the medium, and then samples randomly from a log-uniform distribution.
+
+	Parameters
+	------------
+	density: float
+	    medium density in natural units
+	p:       float
+	    random number. the free-streaming distance is scaled by the log of this number
+	Returns
+	-----------
+	DistanceStep: float
+	    Distance to interaction in natural units
+	'''
         #Calculate the inverse of the interaction lengths (The lengths should be added reciprocally)
         first_piece = (1./self.GetInteractionLength(density, interaction=nsq.NeutrinoCrossSections_Current.CC))
         second_piece = (1./self.GetInteractionLength(density, interaction=nsq.NeutrinoCrossSections_Current.NC))
@@ -324,6 +378,20 @@ class CasinoEvent(object):
         return dL/(boost_factor*self.lifetime)
 
     def GetInteractionLength(self,density,interaction):
+	r'''
+	Calculates the mean interaction length.
+	
+	Parameters
+	-----------
+	density: float
+            medium density in natural units
+	interaction: nusquids obj
+            nusquids object defining the interaction type (CC or NC).
+	Returns
+	----------
+	Interaction length: float
+	    mean interaction length in natural units
+	'''
         if self.particle_id == "tau_neutrino":
             # this should be actually divided by average of proton and neutron mass
             return proton_mass/(TotalNeutrinoCrossSection(self.energy, interaction = interaction)*density)
