@@ -1,6 +1,6 @@
 # TauRunner
 
-Authors: Ibrahim Safa, Carlos A. Arg\"uelles, Alex Pizzuto, Austin Schneider
+Authors: Ibrahim Safa, Carlos A. Arg&uuelles, Alex Pizzuto, Austin Schneider
 
 ## Introduction
 
@@ -46,12 +46,12 @@ Output can either be saved or printed. If saved, data is stored in a `numpy.ndar
 ╞════════╪════════╪═════════╪═════════════╡
 ╘════════╧════════╧═════════╧═════════════╛
 ```
-The first column provides you with the initial energy, the second with the outgoing energy, the third with the sampled nadir angle, and finally the cdx index so one can check against the initial energies to make sure their spline is behaving properly. The first table is the tau neutrinos exiting the Earth, and the second table is the taus which exit the Earth, if any.
+The first column provides you with the initial energy, the second with the outgoing energy, the third with the sampled nadir angle, and finally the cdf index so one can check against the initial energies to make sure their spline is behaving properly. The first table is the tau neutrinos exiting the Earth, and the second table is the taus which exit the Earth, if any.
 
 ## Other options
 There are a variety of other options not specified in the examples that the user may specify at the command line:
 * `spectrum`: instead of using a monoenergetic beam or a splined energy spectrum, simulate a power law (index provided as argument)
-** `--range`: If using a power law, this is to specify the range over which to sample energies
+    * `--range`: If using a power law, this is to specify the range over which to sample energies
 * `-buff`: Stop the simulation a finite distance (in kilometers) below the surface of Earth. This is helpful for calculating fluxes incident upon underground detectors.
 * `-p`: Path to run script from another directory (rarely used, only recommended when working with different versions of the project)
 * `-d`: print debug statements at the end of the execution
