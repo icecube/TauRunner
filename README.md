@@ -8,6 +8,8 @@ Authors: Ibrahim Safa, Carlos A. Arg\"uelles, and Alex Pizzuto
 
 ## Installation
 
+`TauRunner` has a `nuSQuIDS` dependcy. To run it, you need to: 
+
 1) Install `nuSQuIDS` with python interface. 
   *For more information on `nuSQuIDS` including installation instructions see: https://github.com/arguelles/nuSQuIDS
 
