@@ -1,22 +1,38 @@
 # TauRunner
 
-Authors: Ibrahim Safa, Carlos A. Arg\"uelles, Alex Pizzuto, Austin Schneider
+Authors: Ibrahim Safa, Carlos A. Arg\"uelles, Alex Pizzuto
 
 ## Introduction
 
-`TauRunner` is a tool for the propagation of extremely-high-energy tau-neutrinos and taus through the Earth. 
+`TauRunner` is a tool for the propagation of tau-neutrinos and taus through the Earth. Although it was developed for extremely high energy (EeV+) applications, it is able to propagate neutrinos from 1 to 10^16 GeV. Note that oscillations are not taken into account at the lowest energies, but they become negligible above 1TeV.   
 
 ## Installation
 
+1) Install `nuSQuIDS` with python interface. 
+  *For more information on `nuSQuIDS` including installation instructions see: https://github.com/arguelles/nuSQuIDS
+
+2) Run `TauDragon/MMC/MMC/ammc -compall` to compile the tau propagation code. 
+  *For more information on MMC see: https://arxiv.org/abs/hep-ph/0407075
+
+3) You're ready to propagate neutrinos! See the examples section for execution instructions.
 
 ## Examples
 Below are two prototypical use cases for this project:
+
 ### Injecting a beam of monoenergetic tau-neutrinos
-We can simulate 500 tau neutrinos with an energy of 1 EeV that travel directly through the core. At the point of emergence from the Earth, we receive the resultant particle ID and energy
+We can simulate 500 tau neutrinos with an energy of 1 EeV that travel directly through the core. At the point of emergence from the Earth, we receive the resultant particle ID and energy.
 ```console
 python main.py -n 500 -t 0.0 -s 1 -e 1000000000
 ```
-`-n` specifies the number of events, `-t` is the nadir angle in degrees, `-s` specifies a unique seed, and `-e` is for the particle energy in GeV. 
+`-n` specifies the number of events, `-t` is the nadir angle in degrees, `-s` specifies a unique seed for purposes of reproducibility, and `-e` is for the particle energy in GeV. 
+
+### Injecting a beam of multi-energy tau-neutrinos following a power-law distribution
+
+We can simulate 500 tau neutrinos with energies following a power-law distribution from 100 Tev to 10 PeV that travel directly through the core. At the point of emergence from the Earth, we receive the resultant particle ID and energy.
+```console
+python main.py -n 500 -t 0.0 -s 1 -spectrum 2 --range 1e5 1e7
+```
+`-n` specifies the number of events, `-t` is the nadir angle in degrees, `-s` specifies a unique seed for purposes of reproducibility, `-spectrum` specifies the power-law index, and `--range` gives the range of energies to sample from in GeV. 
 
 ### Simulating a model of an isotropic cosmogenic flux
 The user also has the option to simulate an isotropic (over half of the sky) flux, where the energy spectrum is specified by spline of a cdf:
@@ -50,10 +66,9 @@ The first column provides you with the initial energy, the second with the outgo
 
 ## Other options
 There are a variety of other options not specified in the examples that the user may specify at the command line:
-* `spectrum`: instead of using a monoenergetic beam or a splined energy spectrum, simulate a power law (index provided as argument)
-** `--range`: If using a power law, this is to specify the range over which to sample energies
+* `-spectrum`: instead of using a monoenergetic beam or a splined energy spectrum, simulate a power law (index provided as argument)
+** `--range`: If using a power law, this is to specify the range over which to sample energies. the option is passed as two floats
 * `-buff`: Stop the simulation a finite distance (in kilometers) below the surface of Earth. This is helpful for calculating fluxes incident upon underground detectors.
 * `-p`: Path to run script from another directory (rarely used, only recommended when working with different versions of the project)
 * `-d`: print debug statements at the end of the execution
 * `-save`: specify the path to where you would like output saved. If no path is provided, output is formatted into a table and printed
-
