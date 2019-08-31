@@ -17,7 +17,7 @@ Authors: Ibrahim Safa, Carlos A. Arg\"uelles, Alex Pizzuto
 3) You're ready to propagate neutrinos! See the examples section for execution instructions.
 
 ## Examples
-Below are two prototypical use cases for this project:
+Below are three prototypical use cases for this project:
 
 ### Injecting a beam of monoenergetic tau-neutrinos
 We can simulate 500 tau neutrinos with an energy of 1 EeV that travel directly through the core. At the point of emergence from the Earth, we receive the resultant particle ID and energy.
