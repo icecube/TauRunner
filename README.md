@@ -1,10 +1,7 @@
 # TauRunner
 
-<<<<<<< HEAD
-Authors: Ibrahim Safa, Carlos A. Arg&uuelles, Alex Pizzuto, Austin Schneider
+Authors: Ibrahim Safa, Carlos A. Arg&uuelles, Alex Pizzuto
 =======
-Authors: Ibrahim Safa, Carlos A. Arg\"uelles, and Alex Pizzuto
->>>>>>> 9d7754f4e6abd130403fe00f9ee19775d382df79
 
 ## Introduction
 
@@ -72,13 +69,9 @@ The first column provides you with the initial energy, the second with the outgo
 
 ## Other options
 There are a variety of other options not specified in the examples that the user may specify at the command line:
-<<<<<<< HEAD
 * `spectrum`: instead of using a monoenergetic beam or a splined energy spectrum, simulate a power law (index provided as argument)
     * `--range`: If using a power law, this is to specify the range over which to sample energies
-=======
 * `-spectrum`: instead of using a monoenergetic beam or a splined energy spectrum, simulate a power law (index provided as argument)
-** `--range`: If using a power law, this is to specify the range over which to sample energies. the option is passed as two floats
->>>>>>> 9d7754f4e6abd130403fe00f9ee19775d382df79
 * `-buff`: Stop the simulation a finite distance (in kilometers) below the surface of Earth. This is helpful for calculating fluxes incident upon underground detectors.
 * `-p`: Path to run script from another directory (rarely used, only recommended when working with different versions of the project)
 * `-d`: print debug statements at the end of the execution
