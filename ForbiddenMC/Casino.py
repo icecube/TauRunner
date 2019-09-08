@@ -18,17 +18,17 @@ tds = nsq.TauDecaySpectra()
 #temporary until EHE cross sections are added to nuSQUIDS
 ######################################
 cross_section_path = sys.path[-1]+'../cross_sections/'
-charged = np.load(cross_section_path + 'nuXS_CC_8-16.npy')
-neutral = np.load(cross_section_path + 'nuXS_NC_8-16.npy')
-energies = np.logspace(17, 25, 500)
-energies = (energies[:-1] + energies[1:])/2
+#charged = np.load(cross_section_path + 'nuXS_CC_8-16.npy')
+#neutral = np.load(cross_section_path + 'nuXS_NC_8-16.npy')
+#energies = np.logspace(17, 25, 500)
+#energies = (energies[:-1] + energies[1:])/2
 
-log_e = np.log10(energies)
-log_XS_CC = np.log10(charged)
-log_XS_NC = np.log10(neutral)
+#log_e = np.log10(energies)
+#log_XS_CC = np.log10(charged)
+#log_XS_NC = np.log10(neutral)
 
-f_NC = interp1d(log_e, log_XS_NC)
-f_CC = interp1d(log_e, log_XS_CC)
+f_NC = np.load(cross_section_path+'NC_table.npy').item()
+f_CC = np.load(cross_section_path+'CC_table.npy').item()
 
 dsdy_spline_CC = np.load(cross_section_path + 'dsigma_dy_CC.npy').item()
 dsdy_spline_CC_lowe = np.load(cross_section_path + 'dsigma_dy_CC_lowE.npy').item()
@@ -58,14 +58,14 @@ def TotalNeutrinoCrossSection(enu,
 	    Total neutrino cross section at the given energy in natural units.
 	'''
 
-	if(np.log10(enu) > log_e[0]):
+#	if(np.log10(enu) > log_e[0]):
 
-	    if(interaction == nsq.NeutrinoCrossSections_Current.NC):
-		return((10**f_NC(np.log10(enu)))*(units.cm)**2)
-            else:
-                return((10**f_CC(np.log10(enu)))*(units.cm)**2)
-	else:
-	    return dis.TotalCrossSection(enu,flavor,neutype,interaction)*(units.cm)**2
+	if(interaction == nsq.NeutrinoCrossSections_Current.NC):
+	    return((10**f_NC(np.log10(enu/1e9)))*(units.cm)**2)
+        else:
+            return((10**f_CC(np.log10(enu/1e9)))*(units.cm)**2)
+#	else:
+#	    return dis.TotalCrossSection(enu,flavor,neutype,interaction)*(units.cm)**2
 
 def DifferentialOutGoingLeptonDistribution(ein, eout, interaction):
 	r'''
@@ -230,12 +230,12 @@ TauDecayWeights = TauDecayWeights/np.sum(TauDecayWeights)
 yy = np.linspace(0.0,1.0,300)[1:-1]
 
 ##########################################################
-proton_mass = 0.938*units.GeV
+proton_mass = ((0.9382720813+0.9395654133)/2.)*units.GeV
 
 class CasinoEvent(object):
-     r'''
-     This is the class that contains all relevant event information stored in an object.
-     '''
+    r'''
+    This is the class that contains all relevant event information stored in an object.
+    '''
     def __init__(self, particle_id, energy, incoming_angle, position, index, seed, tauposition, buff=0.):
         r'''
         Class initializer. This function sets all initial conditions based on the particle's incoming angle, energy, ID, and position.
@@ -393,7 +393,6 @@ class CasinoEvent(object):
 	    mean interaction length in natural units
 	'''
         if self.particle_id == "tau_neutrino":
-            # this should be actually divided by average of proton and neutron mass
             return proton_mass/(TotalNeutrinoCrossSection(self.energy, interaction = interaction)*density)
         if self.particle_id == "tau":
             # here we need the total tau cross section
