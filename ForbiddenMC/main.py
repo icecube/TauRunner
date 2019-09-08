@@ -35,6 +35,9 @@ parser.add_argument('-save', dest='save', type=str, default=None,
     help="If saving output, provide a path here")
 args = parser.parse_args()
 
+save = False
+isgzk = False
+
 if ((args.seed == None) or (args.nevents == None)):
     raise RuntimeError('You must specify a seed (-s) and number of events to simulate (-n)') 
 if (args.gzk == None and (args.theta==None or args.energy==None) and (args.spectrum==None)):
@@ -48,12 +51,14 @@ debug = args.debug
 if debug:
     message = ''
 if args.gzk is not None:
+    isgzk = True
     if not os.path.isfile(args.gzk):
         raise RuntimeError("GZK CDF Spline file does not exist")
     else:
         gzk = args.gzk
 if args.save is not None:
     savedir = os.path.join(args.save, '')
+    save = True
     if not os.path.isdir(savedir):
         raise RuntimeError("Directory to save output is not a valid directory")
 else:
@@ -133,8 +138,7 @@ while inds_left:
                 del inds_left[j]
                 del out
             else:
-                if not args.onlytau:
-                    nus_e.append((eini[ind], float(out.energy), thetas[ind], cdf_indices[ind]))
+                nus_e.append((eini[ind], float(out.energy), thetas[ind], cdf_indices[ind]))
                	iter_positions[int(out.index)] = float(out.position)
                 del inds_left[j]
                 del out
