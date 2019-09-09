@@ -33,6 +33,8 @@ parser.add_argument('-d', dest='debug', default=False, action='store_true',
     help='Do you want to print out debug statments? If so, raise this flag') 
 parser.add_argument('-save', dest='save', type=str, default=None, 
     help="If saving output, provide a path here")
+parser.add_argument('-onlytau', dest='onlytau', default=False, action='store_true',
+    help="If you only want to save the taus, not neutrinos, raise this flag")
 args = parser.parse_args()
 
 save = False
@@ -174,7 +176,8 @@ if save:
     except OSError as e:
         if debug:
             message += "Subdirectories already existed\n"
-    np.save(savedir + 'nus/' + 'nus_{}_seed_{}.npy'.format(fluxtype, seed), nus_e)
+    if not args.onlytau:
+        np.save(savedir + 'nus/' + 'nus_{}_seed_{}.npy'.format(fluxtype, seed), nus_e)
     np.save(savedir + 'taus/' + 'taus_{}_seed_{}.npy'.format(fluxtype, seed), taus_e)
     if debug:
         print(message)
