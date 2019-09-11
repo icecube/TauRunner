@@ -13,6 +13,7 @@ gr = nsq.GlashowResonanceCrossSection()
 dis = nsq.NeutrinoDISCrossSectionsFromTables()
 tds = nsq.TauDecaySpectra()
 
+tau_propagate_path = sys.path[-1] + 'propagate_taus.sh'
 
 #cross sections patched with nuSQUIDS 
 #temporary until EHE cross sections are added to nuSQUIDS
@@ -205,7 +206,7 @@ def DoAllCCThings(objects):
             eni_str.append([str(eni[x]) for x in range(max_arg*num_args, len(eni))])
         for kk in range(len(eni_str)):
             eni_str[kk].append(str(multis[0]))
-            eni_str[kk].insert(0, '/data/user/apizzuto/ANITA/monte_carlo/TauDragon/ForbiddenMC/propagate_taus.sh')
+            eni_str[kk].insert(0, tau_propagate_path)
             process = subprocess.check_output(eni_str[kk])
             for line in process.split('\n')[:-1]:
                 final_values.append(float(line.replace('\n','')))
