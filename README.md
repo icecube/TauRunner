@@ -1,6 +1,6 @@
 # TauRunner
 
-Authors: Ibrahim Safa, Carlos A. Arg&uuelles, Alex Pizzuto
+Authors: Ibrahim Safa, Carlos A. Argüelles, Alex Pizzuto
 =======
 
 ## Introduction
