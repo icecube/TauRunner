@@ -42,7 +42,7 @@ The user also has the option to simulate an isotropic (over half of the sky) flu
 ```console
 python main.py -n 500 -gzk ./gzk_cdf_phi_spline.npy -s 2
 ```
-here, when the `-gzk` option is raised with the path to a cdf spline, the energy spectrum is sampled from the relevant file, and the angle is sampled uniformly over solid angle. To learn how to make one of these splines, see the example in `notebooks/cdf_spline.ipynb`
+here, when the `-gzk` option is raised with the path to a cdf spline, the energy spectrum is sampled from the relevant file, and the angle is sampled uniformly over solid angle. An example on how to make one of these cdf splines is shown in `resources/cdf_maker.ipynb`
 
 ### Output
 Output can either be saved or printed. If saved, data is stored in a `numpy.ndarray`, otherwise it is printed in a format such as the one below (this is for a gzk flux simulated with 5 events):
