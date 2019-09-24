@@ -76,3 +76,15 @@ There are a variety of other options not specified in the examples that the user
 * `-p`: Path to run script from another directory (rarely used, only recommended when working with different versions of the project)
 * `-d`: print debug statements at the end of the execution
 * `-save`: specify the path to where you would like output saved. If no path is provided, output is formatted into a table and printed
+
+
+## Citation
+
+To cite this work, and for more information, please refer to
+
+Observing EeV neutrinos through the Earth: GZK and the anomalous ANITA events
+
+Ibrahim Safa, Alex Pizzuto, Carlos Argüelles, Francis Halzen, Raamis Hussain, Ali Kheirandish, Justin Vandenbroucke
+
+arXiv:1909.10487
+
