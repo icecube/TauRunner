@@ -91,7 +91,7 @@ elif args.spectrum is not None:
   cdf_indices = np.ones(nevents)
   cos_thetas = rand.uniform(low=0., high=1.,size=nevents)
   thetas = np.arccos(cos_thetas)
-  eini = rndm(args.range[0], args.range[1], args.spectrum + 1, size=nevents)*units.GeV
+  eini = rndm(float(args.range[0]), float(args.range[1]), args.spectrum + 1, size=nevents)*units.GeV
   if debug:
     message+="Sampled {} events from power law\n".format(nevents)
 else:
