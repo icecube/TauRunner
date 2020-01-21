@@ -82,9 +82,10 @@ There are a variety of other options not specified in the examples that the user
 
 To cite this work, and for more information, please refer to
 
-Observing EeV neutrinos through the Earth: GZK and the anomalous ANITA events
+Observing EeV neutrinos through Earth: GZK and the anomalous ANITA events
 
 Ibrahim Safa, Alex Pizzuto, Carlos Argüelles, Francis Halzen, Raamis Hussain, Ali Kheirandish, Justin Vandenbroucke
 
-arXiv:1909.10487
+Journal article: https://doi.org/10.1088/1475-7516/2020/01/012
+preprint: arXiv:1909.10487
 
