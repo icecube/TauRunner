@@ -27,7 +27,7 @@ We can simulate 500 tau neutrinos with an energy of 1 EeV that travel directly t
 ```console
 python main.py -n 500 -t 0.0 -s 1 -e 1000000000
 ```
-`-n` specifies the number of events, `-t` is the nadir angle in degrees, `-s` specifies a unique seed for purposes of reproducibility, and `-e` is for the particle energy in GeV. 
+`-n` specifies the number of events, `-t` is the nadir angle in degrees (0-90), `-s` specifies a unique seed, and `-e` is the particle energy in GeV. 
 
 ### Injecting a beam of multi-energy tau-neutrinos following a power-law distribution
 
@@ -78,7 +78,7 @@ There are a variety of other options not specified in the examples that the user
 * `-save`: specify the path to where you would like output saved. If no path is provided, output is formatted into a table and printed
 * `-water`: Add a water layer to the Earth in km. 0 by default.
 * `-xs`: Choose between two cross section models "dipole" (default) and "CSMS"
-* `-onlytau`: If only the tau distribution is needed. If this flag is raised, neutrino distributions will not be saved.
+* `-onlytau`: If only the tau distribution is needed. When this flag is raised, neutrino distributions are not saved.
 
 ## Citation
 
