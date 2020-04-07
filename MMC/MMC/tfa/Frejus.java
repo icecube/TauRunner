@@ -65,7 +65,7 @@ public class Frejus{
 "                       -cont enable continuous loss randomization\n"+
 "                       -lpm  enable lpm treatment\n"+
 "                       -bs=[1-4]  bremsstrahlung: kkp, abb, ps, csc\n"+
-"                       -ph=[1-4]  photonuclear: bb, bb+bs, allm, bm\n"+
+"                       -ph=[1-4]  photonuclear: bb, bb+bs, dipole, allm \n"+
 "                       -bb=[bb/bs:1-4 3|4:bb|zeus, allm:1-2(91/7), bm:1]\n"+
 "                       -sh=[1-2]  nuclear structure function: dutt/butk\n"+
 "                       -c[i/b/p/e/d]=[cross section modifier, 0:disable]\n"+
@@ -308,7 +308,6 @@ public class Frejus{
 	    String line;
 	    StringTokenizer t;
 	    double e, x, result;
-
 	    while((line=file.readLine())!=null){
 		t = new StringTokenizer(line);
 		if(!t.hasMoreTokens()) continue;
@@ -317,10 +316,13 @@ public class Frejus{
 		result=p.propagateTo(x*1.e2, e*1.e3);
 		//line+=" "+Output.f(result>0?result*1.e-3:result*1.e-2);
 		String Stuff;
-		Stuff=Output.f(result>0?result*1.e-3:result*1.e-2);
-		//line+=" "+Output.f(result>0?result*1.e-3:result*1.e-2);
-  		//if(timef) line+=" "+Output.f(p.p.t);
-		Output.out.println(Stuff);
+                String OtherStuff;
+		Stuff=Output.f(result>0?result:result*1.e-2);
+		OtherStuff=Output.f(x);
+                //line+=" "+Output.f(result>0?result*1.e-3:result*1.e-2);
+  		//if(timef) line+=" "+Output.f(p.p.t
+  		Output.out.println(Stuff);
+		if(result>0) Output.out.println(OtherStuff);
 	    }
 
 	}catch(Exception error){

@@ -260,6 +260,7 @@ public class Photonuclear extends CrossSections{
 	nu=v*p.e;
 	x=Q2/(2*m.M[i]*nu);
 	if(m.Z[i]==1) G=1;
+
 	else switch(shadow){
 	case 1:
 	    {
@@ -309,7 +310,53 @@ public class Photonuclear extends CrossSections{
 	}
 
 	switch(form){
-	case 3:  // Abramowicz, Levin, Levy, and Maor parametrization
+	case 3:  // Dipole
+	    {
+		double P, W2;
+
+		aux=x*x;
+		P=1-1.85*x+2.45*aux-2.35*aux*x+aux*aux;
+		G*=(m.Z[i]+(m.A[i]-m.Z[i])*P);
+
+		W2=m.M[i]*m.M[i]-Q2+2*m.M[i]*p.e*v;
+
+		double a0, a1, a2, b0, b1, b2, c1, n, lamda, MU, M, c0;
+		
+		switch(bb){
+		case 1:
+		case 2:  
+		default:
+		}
+		
+		a0 = 8.205e-4;
+		a1 = -5.148e-2;
+		a2 = -4.725e-3;
+		b0 = 2.217e-3;
+		b1 = 1.244e-2;
+		b2 = 5.958e-4;
+		c1 = 0.1475;
+		n = 11.49;
+		lamda = 2.430;
+		MU = 2.82;
+		M = 0.753;
+		c0 = 0.255;
+
+		double a, A, B, C, D, f;
+		a = Math.log(1. + (Q2/MU));
+	   	A = a0 + a1*a + Math.pow(a2*a, 2);
+		B = b0 + b1*a + Math.pow(b2*a, 2);
+		C = c0 + c1*a;
+		D = (Q2*(Q2 + lamda*M*1e6))/(Math.pow(Q2+M*1e6, 2));
+		f = Math.log(Q2/(x*(Q2+MU*1e6)));
+		F2 = D*Math.pow((1.-x), n)*(C+A*f+B*Math.pow(f, 2)); 
+	        	
+		final double R=0;
+		R2=(2*(1+R));
+
+		break;
+	    }
+	case 4:  // ALLM97
+	default:
 	    {
 		double P, W2;
 
@@ -322,58 +369,29 @@ public class Photonuclear extends CrossSections{
 		double cp1, cp2, cp3, cr1, cr2, cr3, ap1, ap2, ap3, ar1, ar2, ar3;
 		double bp1, bp2, bp3, br1, br2, br3, m2o, m2r, L2, m2p, Q2o;
 
-		switch(bb){
-		case 1:  // ALLM91
-		    cp1=0.26550;
-		    cp2=0.04856;
-		    cp3=1.04682;
-		    cr1=0.67639;
-		    cr2=0.49027;
-		    cr3=2.66275;
-		    ap1=-0.04503;
-		    ap2=-0.36407;
-		    ap3=8.17091;
-		    ar1=0.60408;
-		    ar2=0.17353;
-		    ar3=1.61812;
-		    bp1=0.49222;
-		    bp2=0.52116;
-		    bp3=3.55115;
-		    br1=1.26066;
-		    br2=1.83624;
-		    br3=0.81141;
-		    m2o=0.30508;
-		    m2r=0.20623;
-		    L2=0.06527;
-		    m2p=10.67564;
-		    Q2o=0.27799;
-		    break;
-		case 2:  // ALLM97
-		default:
-		    cp1=0.28067;
-		    cp2=0.22291;
-		    cp3=2.1979;
-		    cr1=0.80107;
-		    cr2=0.97307;
-		    cr3=3.4942;
-		    ap1=-0.0808;
-		    ap2=-0.44812;
-		    ap3=1.1709;
-		    ar1=0.58400;
-		    ar2=0.37888;
-		    ar3=2.6063;
-		    bp1=0.60243;
-		    bp2=1.3754;
-		    bp3=1.8439;
-		    br1=0.10711;
-		    br2=1.9386;
-		    br3=0.49338;
-		    m2o=0.31985;
-		    m2r=0.15052;
-		    L2=0.06527;
-		    m2p=49.457;
-		    Q2o=0.46017;
-		}
+		cp1=0.28067;
+		cp2=0.22291;
+		cp3=2.1979;
+		cr1=0.80107;
+		cr2=0.97307;
+		cr3=3.4942;
+		ap1=-0.0808;
+		ap2=-0.44812;
+		ap3=1.1709;
+		ar1=0.58400;
+		ar2=0.37888;
+		ar3=2.6063;
+		bp1=0.60243;
+		bp2=1.3754;
+		bp3=1.8439;
+		br1=0.10711;
+		br2=1.9386;
+		br3=0.49338;
+		m2o=0.31985;
+		m2r=0.15052;
+		L2=0.06527;
+		m2p=49.457;
+		Q2o=0.46017;
 
 		m2o*=1e6;  // GeV -> MeV conversion
 		m2r*=1e6;
@@ -406,49 +424,13 @@ public class Photonuclear extends CrossSections{
 
 		xp=(Q2+m2p)/(Q2+m2p+W2-m.M[i]*m.M[i]);
 		xr=(Q2+m2r)/(Q2+m2r+W2-m.M[i]*m.M[i]);
+		
 
 		F2p=cp*Math.pow(xp, ap)*Math.pow(1-x, bp);
 		F2r=cr*Math.pow(xr, ar)*Math.pow(1-x, br);
 		F2=(Q2/(Q2+m2o))*(F2p+F2r)*G;
 		R2=(2*(1+R));
 		break;
-	    }
-	case 4:  // Butkevich and Mikheyev parametrization
-	default:
-	    {
-		final double a=0.2513e6;
-		final double b=0.6186e6;
-		final double c=3.0292e6;
-		final double d=1.4817e6;
-		final double d0=0.0988;
-		final double ar=0.4056;
-		final double t=1.8152;
-		final double As=0.12;
-		final double Bu=1.2437;
-		final double Bd=0.1853;
-		final double R=0.25;
-
-		double F2p, F2n, FSp, FNp, FSn, FNn, n, dl, xUv, xDv;
-
-		n=1.5*(1+Q2/(Q2+c));
-		dl=d0*(1+2*Q2/(Q2+d));
-
-		aux=As*Math.pow(x, -dl)*Math.pow(Q2/(Q2+a), 1+dl);
-		FSp=aux*Math.pow(1-x, n+4);
-		FSn=aux*Math.pow(1-x, n+t);
-
-		aux=Math.pow(x, 1-ar)*Math.pow(1-x, n)*Math.pow(Q2/(Q2+b), ar);
-		xUv=Bu*aux;
-		xDv=Bd*aux*(1-x);
-
-		FNp=xUv+xDv;
-		FNn=xUv/4+xDv*4;
-
-		F2p=FSp+FNp;
-		F2n=FSn+FNn;
-
-		F2=G*(m.Z[i]*F2p+(m.A[i]-m.Z[i])*F2n);
-		R2=(2*(1+R));
 	    }
 	}
 
