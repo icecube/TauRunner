@@ -5,7 +5,7 @@ Authors: Ibrahim Safa, Carlos A. Argüelles, Alex Pizzuto
 
 ## Introduction
 
-`TauRunner` is a tool for the propagation of tau-neutrinos and taus through the Earth. Although it was developed for extremely high energy (EeV+) applications, it is able to propagate neutrinos from 1 to 10^16 GeV. Note that oscillations are not taken into account at the lowest energies, but they become negligible above 1TeV.   
+`TauRunner` is a tool that propagates tau-neutrinos and taus through the Earth. Although it was developed for extremely high energy (EeV+) applications, it is able to propagate neutrinos from 1 to 10^16 GeV. Note that oscillations are not taken into account at the lowest energies, but they become negligible above 1TeV.   
 
 ## Installation
 
@@ -27,7 +27,7 @@ We can simulate 500 tau neutrinos with an energy of 1 EeV that travel directly t
 ```console
 python main.py -n 500 -t 0.0 -s 1 -e 1000000000
 ```
-`-n` specifies the number of events, `-t` is the nadir angle in degrees, `-s` specifies a unique seed for purposes of reproducibility, and `-e` is for the particle energy in GeV. 
+`-n` specifies the number of events, `-t` is the nadir angle in degrees (0-90), `-s` specifies a unique seed, and `-e` is the particle energy in GeV. 
 
 ### Injecting a beam of multi-energy tau-neutrinos following a power-law distribution
 
@@ -74,9 +74,11 @@ There are a variety of other options not specified in the examples that the user
 * `-spectrum`: instead of using a monoenergetic beam or a splined energy spectrum, simulate a power law (index provided as argument)
 * `-buff`: Stop the simulation a finite distance (in kilometers) below the surface of Earth. This is helpful for calculating fluxes incident upon underground detectors.
 * `-p`: Path to run script from another directory (rarely used, only recommended when working with different versions of the project)
-* `-d`: print debug statements at the end of the execution
+* `-d`: print debug statements during execution
 * `-save`: specify the path to where you would like output saved. If no path is provided, output is formatted into a table and printed
-
+* `-water`: Add a water layer to the Earth in km. 0 by default.
+* `-xs`: Choose between two cross section models "dipole" (default) and "CSMS"
+* `-onlytau`: If only the tau distribution is needed. When this flag is raised, neutrino distributions are not saved.
 
 ## Citation
 
