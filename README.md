@@ -14,7 +14,7 @@ Authors: Ibrahim Safa, Carlos A. Argüelles, Alex Pizzuto
 1) Install `nuSQuIDS` with python interface. 
   *For more information on `nuSQuIDS` including installation instructions see: https://github.com/arguelles/nuSQuIDS
 
-2) Run `TauDragon/MMC/MMC/ammc -compile -f` to compile the tau propagation code. 
+2) Run `TauRunner/MMC/MMC/ammc -compile -f` to compile the tau propagation code. 
   *For more information on MMC see: https://arxiv.org/abs/hep-ph/0407075
 
 3) You're ready to propagate neutrinos! See the examples section for execution instructions.
