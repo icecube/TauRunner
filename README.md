@@ -70,14 +70,14 @@ The first column provides you with the initial energy, the second with the outgo
 ## Other options
 There are a variety of other options not specified in the examples that the user may specify at the command line:
 * `spectrum`: instead of using a monoenergetic beam or a splined energy spectrum, simulate a power law (index provided as argument)
-    * `--range`: If using a power law, this is to specify the range over which to sample energies
+* `--range`: If using a power law, this is to specify the range over which to sample energies
 * `-spectrum`: instead of using a monoenergetic beam or a splined energy spectrum, simulate a power law (index provided as argument)
 * `-buff`: Stop the simulation a finite distance (in kilometers) below the surface of Earth. This is helpful for calculating fluxes incident upon underground detectors.
-* `-p`: Path to run script from another directory (rarely used, only recommended when working with different versions of the project)
+* `-p`: Path to run script from another directory (if running the script from another directory, provide the path to the script here).
 * `-d`: print debug statements during execution
 * `-save`: specify the path to where you would like output saved. If no path is provided, output is formatted into a table and printed
-* `-water`: Add a water layer to the Earth in km. 0 by default.
-* `-xs`: Choose between two cross section models "dipole" (default) and "CSMS"
+* `-water`: int. Add a water layer to the Earth in km. 0 by default.
+* `-xs`: string. Choose between two cross section models "dipole" (default) and "CSMS". details of these cross sections are discussed in the linked publication. Note that changing the neutrino cross-section also changes the tau energy loss model consistently (dipole mode for dipole, and ALLM for CSMS).
 * `-onlytau`: If only the tau distribution is needed. When this flag is raised, neutrino distributions are not saved.
 
 ## Citation
