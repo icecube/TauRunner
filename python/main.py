@@ -123,25 +123,34 @@ iter_particleID = ['tau_neutrino']*nevents
 iter_TauPosition = list(np.zeros(nevents))
 iter_nCC = list(np.zeros(nevents))
 iter_nNC = list(np.zeros(nevents))
-#print(iter_energies)
+
 # Run the algorithm
-# All neutrinos are propagated until either exiting or undergoing a CC interaction
+# All neutrinos are propagated until either exiting or undergoing a CC interaction.
 # All CC interactions are handled together, and then the next iteration occurs
-# This repeats until all leptons have reached the total distance required
+# This repeats until all leptons have reached the total distance
 t0 = time.time()
+
 while inds_left:
     counter += 1
     if debug:
         message+="Beginning Loop Number {}\n".format(counter)
     cc_stack = []
+
     for j in range(len(inds_left) - 1, -1, -1):
-        i = inds_left[j]
-        EventObject = CasinoEvent(iter_particleID[i],iter_energies[i], thetas[i], iter_positions[i], i, np.random.randint(low=1e9), iter_TauPosition[i], water_layer, xs_model=xs, buff = args.buff)
+        i = inds_left[j] #Unique event index
+    
+        EventObject = CasinoEvent(iter_particleID[i],iter_energies[i], thetas[i],
+			iter_positions[i], i, np.random.randint(low=1e9), iter_TauPosition[i],
+			water_layer, xs_model=xs, buff = args.buff)
+
         out = RollDice(EventObject)
+
         iter_nCC[i]+=out.nCC
         iter_nNC[i]+=out.nNC      
+        
         if (out.isCC):
-            cc_stack.append((float(out.energy), float(out.position), int(out.index), str(out.particle_id), 0, float(out.TotalDistance), float(out.GetCurrentDensity())))
+            cc_stack.append((float(out.energy), float(out.position), int(out.index),
+		 str(out.particle_id), 0, float(out.TotalDistance), float(out.GetCurrentDensity())))
             del out
         else:
             ind = int(out.index)

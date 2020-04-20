@@ -7,6 +7,8 @@ from scipy.interpolate import interp1d
 import time
 import subprocess
 import nuSQUIDSpy as nsq
+from earth import *
+import earth
 
 units = nsq.Const()
 dis = nsq.NeutrinoDISCrossSectionsFromTables()
@@ -60,92 +62,49 @@ def TotalNeutrinoCrossSection(enu, xs_model,
         else:
 	    raise ValueError('Cross section model is not supported. Choose "dipole" or "CSMS".')
 
-def DifferentialOutGoingLeptonDistribution(ein, eout, interaction):
+def DifferentialOutGoingLeptonDistribution(ein, eout, interaction, xs):
 	r'''
 	Calculates Differential neutrino cross section. returns the value of d$\sigma$/dy
 	in natural units.
 	Parameters
 	----------
 	ein:         float
-	    incoming lepton energy in eV
+	    incoming lepton energy in GeV
 	eout:         float
-	    outgoing lepton energy in eV
+	    outgoing lepton energy in GeV
 	interaction: nusquids obj
 	    nusquids object defining the interaction type (CC or NC).
 	Returns
 	-------
 	diff: float
-	    d$\sigma$/dy at the given energies in natural units.
+	    d$\sigma$/d(1-y) at the given energies in natural units where y is the bjorken-y.
 	'''
-
-	if(np.log10(ein) < 0):
-	    diff = 0
-	    return diff
-        if(interaction==nsq.NeutrinoCrossSections_Current.CC):
-            if (np.log10(eout) >= np.log10(ein)):
-                diff = 0.
-		return diff
-            elif(np.log10(eout) < 3.):
-		diff = 10**dsdy_spline_CC_lowe(np.log10(ein), np.log10(eout))[0][0]/ein 
-	    else:
-                diff = 10**dsdy_spline_CC(np.log10(ein), np.log10(eout))[0][0]/ein
-        elif(interaction==nsq.NeutrinoCrossSections_Current.NC):
-            if (np.log10(eout) >= np.log10(ein)):
-                diff = 0.
-		return diff
-            elif( np.log10(eout) <= 3.):
-	        diff = 10**dsdy_spline_NC_lowe(np.log10(ein), np.log10(eout))[0][0]/ein
-	    else:
-                diff = 10**dsdy_spline_NC(np.log10(ein), np.log10(eout))[0][0]/ein
-
+        if(xs=='dipole'):
+	    if(np.log10(ein) < 0):
+	        diff = 0
+	        return diff
+            if(interaction==nsq.NeutrinoCrossSections_Current.CC):
+                if (np.log10(eout) >= np.log10(ein)):
+                    diff = 0.
+		    return diff
+                elif(np.log10(eout) < 3.):
+		    diff = 10**dsdy_spline_CC_lowe(np.log10(ein), np.log10(eout))[0][0]/ein 
+	        else:
+                    diff = 10**dsdy_spline_CC(np.log10(ein), np.log10(eout))[0][0]/ein
+            elif(interaction==nsq.NeutrinoCrossSections_Current.NC):
+                if (np.log10(eout) >= np.log10(ein)):
+                    diff = 0.
+		    return diff
+                elif( np.log10(eout) <= 3.):
+	            diff = 10**dsdy_spline_NC_lowe(np.log10(ein), np.log10(eout))[0][0]/ein
+	        else:
+                    diff = 10**dsdy_spline_NC(np.log10(ein), np.log10(eout))[0][0]/ein
+        elif(xs=='CSMS'):
+            diff = dis.SingleDifferentialCrossSection(ein*units.GeV, eout*units.GeV, 
+		 	nsq.NeutrinoCrossSections_NeutrinoFlavor.tau, 
+			nsq.NeutrinoCrossSections_NeutrinoType.neutrino,
+			interaction) 
         return diff
-
-#########################################################
-#####  Earth Model Handling. Here we define PREM ########
-####   and handling of ice layers/detector       ########
-#########################################################
-
-earth_model_radii = np.flip([6371., 6367.1774, 6355.7096, 6346.7902, 5960.7076, 5719.8838, 3479.8402, 1221.9578], axis=0)
-earth_model_densities = np.flip([1.02, 2.6076200000000003, 2.9090978337728903, 3.4256762971354524, 3.900144943911578,
-    4.989777873466213, 11.239115022426343, 12.98114208759252], axis=0)
-
-def GetDistancesPerSection(theta, radii, water_layer=0):
-        r'''
-        Calculates distance traveled in each uniform density region,
-        given in order with index of density region
-        Parameters
-        ----------
-        radii: list
-            radii of earth regions of different uniform density
-        Returns
-        -------
-        dists_by_sect: list
-            distance traveled in each section of uniform density,
-            along with the index of the region in an additional dimension
-        '''
-        if(water_layer>0):
-            radii = np.sort(radii)
-            radii[-1] = radii[-2] + water_layer
-        else:
-            radii = np.sort(radii)[:-1]
-
-        closest_approach = radii[-1] * np.sin(theta)
-        smallest_sect = np.min(np.where(closest_approach < radii))
-        dists = []
-        for i in range(smallest_sect, len(radii)):
-            side_length = np.sqrt(radii[i]**2 - closest_approach**2)
-            dists.append(side_length - np.sum(dists))
-        dists = np.flip(dists, axis=0)
-        dists[-1] = 2 * dists[-1]
-        dists = np.append(dists, np.flip(dists[:-1], axis=0))
-        sects = list(range(len(radii) - 1, smallest_sect, -1)) + \
-                    list(range(smallest_sect, len(radii)))
-        
-        return dists, sects
-
-###########################################
-##### Earth Model handling ends here ######
-###########################################
 
 def DoAllCCThings(objects, xs):
     r'''
@@ -328,6 +287,7 @@ class CasinoEvent(object):
         self.depth = depth
         self.xs_model = xs_model
         
+        earth_model_radii, earth_model_densities = get_radii_densities(self.water_layer)
         #Calculate densities along the chord length
         #and total distance
         region_lengths, regions = GetDistancesPerSection(incoming_angle, earth_model_radii, self.water_layer)
@@ -341,7 +301,6 @@ class CasinoEvent(object):
                 self.buff -= region_lengths[-1]
                 region_lengths = np.delete(region_lengths, -1)
                 del regions[-1]
-
         for i in range(len(region_lengths)):
             region_lengths[i] = region_lengths[i] * units.km
             densities.append(earth_model_densities[regions[i]] * units.gr/(units.cm**3))
@@ -409,12 +368,12 @@ class CasinoEvent(object):
 	DistanceStep: float
 	    Distance to interaction in natural units
 	'''
-        #Calculate the inverse of the interaction lengths (The lengths should be added reciprocally)
+        #Calculate the inverse of the interaction lengths.
         first_piece = (1./self.GetInteractionLength(density, interaction=nsq.NeutrinoCrossSections_Current.CC))
         second_piece = (1./self.GetInteractionLength(density, interaction=nsq.NeutrinoCrossSections_Current.NC))
         step = (first_piece + second_piece)
 
-        #return the distance to interaction - weighted by a sampled random number
+        #return the distance to interaction - weighted by a random number
         return -np.log(p)/step
 
     def GetCurrentDensity(self):
@@ -506,7 +465,7 @@ class CasinoEvent(object):
     def InteractParticle(self, interaction):
         if self.particle_id == "tau_neutrino":
   	    #Sample energy lost
-            dNdEle = lambda y: DifferentialOutGoingLeptonDistribution(self.energy/units.GeV,self.energy*y/units.GeV,interaction = interaction)
+            dNdEle = lambda y: DifferentialOutGoingLeptonDistribution(self.energy/units.GeV,self.energy*y/units.GeV, interaction, self.xs_model)
             NeutrinoInteractionWeights = map(dNdEle,yy)
 	    NeutrinoInteractionWeights = NeutrinoInteractionWeights/np.sum(NeutrinoInteractionWeights)
 	    self.energy = self.energy*self.rand.choice(yy, p=NeutrinoInteractionWeights)
