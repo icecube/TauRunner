@@ -42,13 +42,12 @@ def rho_earth(theta, x, d = 0, water_layer = 0):
         param = prem_params[7]
     elif r <= 6368:
         param = prem_params[8]
-    elif((REarth > 6368) and (r <= REarth)):
+    elif(r <= REarth):
         param = prem_params[9]
     else:
         raise RuntimeError("sampling densities outside earth boundaries")
 
     rho = param[0] + (param[1] * r/REarth) + (param[2] * (r/REarth)**2) + (param[3] * (r/REarth)**3)
-
     return rho
 
 def get_params(layers, aradius):
@@ -62,25 +61,24 @@ def get_average(param, a, b, REarth):
     return(piece3*(piece2 - piece1))
 
 def get_radii_densities(water_layer):
-
-    if(water_layer > 0):
-        REarth = 6368. + water_layer
-    else:
-        REarth = 6368.
-
+    REarth = 6368.
+    
     layers = [1221., 3480., 5701., 5771., 5971., 6151., 6346.6, 6356., 6368., REarth]
-
     jump_depths = REarth - np.asarray(layers)
     jump_depths = np.sort(np.append(jump_depths[:-1], np.linspace(REarth - layers[2], REarth, 13)[1:]))
-
     avg_rho = []
     jump_radius = REarth - jump_depths
+    jump_radius = np.append(jump_radius, REarth)
     for left_jump, right_jump in zip(jump_radius[:-1], jump_radius[1:]):
         aradius = (left_jump + right_jump)/2.
         param = get_params(layers, aradius)
         avg_rho.append(get_average(param, left_jump, right_jump, REarth))
 
-    return np.flip(jump_radius, axis=0)[1:], np.flip(avg_rho, axis=0)
+    radii, densities = np.flip(jump_radius, axis=0)[1:], np.flip(avg_rho, axis=0)
+    if(water_layer > 0):
+        radii = np.append(radii, REarth+water_layer)
+        densities = np.append(densities, 0.92)
+    return radii, densities
 
 def GetDistancesPerSection(theta, radii, water_layer=0):
         r'''

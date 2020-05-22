@@ -183,6 +183,9 @@ taus_e = np.array(taus_e, dtype = [('Eini', float), ('Eout',float), ('Theta', fl
 nus_e['Theta'] *= 180. / np.pi #Give theta in degrees to user
 taus_e['Theta'] *= 180. / np.pi #Give theta in degrees to user
 
+#p_exit = 100.*(float(len(taus_e))/nevents)
+#print("{} taus exited".format(p_exit))
+
 if save:
     if isgzk:
         fluxtype = "cosmogenic"
