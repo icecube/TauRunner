@@ -17,13 +17,13 @@ dis = nsq.NeutrinoDISCrossSectionsFromTables()
 ######################################
 cross_section_path = sys.path[-1]+'../cross_sections/'
 
-f_NC = np.load(cross_section_path+'NC_table.npy').item()
-f_CC = np.load(cross_section_path+'CC_table.npy').item()
+f_NC = np.load(cross_section_path+'NC_table.npy', allow_pickle=True).item()
+f_CC = np.load(cross_section_path+'CC_table.npy', allow_pickle=True).item()
 
-dsdy_spline_CC = np.load(cross_section_path + 'dsigma_dy_CC.npy').item()
-dsdy_spline_CC_lowe = np.load(cross_section_path + 'dsigma_dy_CC_lowE.npy').item()
-dsdy_spline_NC = np.load(cross_section_path + 'dsigma_dy_NC.npy').item()
-dsdy_spline_NC_lowe = np.load(cross_section_path + 'dsigma_dy_NC_lowE.npy').item()
+dsdy_spline_CC = np.load(cross_section_path + 'dsigma_dy_CC.npy', allow_pickle=True).item()
+dsdy_spline_CC_lowe = np.load(cross_section_path + 'dsigma_dy_CC_lowE.npy', allow_pickle=True).item()
+dsdy_spline_NC = np.load(cross_section_path + 'dsigma_dy_NC.npy', allow_pickle=True).item()
+dsdy_spline_NC_lowe = np.load(cross_section_path + 'dsigma_dy_NC_lowE.npy', allow_pickle=True).item()
 
 #####################################
 #Cross section functions

@@ -89,7 +89,7 @@ if args.gzk is not None:
   # sample initial energies and incoming angles from GZK parameterization
   cos_thetas = rand.uniform(low=0., high=1.,size=nevents)
   thetas = np.arccos(cos_thetas)
-  gzk_cdf = np.load(gzk).item()
+  gzk_cdf = np.load(gzk, allow_pickle=True).item()
   eini = gzk_cdf(cdf_indices)*units.GeV
   if debug:
     message+="Sampled {} events from the GZK flux\n".format(nevents)
