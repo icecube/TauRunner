@@ -39,6 +39,9 @@ parser.add_argument('-water', dest='water_layer', type=float, default=0,
     help="If you you would like to add a water layer to the Earth model, enter it here in km.")
 parser.add_argument('-xs', dest='xs_model', type=str, default='dipole',
     help="Enter 'CSMS' if you would like to run the simulation with a pQCD xs model")
+parser.add_argument('-tau_losses', dest='tau_losses', default=True, action='store_false',
+    help="Raise this flag if you want to turn off tau losses. In this case, taus will decay at rest.")
+
 args = parser.parse_args()
 
 save = False
@@ -56,6 +59,7 @@ seed = args.seed
 debug = args.debug
 xs = args.xs_model
 water_layer = args.water_layer
+tau_losses = args.tau_losses
 if debug:
     message = ''
 if args.gzk is not None:
@@ -169,7 +173,7 @@ while inds_left:
     if (len(cc_stack) > 0):
         if debug:
             message += "{} events passed to MMC in loop iteration {}\n".format(len(cc_stack), counter)
-        EventCollection = DoAllCCThings(cc_stack, xs)
+        EventCollection = DoAllCCThings(cc_stack, xs, tau_losses)
         for event in EventCollection:
             iter_positions[int(event[2])] = float(event[1])
             iter_energies[int(event[2])] = float(event[0])

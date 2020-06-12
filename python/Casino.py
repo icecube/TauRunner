@@ -106,7 +106,7 @@ def DifferentialOutGoingLeptonDistribution(ein, eout, interaction, xs):
 			interaction) 
         return diff
 
-def DoAllCCThings(objects, xs):
+def DoAllCCThings(objects, xs, tau_losses=True):
     r'''
     Calling MMC requires overhead, so handle all MMC calls per iterations
     over the injected events at once
@@ -114,6 +114,10 @@ def DoAllCCThings(objects, xs):
     ----------
     objects: list
         List of CasinoEvents that need to have tau losses sampled stochastically.
+    xs: str 
+        Cross section model to use for the photohadronic losses
+    tau_losses: bool
+        This can be set to False to turn off tau energy losses. In this case, the tau decays at rest.
     Returns
     -------
     objects: list
@@ -130,6 +134,15 @@ def DoAllCCThings(objects, xs):
     sorted_e    = np.asarray(zip(*sort)[1])
     sorted_dists = np.asarray(zip(*sort)[2])
     sorted_obj = np.asarray(zip(*sort)[3])
+
+    if(not tau_losses):
+        final_energies = sorted_e
+        final_distances = np.zeros(len(sorted_e))
+        for i, obj in enumerate(sorted_obj):
+            obj[0] = final_energies[i]*units.GeV
+            obj[4] = final_distances[i]
+        return(sorted_obj)
+
     split = np.append(np.append([-1], np.where(sorted_mult[:-1] != sorted_mult[1:])[0]), len(sorted_mult))
     
     tau_propagate_path = sys.path[-1]
