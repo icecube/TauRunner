@@ -1,4 +1,6 @@
-# TauRunner
+<img src="https://icecube.wisc.edu/~isafa/TauRunner.jpg" alt="logo"
+	title="taurunner logo" width="350" height="250" />
+ 
 
 Authors: Ibrahim Safa, Carlos A. Argüelles, Alex Pizzuto
 =======
