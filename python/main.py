@@ -10,40 +10,45 @@ units = nsq.Const()
 dis = nsq.NeutrinoDISCrossSectionsFromTables()
 tds = nsq.TauDecaySpectra()
 
-parser = argparse.ArgumentParser()
-parser.add_argument('-s',dest='seed',type=int,
-    help='just an integer seed to help with output file names')
-parser.add_argument('-n', dest='nevents', type=float, 
-    help='how many events do you want?')
-parser.add_argument('-e', dest='energy', type=float, 
-    help='if you want to simulate a specific energy, pass it here in GeV')
-parser.add_argument('-t', dest='theta', type=float, 
-    help='nadir angle in degrees (0 is through the core)')
-parser.add_argument('-gzk', dest='gzk', default=None, 
-    help='Pass the file containing the CDF spline to propagate a flux model')
-parser.add_argument('-spectrum', dest='spectrum', default=None, type=float, 
-    help='If you want a power law, provide spectral index here')
-parser.add_argument('--range', dest='range', nargs='+', 
-    help='Range for injected spectrum in format "low high"')
-parser.add_argument('-buff', dest='buff', type=float, default=0., 
-    help="Simulate to a finite distance beneath the edge of the Earth (in km)")
-parser.add_argument('-p', dest='path' , type=str, default = './', 
-    help='Path to script. Default assumes you are running from within the same directory')
-parser.add_argument('-d', dest='debug', default=False, action='store_true', 
-    help='Do you want to print out debug statments? If so, raise this flag') 
-parser.add_argument('-save', dest='save', type=str, default=None, 
-    help="If saving output, provide a path here")
-parser.add_argument('-onlytau', dest='onlytau', default=False, action='store_true',
-    help="If you only want to save the taus, not neutrinos, raise this flag")
-parser.add_argument('-water', dest='water_layer', type=float, default=0,
-    help="If you you would like to add a water layer to the Earth model, enter it here in km.")
-parser.add_argument('-xs', dest='xs_model', type=str, default='dipole',
-    help="Enter 'CSMS' if you would like to run the simulation with a pQCD xs model")
-parser.add_argument('-tau_losses', dest='tau_losses', default=True, action='store_false',
-    help="Raise this flag if you want to turn off tau losses. In this case, taus will decay at rest.")
+def initialize_parser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('-s',dest='seed',type=int,
+        help='just an integer seed to help with output file names')
+    parser.add_argument('-n', dest='nevents', type=float, 
+        help='how many events do you want?')
+    parser.add_argument('-e', dest='energy', type=float, 
+        help='if you want to simulate a specific energy, pass it here in GeV')
+    parser.add_argument('-t', dest='theta', type=float, 
+        help='nadir angle in degrees (0 is through the core)')
+    parser.add_argument('-gzk', dest='gzk', default=None, 
+        help='Pass the file containing the CDF spline to propagate a flux model')
+    parser.add_argument('-spectrum', dest='spectrum', default=None, type=float, 
+        help='If you want a power law, provide spectral index here')
+    parser.add_argument('--range', dest='range', nargs='+', 
+        help='Range for injected spectrum in format "low high"')
+    parser.add_argument('-buff', dest='buff', type=float, default=0., 
+        help="Simulate to a finite distance beneath the edge of the Earth (in km)")
+    parser.add_argument('-p', dest='path' , type=str, default = './', 
+        help='Path to script. Default assumes you are running from within the same directory')
+    parser.add_argument('-d', dest='debug', default=False, action='store_true', 
+        help='Do you want to print out debug statments? If so, raise this flag') 
+    parser.add_argument('-save', dest='save', type=str, default=None, 
+        help="If saving output, provide a path here")
+    parser.add_argument('-onlytau', dest='onlytau', default=False, action='store_true',
+        help="If you only want to save the taus, not neutrinos, raise this flag")
+    parser.add_argument('-water', dest='water_layer', type=float, default=0,
+        help="If you you would like to add a water layer to the Earth model, enter it here in km.")
+    parser.add_argument('-xs', dest='xs_model', type=str, default='dipole',
+        help="Enter 'CSMS' if you would like to run the simulation with a pQCD xs model")
+    parser.add_argument('-tau_losses', dest='tau_losses', default=True, action='store_false',
+        help="Raise this flag if you want to turn off tau losses. In this case, taus will decay at rest.")
+    parser.add_argument('-body', dest='body', type=str, default='earth',
+        help="Raise this flag if you want to turn off tau losses. In this case, taus will decay at rest.")
+    
+    args = parser.parse_args()
+    return args
 
-args = parser.parse_args()
-
+args = initialize_parser()
 save = False
 isgzk = False
 
@@ -60,6 +65,7 @@ debug = args.debug
 xs = args.xs_model
 water_layer = args.water_layer
 tau_losses = args.tau_losses
+body = args.body
 if debug:
     message = ''
 if args.gzk is not None:
@@ -146,7 +152,7 @@ while inds_left:
     
         EventObject = CasinoEvent(iter_particleID[i],iter_energies[i], thetas[i],
 			iter_positions[i], i, np.random.randint(low=1e9), iter_TauPosition[i],
-			water_layer, xs_model=xs, buff = args.buff)
+			water_layer, xs_model=xs, buff=args.buff, body=body)
 
         out = RollDice(EventObject)
 
@@ -207,8 +213,8 @@ if save:
         if debug:
             message += "Subdirectories already existed\n"
     if not args.onlytau:
-        np.save(savedir + 'nus/' + 'nus_{}_seed_{}_xs_{}_water_{}.npy'.format(fluxtype, seed, xs, water_layer), nus_e)
-    np.save(savedir + 'taus/' + 'taus_{}_seed_{}_xs_{}_water_{}.npy'.format(fluxtype, seed, xs, water_layer), taus_e)
+        np.save(savedir + 'nus/' + 'nus_{}_body_{}_seed_{}_xs_{}_water_{}.npy'.format(fluxtype, body, seed, xs, water_layer), nus_e)
+    np.save(savedir + 'taus/' + 'taus_{}_body_{}_seed_{}_xs_{}_water_{}.npy'.format(fluxtype, body, seed, xs, water_layer), taus_e)
     if debug:
         print(message)
 else:

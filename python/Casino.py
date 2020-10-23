@@ -157,7 +157,7 @@ def DoAllCCThings(objects, xs, tau_losses=True):
         multis = sorted_mult[split[i]+1:split[i+1]+1]
         eni = sorted_e[split[i]+1:split[i+1]+1]
         din = sorted_dists[split[i]+1:split[i+1]+1]
-        max_arg = 2500
+        max_arg = 500
         eni_str = [["{} {}".format(eni[y*max_arg + x], din[y*max_arg + x]) for x in range(max_arg)] for y in range(len(eni)/max_arg)]
         num_args = len(eni)/max_arg
         if len(eni) % max_arg != 0:
@@ -258,7 +258,7 @@ class CasinoEvent(object):
     r'''
     This is the class that contains all relevant event information stored in an object.
     '''
-    def __init__(self, particle_id, energy, incoming_angle, position, index, seed, tauposition, water_layer=0, xs_model='dipole', buff=0.):
+    def __init__(self, particle_id, energy, incoming_angle, position, index, seed, tauposition, water_layer=0, xs_model='dipole', buff=0., body='earth'):
         r'''
         Class initializer. This function sets all initial conditions based on the particle's incoming angle, energy, ID, and position.
 
@@ -299,26 +299,39 @@ class CasinoEvent(object):
         self.water_layer = water_layer
         #self.depth = depth
         self.xs_model = xs_model
-        earth_model_radii, earth_model_densities = get_radii_densities(self.water_layer)
-        #Calculate densities along the chord length
-        #and total distance
-        region_lengths, regions = GetDistancesPerSection(incoming_angle, earth_model_radii, self.water_layer)
-        densities = []
-        
-        while self.buff > 0:
-            if region_lengths[-1] > self.buff:
-                region_lengths[-1] -= self.buff
-                self.buff = 0
-            else:
-                self.buff -= region_lengths[-1]
-                region_lengths = np.delete(region_lengths, -1)
-                del regions[-1]
-        for i in range(len(region_lengths)):
-            region_lengths[i] = region_lengths[i] * units.km
-            densities.append(earth_model_densities[regions[i]] * units.gr/(units.cm**3))
+        if body=='earth':
+            earth_model_radii, earth_model_densities = get_radii_densities(self.water_layer)
+            #Calculate densities along the chord length
+            #and total distance
+            region_lengths, regions = GetDistancesPerSection(incoming_angle, earth_model_radii, self.water_layer)
+            densities = []
+            
+            while self.buff > 0:
+                if region_lengths[-1] > self.buff:
+                    region_lengths[-1] -= self.buff
+                    self.buff = 0
+                else:
+                    self.buff -= region_lengths[-1]
+                    region_lengths = np.delete(region_lengths, -1)
+                    del regions[-1]
+            for i in range(len(region_lengths)):
+                region_lengths[i] = region_lengths[i] * units.km
+                densities.append(earth_model_densities[regions[i]] * units.gr/(units.cm**3))
        
-        self.region_lengths = region_lengths
+        elif body=='sun':
+            densities      = [152.9 * units.gr/units.cm**3]
+            region_lengths = [6.957e5 * units.km, 2*units.km]
+        elif body=='christ':
+            a_file = open(".ascii_art.txt")
+            lines = a_file.readlines()
+            for line in lines:
+                print(line.strip('\n'))
+            quit()
+        else:
+            print('Body %s is not valid. Only "earth" and "sun" supported presently' % body)
+
         self.densities = densities
+        self.region_lengths = region_lengths
         self.TotalDistance = np.sum(region_lengths)
         cumsum = np.cumsum(self.region_lengths)
         self.region_index = np.min(np.where(cumsum > self.position))
@@ -505,7 +518,7 @@ class CasinoEvent(object):
               "energy ", self.energy/units.GeV, " GeV", \
               "position ", self.position/units.km, " km"
 
-#This is the propagation algorithm. The MC meat, if you may.
+#This is the propagation algorithm. The MCmeat, if you will.
 def RollDice(event):
 
     while(not np.any((event.position >= event.TotalDistance) or (event.energy <= event.GetMass()) or (event.isCC))):
