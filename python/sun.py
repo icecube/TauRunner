@@ -1,6 +1,8 @@
 import numpy as np
 from scipy.interpolate import splev, splrep
 
+import nuSQUIDSpy as nsq
+units = nsq.Const()
 
 class Sun:
 
@@ -8,6 +10,7 @@ class Sun:
 
         self.solar_model_file = solar_model_file
         self.model            = np.genfromtxt(solar_model_file)
+        self.radius           = 6.957e5 * units.km
 
         xx       = self.model[:,0]
         mdensity = self.model[:,1]
