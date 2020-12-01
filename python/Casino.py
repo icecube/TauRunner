@@ -29,81 +29,81 @@ dsdy_spline_NC_lowe = np.load(cross_section_path + 'dsigma_dy_NC_lowE.npy', allo
 #Cross section functions
 
 def TotalNeutrinoCrossSection(enu, xs_model,
-		      flavor = nsq.NeutrinoCrossSections_NeutrinoFlavor.tau,
-		      neutype = nsq.NeutrinoCrossSections_NeutrinoType.neutrino,
-		      interaction = nsq.NeutrinoCrossSections_Current.NC):
-	r'''
-	Calculates total neutrino cross section. returns the value of sigma_CC (or NC)
-	in natural units.
-	Parameters
-	----------
-	enu:         float
-	    neutrino energy in eV
-	flavor:      nusquids obj
-	    nusquids object defining neutrino flavor. default is tau
-	interaction: nusquids obj
-	    nusquids object defining the interaction type (CC or NC). default is NC
-	Returns
-	-------
-	TotalCrossSection: float
-	    Total neutrino cross section at the given energy in natural units.
-	'''
-	if(xs_model == 'dipole'):
-	    if(np.log10(enu) < 0.):
-	        print("Going below a GeV. this region is not supported. godspeed!")
-	        return 0.
-	    if(interaction == nsq.NeutrinoCrossSections_Current.NC):
-	        return((10**f_NC(np.log10(enu/1e9)))*(units.cm)**2)
+                      flavor = nsq.NeutrinoCrossSections_NeutrinoFlavor.tau,
+                      neutype = nsq.NeutrinoCrossSections_NeutrinoType.neutrino,
+                      interaction = nsq.NeutrinoCrossSections_Current.NC):
+        r'''
+        Calculates total neutrino cross section. returns the value of sigma_CC (or NC)
+        in natural units.
+        Parameters
+        ----------
+        enu:         float
+            neutrino energy in eV
+        flavor:      nusquids obj
+            nusquids object defining neutrino flavor. default is tau
+        interaction: nusquids obj
+            nusquids object defining the interaction type (CC or NC). default is NC
+        Returns
+        -------
+        TotalCrossSection: float
+            Total neutrino cross section at the given energy in natural units.
+        '''
+        if(xs_model == 'dipole'):
+            if(np.log10(enu) < 0.):
+                print("Going below a GeV. this region is not supported. godspeed!")
+                return 0.
+            if(interaction == nsq.NeutrinoCrossSections_Current.NC):
+                return((10**f_NC(np.log10(enu/1e9)))*(units.cm)**2)
             else:
                 return((10**f_CC(np.log10(enu/1e9)))*(units.cm)**2)
-	elif(xs_model == 'CSMS'):
+        elif(xs_model == 'CSMS'):
             flavor = nsq.NeutrinoCrossSections_NeutrinoFlavor.tau
-	    return dis.TotalCrossSection(enu,flavor,neutype,interaction)*(units.cm)**2
+            return dis.TotalCrossSection(enu,flavor,neutype,interaction)*(units.cm)**2
         else:
-	    raise ValueError('Cross section model is not supported. Choose "dipole" or "CSMS".')
+            raise ValueError('Cross section model is not supported. Choose "dipole" or "CSMS".')
 
 def DifferentialOutGoingLeptonDistribution(ein, eout, interaction, xs):
-	r'''
-	Calculates Differential neutrino cross section. returns the value of d$\sigma$/dy
-	in natural units.
-	Parameters
-	----------
-	ein:         float
-	    incoming lepton energy in GeV
-	eout:         float
-	    outgoing lepton energy in GeV
-	interaction: nusquids obj
-	    nusquids object defining the interaction type (CC or NC).
-	Returns
-	-------
-	diff: float
-	    d$\sigma$/d(1-y) at the given energies in natural units where y is the bjorken-y.
-	'''
+        r'''
+        Calculates Differential neutrino cross section. returns the value of d$\sigma$/dy
+        in natural units.
+        Parameters
+        ----------
+        ein:         float
+            incoming lepton energy in GeV
+        eout:         float
+            outgoing lepton energy in GeV
+        interaction: nusquids obj
+            nusquids object defining the interaction type (CC or NC).
+        Returns
+        -------
+        diff: float
+            d$\sigma$/d(1-y) at the given energies in natural units where y is the bjorken-y.
+        '''
         if(xs=='dipole'):
-	    if(np.log10(ein) < 0):
-	        diff = 0
-	        return diff
+            if(np.log10(ein) < 0):
+                diff = 0
+                return diff
             if(interaction==nsq.NeutrinoCrossSections_Current.CC):
                 if (np.log10(eout) >= np.log10(ein)):
                     diff = 0.
-		    return diff
+                    return diff
                 elif(np.log10(eout) < 3.):
-		    diff = 10**dsdy_spline_CC_lowe(np.log10(ein), np.log10(eout))[0][0]/ein 
-	        else:
+                    diff = 10**dsdy_spline_CC_lowe(np.log10(ein), np.log10(eout))[0][0]/ein 
+                else:
                     diff = 10**dsdy_spline_CC(np.log10(ein), np.log10(eout))[0][0]/ein
             elif(interaction==nsq.NeutrinoCrossSections_Current.NC):
                 if (np.log10(eout) >= np.log10(ein)):
                     diff = 0.
-		    return diff
+                    return diff
                 elif( np.log10(eout) <= 3.):
-	            diff = 10**dsdy_spline_NC_lowe(np.log10(ein), np.log10(eout))[0][0]/ein
-	        else:
+                    diff = 10**dsdy_spline_NC_lowe(np.log10(ein), np.log10(eout))[0][0]/ein
+                else:
                     diff = 10**dsdy_spline_NC(np.log10(ein), np.log10(eout))[0][0]/ein
         elif(xs=='CSMS'):
             diff = dis.SingleDifferentialCrossSection(ein*units.GeV, eout*units.GeV, 
-		 	nsq.NeutrinoCrossSections_NeutrinoFlavor.tau, 
-			nsq.NeutrinoCrossSections_NeutrinoType.neutrino,
-			interaction) 
+                        nsq.NeutrinoCrossSections_NeutrinoFlavor.tau, 
+                        nsq.NeutrinoCrossSections_NeutrinoType.neutrino,
+                        interaction) 
         return diff
 
 def DoAllCCThings(objects, xs, tau_losses=True):
@@ -266,21 +266,21 @@ class CasinoEvent(object):
         ----------
         particle_id:    string
             The particle can either be "tau" or "tau_neutrino". That is defined here.
-	energy:         float
-	    Initial energy in eV.
-	incoming_angle: float
-	    The incident angle with respect to nadir in radians.
-	position:       float
-	    Position of the particle along the trajectory in natural units (initial should be 0)
+        energy:         float
+            Initial energy in eV.
+        incoming_angle: float
+            The incident angle with respect to nadir in radians.
+        position:       float
+            Position of the particle along the trajectory in natural units (initial should be 0)
         index:          int
-	    Unique event ID within each run.
+            Unique event ID within each run.
         seed:           int
-	    Seed corresponding to the random number generator.
-	tauposition:    float
-	    If particle is a tau, this is the distance it propagated.
-	buff:           float
-	    If you don't want to simulate to earth emergence, set this buffer to a positive number and simulation will stop short at buff km.
-        '''	
+            Seed corresponding to the random number generator.
+        tauposition:    float
+            If particle is a tau, this is the distance it propagated.
+        buff:           float
+            If you don't want to simulate to earth emergence, set this buffer to a positive number and simulation will stop short at buff km.
+        '''     
         #Set Initial Values
         self.particle_id = particle_id
         self.energy = energy
@@ -295,7 +295,7 @@ class CasinoEvent(object):
         self.isCC = False
         self.index = index
         self.buff = buff
-       	self.rand = np.random.RandomState(seed=seed)
+        self.rand = np.random.RandomState(seed=seed)
         self.water_layer = water_layer
         #self.depth = depth
         self.xs_model = xs_model
@@ -354,45 +354,45 @@ class CasinoEvent(object):
     def GetParticleId(self):
         r'''
         Returns the current particle ID        
-	'''
+        '''
         return self.particle_id
 
     def GetLifetime(self):
-	r'''
-	Returns the current particle's lifetime
-	'''
+        r'''
+        Returns the current particle's lifetime
+        '''
         return self.lifetime
 
     def GetMass(self):
-	r'''
-	Returns the current particle's mass
-	'''
+        r'''
+        Returns the current particle's mass
+        '''
         return self.mass
 
     def GetBoostFactor(self):
-	r'''
-	Returns the current particle's boost factor
-	'''
+        r'''
+        Returns the current particle's boost factor
+        '''
         if self.mass > 0.:
             return self.energy/self.mass
         else:
             return np.inf
 
     def GetProposedDistanceStep(self, density, p):
-	r'''
-	Calculates the free-streaming distance of your neutrino based on the density of the medium, and then samples randomly from a log-uniform distribution.
+        r'''
+        Calculates the free-streaming distance of your neutrino based on the density of the medium, and then samples randomly from a log-uniform distribution.
 
-	Parameters
-	------------
-	density: float
-	    medium density in natural units
-	p:       float
-	    random number. the free-streaming distance is scaled by the log of this number
-	Returns
-	-----------
-	DistanceStep: float
-	    Distance to interaction in natural units
-	'''
+        Parameters
+        ------------
+        density: float
+            medium density in natural units
+        p:       float
+            random number. the free-streaming distance is scaled by the log of this number
+        Returns
+        -----------
+        DistanceStep: float
+            Distance to interaction in natural units
+        '''
         #Calculate the inverse of the interaction lengths.
         first_piece = (1./self.GetInteractionLength(density, interaction=nsq.NeutrinoCrossSections_Current.CC))
         second_piece = (1./self.GetInteractionLength(density, interaction=nsq.NeutrinoCrossSections_Current.NC))
@@ -416,20 +416,20 @@ class CasinoEvent(object):
         return dL/(boost_factor*self.lifetime)
 
     def GetInteractionLength(self,density,interaction):
-	r'''
-	Calculates the mean interaction length.
-	
-	Parameters
-	-----------
-	density: float
+        r'''
+        Calculates the mean interaction length.
+        
+        Parameters
+        -----------
+        density: float
             medium density in natural units
-	interaction: nusquids obj
+        interaction: nusquids obj
             nusquids object defining the interaction type (CC or NC).
-	Returns
-	----------
-	Interaction length: float
-	    mean interaction length in natural units
-	'''
+        Returns
+        ----------
+        Interaction length: float
+            mean interaction length in natural units
+        '''
         if self.particle_id == "tau_neutrino":
             return proton_mass/(TotalNeutrinoCrossSection(self.energy, interaction = interaction, xs_model=self.xs_model)*density)
         if self.particle_id == "tau":
@@ -489,34 +489,34 @@ class CasinoEvent(object):
 
     def InteractParticle(self, interaction):
         if self.particle_id == "tau_neutrino":
-  	    #Sample energy lost
+            #Sample energy lost
             dNdEle = lambda y: DifferentialOutGoingLeptonDistribution(self.energy/units.GeV,self.energy*y/units.GeV, interaction, self.xs_model)
             NeutrinoInteractionWeights = map(dNdEle,yy)
-	    NeutrinoInteractionWeights = NeutrinoInteractionWeights/np.sum(NeutrinoInteractionWeights)
-	    self.energy = self.energy*self.rand.choice(yy, p=NeutrinoInteractionWeights)
-           	   
+            NeutrinoInteractionWeights = NeutrinoInteractionWeights/np.sum(NeutrinoInteractionWeights)
+            self.energy = self.energy*self.rand.choice(yy, p=NeutrinoInteractionWeights)
+                   
             if interaction == nsq.NeutrinoCrossSections_Current.CC:
-		self.isCC = True
+                self.isCC = True
                 self.particle_id = "tau"
                 self.SetParticleProperties()
- 		self.nCC += 1
+                self.nCC += 1
 
             elif interaction == nsq.NeutrinoCrossSections_Current.NC:
-	        self.particle_id = "tau_neutrino"
+                self.particle_id = "tau_neutrino"
                 self.SetParticleProperties()
                 self.nNC += 1
             
-	    return
+            return
 
         elif self.particle_id == "tau":
-	    print("Im not supposed to be here")
-	    raise ValueError("tau interactions don't happen here")
+            print("Im not supposed to be here")
+            raise ValueError("tau interactions don't happen here")
 
 
     def PrintParticleProperties(self):
-        print "id", self.particle_id, \
+        print("id", self.particle_id, \
               "energy ", self.energy/units.GeV, " GeV", \
-              "position ", self.position/units.km, " km"
+              "position ", self.position/units.km, " km")
 
 #This is the propagation algorithm. The MCmeat, if you will.
 def RollDice(event):
