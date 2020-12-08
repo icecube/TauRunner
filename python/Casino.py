@@ -1,7 +1,7 @@
 import os, sys
 os.environ['HDF5_DISABLE_VERSION_CHECK']='2'
 import numpy as np
-# import pythia8
+import pythia8
 import scipy as sp
 import pickle
 from scipy.interpolate import interp1d
@@ -11,12 +11,12 @@ import nuSQUIDSpy as nsq
 from earth import *
 import earth
 
-# pythia = pythia8.Pythia()
+pythia = pythia8.Pythia()
 
-# pythia.readString("ProcessLevel:all = off")
-# pythia.readString("Random:setSeed = on")
-# pythia.readString("Random:seed = 0")
-# pythia.init()
+pythia.readString("ProcessLevel:all = off")
+pythia.readString("Random:setSeed = on")
+pythia.readString("Random:seed = 0")
+pythia.init()
 
 units = nsq.Const()
 dis = nsq.NeutrinoDISCrossSectionsFromTables()
@@ -482,18 +482,14 @@ class CasinoEvent(object):
             self.particle_id = "tau_neutrino"
             self.SetParticleProperties()
             # RNG prob sampling
-            p1 = np.random.random_sample()
+            p0 = np.random.random_sample()
             # Add secondary id, position at which it emerged w.r.t channel and approximate energy.
-            if p1 <= .1782:
+            if p0 <= .1782:
                 self.basket.append({"id" : "electron_neutrino", "position" : self.position, "energy" : approx_energy})
-                self.basket.append({"id" : "electron_antineutrino", "position" : self.position, "energy" : approx_energy})
                 self.history.append("nu_e")
-                self.history.append("nubar_e")
-            elif p1 > .1782 and p1 <= .3521:
+            elif p0 > .1782 and p0 <= .3521:
                 self.basket.append({"id" : "muon_neutrino", "position" : self.position, "energy" : approx_energy})
-                self.basket.append({"id" : "muon_antineutrino", "position" : self.position, "energy" : approx_energy})
                 self.history.append("nu_mu")
-                self.history.append("nubar_mu")
             # self.history.append("Tau decayed")
             return
 

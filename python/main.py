@@ -194,7 +194,7 @@ while inds_left:
                     ind = len(basket)-1
                     if basket[ind]["id"] == "muon_neutrino":
                         nus_muon_e.append((basket[ind]["energy"], float(secOut.energy), float(secOut.position)))
-                    else:
+                    elif basket[ind]["id"] == "electron_neutrino":
                         nus_electron_e.append((basket[ind]["energy"], float(secOut.energy), float(secOut.position)))
                     del secOut
                	iter_positions[int(out.index)] = float(out.position)
