@@ -2,9 +2,11 @@
 
 import os, sys
 os.environ['HDF5_DISABLE_VERSION_CHECK']='2'
-import os, sys
 import argparse
 import nuSQUIDSpy as nsq
+
+info = sys.version_info
+pyv  = int(info.major)
 
 units = nsq.Const()
 dis = nsq.NeutrinoDISCrossSectionsFromTables()
@@ -123,7 +125,7 @@ else:
 
 cc_left = True
 propagated_stack = []
-inds_left = range(nevents)
+inds_left = list(range(nevents))
 
 taus_e = []
 nus_e = []

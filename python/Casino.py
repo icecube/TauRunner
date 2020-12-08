@@ -12,18 +12,29 @@ import earth
 
 units = nsq.Const()
 dis = nsq.NeutrinoDISCrossSectionsFromTables()
+info = sys.version_info
+pyv  = int(info.major)
 
 #cross section tables
 ######################################
 cross_section_path = sys.path[-1]+'../cross_sections/'
 
-f_NC = np.load(cross_section_path+'NC_table.npy', allow_pickle=True).item()
-f_CC = np.load(cross_section_path+'CC_table.npy', allow_pickle=True).item()
+if(pyv==3):
+    f_NC = np.load(cross_section_path+'NC_table_py3.npy', allow_pickle=True).item()
+    f_CC = np.load(cross_section_path+'CC_table_py3.npy', allow_pickle=True).item()
 
-dsdy_spline_CC = np.load(cross_section_path + 'dsigma_dy_CC.npy', allow_pickle=True).item()
-dsdy_spline_CC_lowe = np.load(cross_section_path + 'dsigma_dy_CC_lowE.npy', allow_pickle=True).item()
-dsdy_spline_NC = np.load(cross_section_path + 'dsigma_dy_NC.npy', allow_pickle=True).item()
-dsdy_spline_NC_lowe = np.load(cross_section_path + 'dsigma_dy_NC_lowE.npy', allow_pickle=True).item()
+    dsdy_spline_CC = np.load(cross_section_path + 'dsigma_dy_CC_py3.npy', allow_pickle=True).item()
+    dsdy_spline_CC_lowe = np.load(cross_section_path + 'dsigma_dy_CC_lowE_py3.npy', allow_pickle=True).item()
+    dsdy_spline_NC = np.load(cross_section_path + 'dsigma_dy_NC_py3.npy', allow_pickle=True).item()
+    dsdy_spline_NC_lowe = np.load(cross_section_path + 'dsigma_dy_NC_lowE_py3.npy', allow_pickle=True).item()
+else:
+    f_NC = np.load(cross_section_path+'NC_table.npy', allow_pickle=True).item()
+    f_CC = np.load(cross_section_path+'CC_table.npy', allow_pickle=True).item()
+
+    dsdy_spline_CC = np.load(cross_section_path + 'dsigma_dy_CC.npy', allow_pickle=True).item()
+    dsdy_spline_CC_lowe = np.load(cross_section_path + 'dsigma_dy_CC_lowE.npy', allow_pickle=True).item()
+    dsdy_spline_NC = np.load(cross_section_path + 'dsigma_dy_NC.npy', allow_pickle=True).item()
+    dsdy_spline_NC_lowe = np.load(cross_section_path + 'dsigma_dy_NC_lowE.npy', allow_pickle=True).item()
 
 #####################################
 #Cross section functions
@@ -129,11 +140,11 @@ def DoAllCCThings(objects, xs, tau_losses=True):
     dists =      [1e3*(obj[-2] - obj[1])/units.km for obj in objects]  #distance to propagate in m 
     mult  = [obj[-1]*(units.cm**3)/units.gr/2.7 for obj in objects]    #convert density back to normal (not natural) units
                                                                        #factor of 2.7 because we're scaling the default rho in MMC
-    sort = sorted(zip(mult, e, dists, objects))
-    sorted_mult = np.asarray(zip(*sort)[0])
-    sorted_e    = np.asarray(zip(*sort)[1])
-    sorted_dists = np.asarray(zip(*sort)[2])
-    sorted_obj = np.asarray(zip(*sort)[3])
+    sort = sorted(list(zip(mult, e, dists, objects)))
+    sorted_mult = np.asarray(list(zip(*sort))[0])
+    sorted_e    = np.asarray(list(zip(*sort))[1])
+    sorted_dists = np.asarray(list(zip(*sort))[2])
+    sorted_obj = np.asarray(list(zip(*sort))[3])
 
     if(not tau_losses):
         final_energies = sorted_e
@@ -158,20 +169,26 @@ def DoAllCCThings(objects, xs, tau_losses=True):
         eni = sorted_e[split[i]+1:split[i+1]+1]
         din = sorted_dists[split[i]+1:split[i+1]+1]
         max_arg = 500
-        eni_str = [["{} {}".format(eni[y*max_arg + x], din[y*max_arg + x]) for x in range(max_arg)] for y in range(len(eni)/max_arg)]
+        nbatch = np.ceil(len(eni)/max_arg)
+        eni_str = []
+        for i in range(int(nbatch)):
+            if i != int(nbatch) - 1:
+                eni_str.append(['{} {}'.format(eni[i*max_arg + x], din[i*max_arg + x]) for x in range(max_arg)])
+            else:
+                eni_str.append(['{} {}'.format(eni[i*max_arg + x], din[i*max_arg + x]) for x in range(len(eni)%max_arg)])
+
         num_args = len(eni)/max_arg
         if len(eni) % max_arg != 0:
-            eni_str.append(["{} {}".format(eni[x], din[x]) for x in range(max_arg*num_args, len(eni))])
+            eni_str.append(["{} {}".format(eni[x], din[x]) for x in range(int(max_arg*num_args), len(eni))])
         for kk in range(len(eni_str)):
             eni_str[kk].append(str(multis[0]))
             eni_str[kk].insert(0, tau_propagate_path)
             process = subprocess.check_output(eni_str[kk])
-            for line in process.split('\n')[:-1]:
-                final_values.append(float(line.replace('\n','')))
+            for line in process.split(b'\n')[:-1]:
+                final_values.append(float(line.replace(b'\n',b'')))
 
     final_energies = np.asarray(final_values)[::2]
     final_distances = np.abs(np.asarray(final_values)[1::2])/1e3
-
     for i, obj in enumerate(sorted_obj):
         obj[0] = final_energies[i]*units.GeV/1e3
         obj[4] = final_distances[i]
@@ -245,8 +262,8 @@ def TauDecayToAll(Etau, Enu, P):
 Etau = 100.
 zz = np.linspace(0.0,1.0,500)[1:-1]
 dNTaudz = lambda z: TauDecayToAll(Etau, Etau*z, 0.)
-TauDecayWeights = np.array(map(dNTaudz,zz))
-TauDecayWeights = TauDecayWeights/np.sum(TauDecayWeights)
+TauDecayWeights = np.array(list(map(dNTaudz,zz)))
+TauDecayWeights = np.divide(TauDecayWeights, np.sum(TauDecayWeights))
 yy = np.linspace(0.0,1.0,300)[1:-1]
 
 ##########################################################
@@ -491,8 +508,8 @@ class CasinoEvent(object):
         if self.particle_id == "tau_neutrino":
             #Sample energy lost
             dNdEle = lambda y: DifferentialOutGoingLeptonDistribution(self.energy/units.GeV,self.energy*y/units.GeV, interaction, self.xs_model)
-            NeutrinoInteractionWeights = map(dNdEle,yy)
-            NeutrinoInteractionWeights = NeutrinoInteractionWeights/np.sum(NeutrinoInteractionWeights)
+            NeutrinoInteractionWeights = list(map(dNdEle,yy))
+            NeutrinoInteractionWeights = np.divide(NeutrinoInteractionWeights, np.sum(NeutrinoInteractionWeights))
             self.energy = self.energy*self.rand.choice(yy, p=NeutrinoInteractionWeights)
                    
             if interaction == nsq.NeutrinoCrossSections_Current.CC:
