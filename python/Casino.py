@@ -1,7 +1,7 @@
 import os, sys
 os.environ['HDF5_DISABLE_VERSION_CHECK']='2'
 import numpy as np
-import pythia8
+# import pythia8
 import scipy as sp
 import pickle
 from scipy.interpolate import interp1d
@@ -11,12 +11,12 @@ import nuSQUIDSpy as nsq
 from earth import *
 import earth
 
-pythia = pythia8.Pythia()
+# pythia = pythia8.Pythia()
 
-pythia.readString("ProcessLevel:all = off")
-pythia.readString("Random:setSeed = on")
-pythia.readString("Random:seed = 0")
-pythia.init()
+# pythia.readString("ProcessLevel:all = off")
+# pythia.readString("Random:setSeed = on")
+# pythia.readString("Random:seed = 0")
+# pythia.init()
 
 units = nsq.Const()
 dis = nsq.NeutrinoDISCrossSectionsFromTables()
@@ -477,23 +477,23 @@ class CasinoEvent(object):
             #self.history.append("Neutrino decayed???")
             raise ValueError("Dead end.")
         elif self.particle_id == "tau":
-            p4vec = pythia8.Vec4(self.eini,0.,0.,self.energy)
-            pythia.event.reset()
-            pythia.event.append(15,91,0,0,p4vec,self.mass)
-            pythia.forceHadronLevel()
-            for i in range(pythia.event.size()):
-                if not pythia.event[i].isFinal():
-                    # if not done decaying, continue
-                    continue
-                if pythia.event[i].id() == 12:
-                    self.basket.append({"id" : "electron_neutrino", "position" : self.position, "energy" : pythia.event[i].e()})
-                    # self.history.append("nu_e")
-                elif pythia.event[i].id() == 14:
-                    self.basket.append({"id" : "muon_neutrino", "position" : self.position, "energy" : pythia.event[i].e()})
-                    # self.history.append("nu_mu")
             self.energy = self.energy*self.rand.choice(zz, p=TauDecayWeights)
+            approx_energy = self.energy / 6
             self.particle_id = "tau_neutrino"
             self.SetParticleProperties()
+            # RNG prob sampling
+            p1 = np.random.random_sample()
+            # Add secondary id, position at which it emerged w.r.t channel and approximate energy.
+            if p1 <= .1782:
+                self.basket.append({"id" : "electron_neutrino", "position" : self.position, "energy" : approx_energy})
+                self.basket.append({"id" : "electron_antineutrino", "position" : self.position, "energy" : approx_energy})
+                self.history.append("nu_e")
+                self.history.append("nubar_e")
+            elif p1 > .1782 and p1 <= .3521:
+                self.basket.append({"id" : "muon_neutrino", "position" : self.position, "energy" : approx_energy})
+                self.basket.append({"id" : "muon_antineutrino", "position" : self.position, "energy" : approx_energy})
+                self.history.append("nu_mu")
+                self.history.append("nubar_mu")
             # self.history.append("Tau decayed")
             return
 
