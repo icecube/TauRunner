@@ -295,5 +295,5 @@ else:
         print(nus_electron_e)
         print("Outgoing Taus: ")
         print(taus_e)
-        # print(basket)
+        print(basket)
         # print(history)
