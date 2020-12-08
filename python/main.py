@@ -128,7 +128,11 @@ propagated_stack = []
 inds_left = list(range(nevents))
 
 taus_e = []
-nus_e = []
+nus_tau_e = []
+nus_electron_e = []
+nus_muon_e = []
+basket = []
+history = []
 counter = 0
 iter_energies = list(eini)[:]
 iter_positions = list(np.zeros(nevents))
@@ -154,12 +158,22 @@ while inds_left:
     
         EventObject = CasinoEvent(iter_particleID[i],iter_energies[i], thetas[i],
 			iter_positions[i], i, np.random.randint(low=1e9), iter_TauPosition[i],
-			water_layer, xs_model=xs, buff=args.buff, body=body)
+			[], [], water_layer, xs_model=xs, buff=args.buff, body=body)
 
         out = RollDice(EventObject)
 
         iter_nCC[i]+=out.nCC
-        iter_nNC[i]+=out.nNC      
+        iter_nNC[i]+=out.nNC   
+        
+        basket += out.basket
+        if out.history != []: history.append((out.history, i)) # For debugging
+
+        # Make secondaries part of the casino   
+        if out.basket != []:
+            SecondaryEvent = CasinoEvent(basket[len(basket)-1]["id"],basket[len(basket)-1]["energy"],thetas[i],basket[len(basket)-1]["position"],
+                             i,np.random.randint(low=1e9), iter_TauPosition[i],
+			                 [], [], water_layer, xs_model=xs, buff = args.buff, body=body)
+            secOut = RollDice(SecondaryEvent)
         
         if (out.isCC):
             cc_stack.append((float(out.energy), float(out.position), int(out.index),
@@ -175,7 +189,14 @@ while inds_left:
                 del inds_left[j]
                 del out
             else:
-                nus_e.append((eini[ind], float(out.energy), thetas[ind], cdf_indices[ind], iter_nCC[ind], iter_nNC[ind]))
+                nus_tau_e.append((eini[ind], float(out.energy), thetas[ind], cdf_indices[ind], iter_nCC[ind], iter_nNC[ind]))
+                if out.basket != [] and secOut is not None:
+                    ind = len(basket)-1
+                    if basket[ind]["id"] == "muon_neutrino":
+                        nus_muon_e.append((basket[ind]["energy"], float(secOut.energy), float(secOut.position)))
+                    else:
+                        nus_electron_e.append((basket[ind]["energy"], float(secOut.energy), float(secOut.position)))
+                    del secOut
                	iter_positions[int(out.index)] = float(out.position)
                 del inds_left[j]
                 del out
@@ -191,9 +212,13 @@ while inds_left:
             del event
 
 print("Simulating {} events at {} degrees took {} seconds.".format(nevents, args.theta, time.time() - t0))
-nus_e = np.array(nus_e, dtype = [('Eini', float), ('Eout',float), ('Theta', float), ('CDF_index', float), ('nCC', int), ('nNC', int)])
+nus_tau_e = np.array(nus_tau_e, dtype = [('Eini', float), ('Eout',float), ('Theta', float), ('CDF_index', float), ('nCC', int), ('nNC', int)])
+nus_muon_e = np.array(nus_muon_e, dtype = [('Eini', float), ('Eout',float), ('Finpos', float)]) # Need to tabulate
+nus_electron_e = np.array(nus_electron_e, dtype = [('Eini', float), ('Eout',float), ('Finpos', float)]) # Need to tabulate
 taus_e = np.array(taus_e, dtype = [('Eini', float), ('Eout',float), ('Theta', float), ('CDF_index', float), ('nCC', int), ('nNC', int)])
-nus_e['Theta'] *= 180. / np.pi #Give theta in degrees to user
+basket = np.array(basket)
+# history = np.array(history)
+nus_tau_e['Theta'] *= 180. / np.pi #Give theta in degrees to user
 taus_e['Theta'] *= 180. / np.pi #Give theta in degrees to user
 
 #p_exit = 100.*(float(len(taus_e))/nevents)
@@ -215,7 +240,9 @@ if save:
         if debug:
             message += "Subdirectories already existed\n"
     if not args.onlytau:
-        np.save(savedir + 'nus/' + 'nus_{}_body_{}_seed_{}_xs_{}_water_{}.npy'.format(fluxtype, body, seed, xs, water_layer), nus_e)
+        np.save(savedir + 'nus/' + 'nu_e_nus_{}_seed_{}_xs_{}_water_{}.npy'.format(fluxtype, seed, xs, water_layer), nus_electron_e)
+        np.save(savedir + 'nus/' + 'nu_mu_nus_{}_seed_{}_xs_{}_water_{}.npy'.format(fluxtype, seed, xs, water_layer), nus_muon_e)
+        np.save(savedir + 'nus/' + 'nu_tau_nus_{}_seed_{}_xs_{}_water_{}.npy'.format(fluxtype, seed, xs, water_layer), nus_tau_e)
     np.save(savedir + 'taus/' + 'taus_{}_body_{}_seed_{}_xs_{}_water_{}.npy'.format(fluxtype, body, seed, xs, water_layer), taus_e)
     if debug:
         print(message)
@@ -224,13 +251,49 @@ else:
         print(message)
     try:
         from tabulate import tabulate
-        headers = list(nus_e.dtype.names)
-        nus_table = tabulate(nus_e, headers, tablefmt="fancy_grid")
+        headers = list(nus_tau_e.dtype.names)
+        nus_tau_table = tabulate(nus_tau_e, headers, tablefmt="fancy_grid")
         taus_table = tabulate(taus_e, headers, tablefmt="fancy_grid")
-        print(nus_table)
+        print(nus_tau_table)
+        print(nus_muon_e)
+        print(nus_electron_e)
         print(taus_table)
+        # print(basket)
+        nueNumPerEvent, numuNumPerEvent = list(np.zeros(nevents)), list(np.zeros(nevents))
+        for flavor, ev_Index in history:
+            if flavor[0] == 'nue':
+                nueNumPerEvent[ev_Index] += 1
+            else: numuNumPerEvent[ev_Index] += 1
+        # print(history)
+        
+        # print(nueNumPerEvent)
+        # print(numuNumPerEvent)
+        # print("")
+
+        binsnue = []
+        binsnumu = []
+        for i in range(int(max(nueNumPerEvent)+1)): binsnue.append(i)
+        for i in range(int(max(numuNumPerEvent)+1)): binsnumu.append(i)
+
+        # for i in range(len(nueNumPerEvent)): nueNumPerEvent[i] = (nueNumPerEvent[i] / nevents) * 100
+        # for i in range(len(numuNumPerEvent)): numuNumPerEvent[i] = (numuNumPerEvent[i] / nevents) * 100
+
+        # print(nueNumPerEvent)
+        # print(numuNumPerEvent)
+        from matplotlib import pyplot as plt
+        plt.hist(nueNumPerEvent, bins=binsnue, histtype='step', label=r'$\nu_e$')
+        plt.hist(numuNumPerEvent, bins=binsnumu, histtype='step', label=r'$\nu_\mu$')
+        # plt.yscale('log', nonposy='clip')
+        plt.xlabel('# of secondaries per nu_tau')
+        plt.ylabel('%')
+        plt.legend(loc='best')
+        plt.show()
     except ImportError:
         print("Outgoing Neutrinos: ")
-        print(nus_e)
+        print(nus_tau_e)
+        print(nus_muon_e)
+        print(nus_electron_e)
         print("Outgoing Taus: ")
         print(taus_e)
+        # print(basket)
+        # print(history)

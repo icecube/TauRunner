@@ -1,6 +1,7 @@
 import os, sys
 os.environ['HDF5_DISABLE_VERSION_CHECK']='2'
 import numpy as np
+import pythia8
 import scipy as sp
 import pickle
 from scipy.interpolate import interp1d
@@ -9,6 +10,13 @@ import subprocess
 import nuSQUIDSpy as nsq
 from earth import *
 import earth
+
+pythia = pythia8.Pythia()
+
+pythia.readString("ProcessLevel:all = off")
+pythia.readString("Random:setSeed = on")
+pythia.readString("Random:seed = 0")
+pythia.init()
 
 units = nsq.Const()
 dis = nsq.NeutrinoDISCrossSectionsFromTables()
@@ -275,7 +283,7 @@ class CasinoEvent(object):
     r'''
     This is the class that contains all relevant event information stored in an object.
     '''
-    def __init__(self, particle_id, energy, incoming_angle, position, index, seed, tauposition, water_layer=0, xs_model='dipole', buff=0., body='earth'):
+    def __init__(self, particle_id, energy, incoming_angle, position, index, seed, tauposition, basket, history, water_layer=0, xs_model='dipole', buff=0., body='earth'):
         r'''
         Class initializer. This function sets all initial conditions based on the particle's incoming angle, energy, ID, and position.
 
@@ -301,6 +309,7 @@ class CasinoEvent(object):
         #Set Initial Values
         self.particle_id = particle_id
         self.energy = energy
+        self.eini = energy
         self.position = position
         self.SetParticleProperties()
         self.tauposition = tauposition
@@ -314,6 +323,9 @@ class CasinoEvent(object):
         self.buff = buff
         self.rand = np.random.RandomState(seed=seed)
         self.water_layer = water_layer
+        self.basket = basket
+        self.history = history
+        self.count = 0
         #self.depth = depth
         self.xs_model = xs_model
         if body=='earth':
@@ -361,7 +373,7 @@ class CasinoEvent(object):
         r'''
         Sets particle properties, either when initializing or after an interaction.
         '''
-        if self.particle_id == "tau_neutrino":
+        if "neutrino" in self.particle_id:
             self.mass = 0.0
             self.lifetime = np.inf
         if self.particle_id == "tau":
@@ -447,7 +459,7 @@ class CasinoEvent(object):
         Interaction length: float
             mean interaction length in natural units
         '''
-        if self.particle_id == "tau_neutrino":
+        if "neutrino" in self.particle_id:
             return proton_mass/(TotalNeutrinoCrossSection(self.energy, interaction = interaction, xs_model=self.xs_model)*density)
         if self.particle_id == "tau":
             raise ValueError("Tau interaction length should never be sampled.")
@@ -461,14 +473,28 @@ class CasinoEvent(object):
         return current_density / next_density
 
     def DecayParticle(self):
-        if self.particle_id == "tau_neutrino":
+        if "neutrino" in self.particle_id:
             #self.history.append("Neutrino decayed???")
             raise ValueError("Dead end.")
-        if self.particle_id == "tau":
+        elif self.particle_id == "tau":
+            p4vec = pythia8.Vec4(self.eini,0.,0.,self.energy)
+            pythia.event.reset()
+            pythia.event.append(15,91,0,0,p4vec,self.mass)
+            pythia.forceHadronLevel()
+            for i in range(pythia.event.size()):
+                if not pythia.event[i].isFinal():
+                    # if not done decaying, continue
+                    continue
+                if pythia.event[i].id() == 12:
+                    self.basket.append({"id" : "electron_neutrino", "position" : self.position, "energy" : pythia.event[i].e()})
+                    # self.history.append("nu_e")
+                elif pythia.event[i].id() == 14:
+                    self.basket.append({"id" : "muon_neutrino", "position" : self.position, "energy" : pythia.event[i].e()})
+                    # self.history.append("nu_mu")
             self.energy = self.energy*self.rand.choice(zz, p=TauDecayWeights)
             self.particle_id = "tau_neutrino"
             self.SetParticleProperties()
-            #self.history.append("Tau decayed")
+            # self.history.append("Tau decayed")
             return
 
     def check_taundaries(self, tau_position):
@@ -505,7 +531,7 @@ class CasinoEvent(object):
             self.position += Ladv
 
     def InteractParticle(self, interaction):
-        if self.particle_id == "tau_neutrino":
+        if "neutrino" in self.particle_id:
             #Sample energy lost
             dNdEle = lambda y: DifferentialOutGoingLeptonDistribution(self.energy/units.GeV,self.energy*y/units.GeV, interaction, self.xs_model)
             NeutrinoInteractionWeights = list(map(dNdEle,yy))
@@ -539,7 +565,7 @@ class CasinoEvent(object):
 def RollDice(event):
 
     while(not np.any((event.position >= event.TotalDistance) or (event.energy <= event.GetMass()) or (event.isCC))):
-        if(event.particle_id == 'tau_neutrino'):
+        if "neutrino" in event.particle_id:
             if(event.energy/units.GeV <= 1e3):
                 event.position = event.TotalDistance
                 continue
@@ -568,6 +594,8 @@ def RollDice(event):
             p_int_CC = event.GetTotalInteractionLength(density) / CC_lint
 
             if(p2 <= p_int_CC):
+                if event.particle_id == "electron_neutrino" or event.particle_id == "muon_neutrino":
+                    return None # Kill nues and numus after cc interaction
                 event.InteractParticle(nsq.NeutrinoCrossSections_Current.CC)
                 event.position += DistanceStep
                 event.region_distance += DistanceStep
