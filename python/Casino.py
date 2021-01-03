@@ -1,22 +1,15 @@
 import os, sys
 os.environ['HDF5_DISABLE_VERSION_CHECK']='2'
 import numpy as np
-import pythia8
 import scipy as sp
 import pickle
 from scipy.interpolate import interp1d
+from scipy.interpolate import InterpolatedUnivariateSpline as iuvs
 import time
 import subprocess
 import nuSQUIDSpy as nsq
 from earth import *
 import earth
-
-pythia = pythia8.Pythia()
-
-pythia.readString("ProcessLevel:all = off")
-pythia.readString("Random:setSeed = on")
-pythia.readString("Random:seed = 0")
-pythia.init()
 
 units = nsq.Const()
 dis = nsq.NeutrinoDISCrossSectionsFromTables()
@@ -125,7 +118,7 @@ def DifferentialOutGoingLeptonDistribution(ein, eout, interaction, xs):
                         interaction) 
         return diff
 
-def DoAllCCThings(objects, xs, tau_losses=True):
+def DoAllCCThings(objects, xs, flavor, losses=True):
     r'''
     Calling MMC requires overhead, so handle all MMC calls per iterations
     over the injected events at once
@@ -135,26 +128,27 @@ def DoAllCCThings(objects, xs, tau_losses=True):
         List of CasinoEvents that need to have tau losses sampled stochastically.
     xs: str 
         Cross section model to use for the photohadronic losses
-    tau_losses: bool
-        This can be set to False to turn off tau energy losses. In this case, the tau decays at rest.
+    losses: bool
+        This can be set to False to turn off energy losses. In this case, the particle decays at rest.
     Returns
     -------
     objects: list
-        List of CasinoEvents after Tau Losses have been calculated
+        List of CasinoEvents after losses are calculated
     '''
     final_values= []
     efinal, distance = [], []
-    e =             [obj[0]/units.GeV for obj in objects]              #MMC takes initial energy in GeV 
-    dists =      [1e3*(obj[-2] - obj[1])/units.km for obj in objects]  #distance to propagate in m 
-    mult  = [obj[-1]*(units.cm**3)/units.gr/2.7 for obj in objects]    #convert density back to normal (not natural) units
-                                                                       #factor of 2.7 because we're scaling the default rho in MMC
-    sort = sorted(list(zip(mult, e, dists, objects)))
-    sorted_mult = np.asarray(list(zip(*sort))[0])
-    sorted_e    = np.asarray(list(zip(*sort))[1])
+    flavor = objects[0][-1]
+    e      = [obj[0]/units.GeV for obj in objects]                    #MMC takes initial energy in GeV 
+    dists  = [1e3*(obj[-4] - obj[1])/units.km for obj in objects]     #distance to propagate in m 
+    mult   = [obj[-2]*(units.cm**3)/units.gr/2.7 for obj in objects]  #convert density back to normal (not natural) units
+                                                                      #factor of 2.7 because we're scaling the default rho in MMC
+    sort         = sorted(list(zip(mult, e, dists, objects)))
+    sorted_mult  = np.asarray(list(zip(*sort))[0])
+    sorted_e     = np.asarray(list(zip(*sort))[1])
     sorted_dists = np.asarray(list(zip(*sort))[2])
-    sorted_obj = np.asarray(list(zip(*sort))[3])
+    sorted_obj   = np.asarray(list(zip(*sort))[3])
 
-    if(not tau_losses):
+    if(not losses):
         final_energies = sorted_e
         final_distances = np.zeros(len(sorted_e))
         for i, obj in enumerate(sorted_obj):
@@ -164,14 +158,13 @@ def DoAllCCThings(objects, xs, tau_losses=True):
 
     split = np.append(np.append([-1], np.where(sorted_mult[:-1] != sorted_mult[1:])[0]), len(sorted_mult))
     
-    tau_propagate_path = sys.path[-1]
+    propagate_path = sys.path[-1]
     if(xs=='dipole'):
-        tau_propagate_path+='propagate_taus.sh'
+        propagate_path+='propagate_{}s.sh'.format(flavor)
     elif(xs=='CSMS'):
-        tau_propagate_path+='propagate_taus_ALLM.sh'
+        propagate_path+='propagate_{}s_ALLM.sh'.format(flavor)
     else:
         raise ValueError("Cross section model error.")
-
     for i in range(len(split)-1):
         multis = sorted_mult[split[i]+1:split[i+1]+1]
         eni = sorted_e[split[i]+1:split[i+1]+1]
@@ -190,7 +183,7 @@ def DoAllCCThings(objects, xs, tau_losses=True):
             eni_str.append(["{} {}".format(eni[x], din[x]) for x in range(int(max_arg*num_args), len(eni))])
         for kk in range(len(eni_str)):
             eni_str[kk].append(str(multis[0]))
-            eni_str[kk].insert(0, tau_propagate_path)
+            eni_str[kk].insert(0, propagate_path)
             process = subprocess.check_output(eni_str[kk])
             for line in process.split(b'\n')[:-1]:
                 final_values.append(float(line.replace(b'\n',b'')))
@@ -283,10 +276,9 @@ class CasinoEvent(object):
     r'''
     This is the class that contains all relevant event information stored in an object.
     '''
-    def __init__(self, particle_id, energy, incoming_angle, position, index, seed, tauposition, basket, history, water_layer=0, xs_model='dipole', buff=0., body='earth'):
+    def __init__(self, particle_id, flavor, secondaries, basket, energy, incoming_angle, position, index, seed, chargedposition, water_layer=0, xs_model='dipole', buff=0., body='earth'):
         r'''
         Class initializer. This function sets all initial conditions based on the particle's incoming angle, energy, ID, and position.
-
         Parameters
         ----------
         particle_id:    string
@@ -301,18 +293,21 @@ class CasinoEvent(object):
             Unique event ID within each run.
         seed:           int
             Seed corresponding to the random number generator.
-        tauposition:    float
-            If particle is a tau, this is the distance it propagated.
+        chargedposition:    float
+            If particle is charged, this is the distance it propagated.
         buff:           float
             If you don't want to simulate to earth emergence, set this buffer to a positive number and simulation will stop short at buff km.
         '''     
         #Set Initial Values
         self.particle_id = particle_id
         self.energy = energy
-        self.eini = energy
+        self.flavor = flavor
+        self.secondaries = secondaries
+        self.basket = basket
         self.position = position
         self.SetParticleProperties()
-        self.tauposition = tauposition
+        self.chargedposition = chargedposition
+        self.survived = True
         self.nCC = 0
         self.nNC = 0
         self.ntdecay = 0
@@ -323,9 +318,6 @@ class CasinoEvent(object):
         self.buff = buff
         self.rand = np.random.RandomState(seed=seed)
         self.water_layer = water_layer
-        self.basket = basket
-        self.history = history
-        self.count = 0
         #self.depth = depth
         self.xs_model = xs_model
         if body=='earth':
@@ -357,7 +349,7 @@ class CasinoEvent(object):
                 print(line.strip('\n'))
             quit()
         else:
-            print('Body %s is not valid. Only "earth" and "sun" supported presently' % body)
+            raise ValueError('Body %s is not valid. Only "earth" and "sun" supported presently' % body)
 
         self.densities = densities
         self.region_lengths = region_lengths
@@ -373,13 +365,19 @@ class CasinoEvent(object):
         r'''
         Sets particle properties, either when initializing or after an interaction.
         '''
-        if "neutrino" in self.particle_id:
+        if self.particle_id == "neutrino":
             self.mass = 0.0
             self.lifetime = np.inf
         if self.particle_id == "tau":
             self.mass = 1.7*units.GeV
             self.lifetime = 1.*units.sec
-
+        if self.particle_id == "mu":
+            self.mass = 0.105*units.GeV
+            self.lifetime = 1.e-6*units.sec
+        if self.particle_id == "e":
+            self.mass = 0.0005*units.GeV
+            self.lifetime = np.inf
+ 
     def GetParticleId(self):
         r'''
         Returns the current particle ID        
@@ -410,7 +408,6 @@ class CasinoEvent(object):
     def GetProposedDistanceStep(self, density, p):
         r'''
         Calculates the free-streaming distance of your neutrino based on the density of the medium, and then samples randomly from a log-uniform distribution.
-
         Parameters
         ------------
         density: float
@@ -459,7 +456,7 @@ class CasinoEvent(object):
         Interaction length: float
             mean interaction length in natural units
         '''
-        if "neutrino" in self.particle_id:
+        if self.particle_id == "neutrino":
             return proton_mass/(TotalNeutrinoCrossSection(self.energy, interaction = interaction, xs_model=self.xs_model)*density)
         if self.particle_id == "tau":
             raise ValueError("Tau interaction length should never be sampled.")
@@ -473,29 +470,37 @@ class CasinoEvent(object):
         return current_density / next_density
 
     def DecayParticle(self):
-        if "neutrino" in self.particle_id:
-            #self.history.append("Neutrino decayed???")
-            raise ValueError("Dead end.")
-        elif self.particle_id == "tau":
+        if self.particle_id == "neutrino":
+            raise ValueError("No, you did not just discover neutrino decays..")
+        if self.particle_id == "tau":
+            if self.secondaries:
+                # sample probability of generating numu or nue in tau decay channel REVISIT
+                p = np.random.uniform(0,1) # dummy sample
+                # ensure a secondary flavor will be produced
+                if p < .5:
+                    cdf = np.load('numu_cdf.npy')
+                    sec_flavor = 2
+                else:
+                    cdf = np.load('nue_cdf.npy')
+                    sec_flavor = 1
+                # sample energy of tau secondary
+                bins = list(np.logspace(-5,0,101))[:-1]
+                sample = (iuvs(bins,cdf-np.random.uniform(0,1)).roots())[0]
+                enu = sample*self.energy*units.GeV
+                # add secondary to basket, prepare propagation
+                self.basket.append({"flavor" : sec_flavor, "posini" : self.position, "eini" : enu})
             self.energy = self.energy*self.rand.choice(zz, p=TauDecayWeights)
-            approx_energy = self.energy / 6
-            self.particle_id = "tau_neutrino"
+            self.particle_id = "neutrino"
             self.SetParticleProperties()
-            # RNG prob sampling
-            p0 = np.random.random_sample()
-            # Add secondary id, position at which it emerged w.r.t channel and approximate energy.
-            if p0 <= .1782:
-                self.basket.append({"id" : "electron_neutrino", "position" : self.position, "energy" : approx_energy})
-                self.history.append("nu_e")
-            elif p0 > .1782 and p0 <= .3521:
-                self.basket.append({"id" : "muon_neutrino", "position" : self.position, "energy" : approx_energy})
-                self.history.append("nu_mu")
-            # self.history.append("Tau decayed")
             return
+        if self.particle_id == "mu":
+            self.survived=False
+        if self.particle_id == "e":
+            raise ValueError("An electron decayed??") # REVISIT
 
-    def check_taundaries(self, tau_position):
+    def check_boundaries(self, charged_position):
         r'''
-        Propagates Tau leptons while checking boundary conditions i.e if tau exits earth
+        checks boundary conditions i.e if tau/mu exits earth
         Parameters
         ----------
         objects: list
@@ -507,9 +512,9 @@ class CasinoEvent(object):
         objects:
             list of CasinoEvents after propagation
         '''
-        if tau_position is None:
-            raise Exception('Your tau has not moved. Something is wrong')
-        Ladv = (tau_position+0.05*tau_position)*units.km
+        if charged_position is None:
+            raise Exception('Your particle has not moved. Something is wrong with the propagation')
+        Ladv = (charged_position+0.05*charged_position)*units.km
         has_exited = False
         while (self.region_distance + Ladv >= self.GetTotalRegionLength()) and (has_exited==False):
             try:
@@ -527,7 +532,7 @@ class CasinoEvent(object):
             self.position += Ladv
 
     def InteractParticle(self, interaction):
-        if "neutrino" in self.particle_id:
+        if self.particle_id == "neutrino":
             #Sample energy lost
             dNdEle = lambda y: DifferentialOutGoingLeptonDistribution(self.energy/units.GeV,self.energy*y/units.GeV, interaction, self.xs_model)
             NeutrinoInteractionWeights = list(map(dNdEle,yy))
@@ -536,20 +541,25 @@ class CasinoEvent(object):
                    
             if interaction == nsq.NeutrinoCrossSections_Current.CC:
                 self.isCC = True
-                self.particle_id = "tau"
+                if(self.flavor == 3):
+                    self.particle_id = "tau"
+                elif(self.flavor== 2):
+                    self.particle_id = "mu"
+                elif(self.flavor== 1):
+                    self.particle_id = "e"
                 self.SetParticleProperties()
                 self.nCC += 1
 
             elif interaction == nsq.NeutrinoCrossSections_Current.NC:
-                self.particle_id = "tau_neutrino"
+                self.particle_id = "neutrino"
                 self.SetParticleProperties()
                 self.nNC += 1
             
             return
 
-        elif self.particle_id == "tau":
+        elif np.logical_or(self.particle_id == "tau", self.particle_id == "mu") or self.particle_id == "e":
             print("Im not supposed to be here")
-            raise ValueError("tau interactions don't happen here")
+            raise ValueError("tau/mu/e interactions don't happen here")
 
 
     def PrintParticleProperties(self):
@@ -561,7 +571,7 @@ class CasinoEvent(object):
 def RollDice(event):
 
     while(not np.any((event.position >= event.TotalDistance) or (event.energy <= event.GetMass()) or (event.isCC))):
-        if "neutrino" in event.particle_id:
+        if(event.particle_id == 'neutrino'):
             if(event.energy/units.GeV <= 1e3):
                 event.position = event.TotalDistance
                 continue
@@ -590,8 +600,6 @@ def RollDice(event):
             p_int_CC = event.GetTotalInteractionLength(density) / CC_lint
 
             if(p2 <= p_int_CC):
-                if event.particle_id == "electron_neutrino" or event.particle_id == "muon_neutrino":
-                    return None # Kill nues and numus after cc interaction
                 event.InteractParticle(nsq.NeutrinoCrossSections_Current.CC)
                 event.position += DistanceStep
                 event.region_distance += DistanceStep
@@ -601,12 +609,11 @@ def RollDice(event):
                 event.region_distance += DistanceStep
             if(event.isCC):
                 continue
-        elif(event.particle_id == 'tau'):
-            event.check_taundaries(event.tauposition)
+        elif(np.logical_or(event.particle_id == 'tau', event.particle_id == 'mu') or event.particle_id == 'e'):
+            event.check_boundaries(event.chargedposition)
             if(event.position >= event.TotalDistance):
                 return event
                 continue
             else:
                 event.DecayParticle()
     return event
-
