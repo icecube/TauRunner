@@ -21,7 +21,7 @@ def initialize_parser():
     parser.add_argument('-flavor', dest='flavor', type=int, default=3,
         help='neutrino flavor (default is nutau): 1 for nue 2 for numu 3 for nutau')
     parser.add_argument('-secondaries', dest='secondaries', type=bool, default=False,
-        help='allow for nue and numu to be produced in some decay channels of the tau (default is False)')
+        help='allow for tau neutrino secondaries (default is False)')
     parser.add_argument('-e', dest='energy', type=float, 
         help='if you want to simulate a specific energy, pass it here in GeV')
     parser.add_argument('-t', dest='theta', type=float, 
@@ -178,9 +178,9 @@ while inds_left:
 
         out = RollDice(EventObject)
 
-        print(out.basket)
+        # print(out.basket)
         for sec in out.basket:
-            SecondaryEventObject = CasinoEvent('neutrino', sec['flavor'], False, [], sec['eini'], thetas[i], # What about the angle?
+            SecondaryEventObject = CasinoEvent('antineutrino', sec['flavor'], False, [], sec['eini'], thetas[i], # What about the angle?
 			sec['posini'], i, np.random.randint(low=1e9), iter_ChargedPosition[i],
 			water_layer, xs_model=xs, buff=args.buff, body=body)
 
@@ -195,7 +195,7 @@ while inds_left:
                 cc_sec_stack.append((float(sec_out.energy), float(sec_out.position), int(sec_out.index),
             str(sec_out.particle_id), 0, float(sec_out.TotalDistance), float(sec_out.GetCurrentDensity()), str(sec_out.flavor)))
                 del sec_out
-            elif (sec_out.particle_id != 'neutrino'):
+            elif (sec_out.particle_id != 'antineutrino'):
                 del sec_out
             else:
                 if sec_out.flavor == 1:
@@ -327,6 +327,6 @@ else:
         print("Outgoing Electrons:  ")
         print(es_e)
         if secondaries:
-            print("Outgoing Tau Secondaries (NuE and NuMu, in such order):  ")
+            print("Outgoing Tau Secondaries (AntinuE and AntinuMu, in such order):  ")
             print(sec_nues_e)
             print(sec_numus_e)

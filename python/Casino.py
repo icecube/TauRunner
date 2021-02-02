@@ -365,7 +365,7 @@ class CasinoEvent(object):
         r'''
         Sets particle properties, either when initializing or after an interaction.
         '''
-        if self.particle_id == "neutrino":
+        if "neutrino" in self.particle_id:
             self.mass = 0.0
             self.lifetime = np.inf
         if self.particle_id == "tau":
@@ -474,14 +474,13 @@ class CasinoEvent(object):
             raise ValueError("No, you did not just discover neutrino decays..")
         if self.particle_id == "tau":
             if self.secondaries:
-                # sample probability of generating numu or nue in tau decay channel REVISIT
-                p = np.random.uniform(0,1) # dummy sample
-                # ensure a secondary flavor will be produced
-                if p < .5:
-                    cdf = np.load('numu_cdf.npy')
+                # sample branching ratio of tau leptonic decay
+                p = np.random.uniform(0,1)
+                if p < .18:
+                    cdf = np.load('antinumu_cdf.npy')
                     sec_flavor = 2
-                else:
-                    cdf = np.load('nue_cdf.npy')
+                elif p > .18 and p < .36:
+                    cdf = np.load('antinue_cdf.npy')
                     sec_flavor = 1
                 # sample energy of tau secondary
                 bins = list(np.logspace(-5,0,101))[:-1]
@@ -555,6 +554,10 @@ class CasinoEvent(object):
                 self.SetParticleProperties()
                 self.nNC += 1
             
+            return
+
+        elif self.particle_id == "antineutrino":
+            self.basket = []
             return
 
         elif np.logical_or(self.particle_id == "tau", self.particle_id == "mu") or self.particle_id == "e":
