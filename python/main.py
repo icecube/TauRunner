@@ -95,27 +95,36 @@ cross_section_path = base_path+'../cross_sections/'
 def rndm(a, b, g, size=1):
     #Random spectrum function. g is gamma+1 (use -1 for E^-2)
     r = np.random.random(size=size)
+    if g == 0.:
+        # E^-1 is uniform sampling in log space
+        log_es = (np.log10(b) - np.log10(a)) * r + np.log10(a)
+        return 10.**log_es
     ag, bg = a**g, b**g
     return (ag + (bg - ag)*r)**(1./g)
 
 rand = np.random.RandomState(seed=seed)
 
 if args.gzk is not None:
-  # sample initial energies and incoming angles from GZK parameterization
-  cos_thetas = rand.uniform(low=0., high=1.,size=nevents)
-  cdf_indices= rand.uniform(low=0., high=1.,size=nevents)
-  thetas = np.arccos(cos_thetas)
-  gzk_cdf = np.load(gzk, allow_pickle=True).item()
-  eini = gzk_cdf(cdf_indices)*units.GeV
-  if debug:
-    message+="Sampled {} events from the GZK flux\n".format(nevents)
+    # sample initial energies and incoming angles from GZK parameterization
+    cos_thetas = rand.uniform(low=0., high=1.,size=nevents)
+    cdf_indices= rand.uniform(low=0., high=1.,size=nevents)
+    thetas = np.arccos(cos_thetas)
+    gzk_cdf = np.load(gzk, allow_pickle=True).item()
+    eini = gzk_cdf(cdf_indices)*units.GeV
+    if debug:
+        message+="Sampled {} events from the GZK flux\n".format(nevents)
 elif args.spectrum is not None:
-  cdf_indices = np.ones(nevents)
-  cos_thetas = rand.uniform(low=0., high=1.,size=nevents)
-  thetas = np.arccos(cos_thetas)
-  eini = rndm(float(args.range[0]), float(args.range[1]), args.spectrum + 1, size=nevents)*units.GeV
-  if debug:
-    message+="Sampled {} events from power law\n".format(nevents)
+    cdf_indices = np.ones(nevents)
+    if args.theta is None:
+        cos_thetas = rand.uniform(low=0., high=1.,size=nevents)
+        thetas = np.arccos(cos_thetas)
+    else:
+        if args.theta >= 90:
+            raise ValueError("Exit angle cannot be greater than 90.")
+        thetas = np.ones(nevents)*np.radians(args.theta)
+    eini = rndm(float(args.range[0]), float(args.range[1]), args.spectrum + 1, size=nevents)*units.GeV
+    if debug:
+        message+="Sampled {} events from power law\n".format(nevents)
 else:
     # Use a monochromatic flux
     cdf_indices = np.ones(nevents)
