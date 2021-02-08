@@ -105,21 +105,26 @@ def rndm(a, b, g, size=1):
 rand = np.random.RandomState(seed=seed)
 
 if args.gzk is not None:
-  # sample initial energies and incoming angles from GZK parameterization
-  cos_thetas = rand.uniform(low=0., high=1.,size=nevents)
-  cdf_indices= rand.uniform(low=0., high=1.,size=nevents)
-  thetas = np.arccos(cos_thetas)
-  gzk_cdf = np.load(gzk, allow_pickle=True).item()
-  eini = gzk_cdf(cdf_indices)*units.GeV
-  if debug:
-    message+="Sampled {} events from the GZK flux\n".format(nevents)
+    # sample initial energies and incoming angles from GZK parameterization
+    cos_thetas = rand.uniform(low=0., high=1.,size=nevents)
+    cdf_indices= rand.uniform(low=0., high=1.,size=nevents)
+    thetas = np.arccos(cos_thetas)
+    gzk_cdf = np.load(gzk, allow_pickle=True).item()
+    eini = gzk_cdf(cdf_indices)*units.GeV
+    if debug:
+        message+="Sampled {} events from the GZK flux\n".format(nevents)
 elif args.spectrum is not None:
-  cdf_indices = np.ones(nevents)
-  cos_thetas = rand.uniform(low=0., high=1.,size=nevents)
-  thetas = np.arccos(cos_thetas)
-  eini = rndm(float(args.range[0]), float(args.range[1]), args.spectrum + 1, size=nevents)*units.GeV
-  if debug:
-    message+="Sampled {} events from power law\n".format(nevents)
+    cdf_indices = np.ones(nevents)
+    if args.theta is None:
+        cos_thetas = rand.uniform(low=0., high=1.,size=nevents)
+        thetas = np.arccos(cos_thetas)
+    else:
+        if args.theta >= 90:
+            raise ValueError("Exit angle cannot be greater than 90.")
+        thetas = np.ones(nevents)*np.radians(args.theta)
+    eini = rndm(float(args.range[0]), float(args.range[1]), args.spectrum + 1, size=nevents)*units.GeV
+    if debug:
+        message+="Sampled {} events from power law\n".format(nevents)
 else:
     # Use a monochromatic flux
     cdf_indices = np.ones(nevents)
