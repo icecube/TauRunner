@@ -219,7 +219,7 @@ def TauDecayToPion(Etau, Enu, P):
     g1 = 0.
     if((1. - RPion - z)  > 0.0):
         g0 = 1./(1. - RPion)
-        g1 = -(2.*z - 1. - RPion)/(1. - RPion)**2
+        g1 = -(2.*z - 1. + RPion)/(1. - RPion)**2
 
     return(g0+P*g1)
     
