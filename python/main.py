@@ -180,7 +180,7 @@ while inds_left:
 
         # print(out.basket)
         for sec in out.basket:
-            SecondaryEventObject = CasinoEvent('antineutrino', sec['flavor'], False, [], sec['eini'], thetas[i], # What about the angle?
+            SecondaryEventObject = CasinoEvent('neutrino', sec['flavor'], False, [], sec['eini'], thetas[i], # What about the angle?
 			sec['posini'], i, np.random.randint(low=1e9), iter_ChargedPosition[i],
 			water_layer, xs_model=xs, buff=args.buff, body=body)
 
@@ -195,7 +195,7 @@ while inds_left:
                 cc_sec_stack.append((float(sec_out.energy), float(sec_out.position), int(sec_out.index),
             str(sec_out.particle_id), 0, float(sec_out.TotalDistance), float(sec_out.GetCurrentDensity()), str(sec_out.flavor)))
                 del sec_out
-            elif (sec_out.particle_id != 'antineutrino'):
+            elif (sec_out.particle_id != 'neutrino'):
                 del sec_out
             else:
                 if sec_out.flavor == 1:
@@ -272,7 +272,7 @@ if save:
     if isgzk:
         fluxtype = "cosmogenic"
     elif args.spectrum is not None:
-        fluxtype = "powerlaw"
+        fluxtype = "powerlaw_{}_{}".format(args.theta, args.spectrum)
     else:
         fluxtype = "monochromatic_{}_{}".format(args.energy, args.theta)
     try:
