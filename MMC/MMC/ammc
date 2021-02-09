@@ -15,7 +15,7 @@ if test ""`basename $0` = ammc; then MMCDIR=`echo "$0" | sed 's/[^/]*$//'`; EXI=
 if test "$MMCDIR" = ""; then MMCDIR="$PWD"; else cd "$MMCDIR"; MMCDIR="$PWD"; fi
 STRDIR=`echo $STRDIR | sed 's;'$PWD'/*;.;'`
 
-JDK_DIR="$MMCDIR/j*dk1.* $HOME/j*dk1.* /usr/lib/jvm/java-* /usr/*/j*dk1.* /opt/j*dk1.* /opt/IBMJava* /usr/*/IBMJava* $JAVA_HOME/../j*dk1.*"
+JDK_DIR="$MMCDIR/j*dk1.* $HOME/j*dk1.* /usr/lib/jvm/java-* /usr/*/j*dk1.* /opt/j*dk1.* /opt/IBMJava* /usr/*/IBMJava* $JAVA_HOME/../j*dk1.* $JAVA_HOME"
 GCC_DIR="$HOME/DIMA/gcc"
 
 NULL=/dev/null
