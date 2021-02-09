@@ -475,19 +475,24 @@ class CasinoEvent(object):
         if self.particle_id == "tau":
             if self.secondaries:
                 # sample branching ratio of tau leptonic decay
-                p = np.random.uniform(0,1)
-                if p < .18:
+                p0 = np.random.uniform(0,1)
+                bins = list(np.logspace(-5,0,101))[:-1]
+                if p0 < .18:
                     cdf = np.load('antinumu_cdf.npy')
                     sec_flavor = 2
-                elif p > .18 and p < .36:
+                     # sample energy of tau secondary
+                    sample = (iuvs(bins,cdf-np.random.uniform(0,1)).roots())[0]
+                    enu = sample*self.energy*units.GeV
+                    # add secondary to basket, prepare propagation
+                    self.basket.append({"flavor" : sec_flavor, "posini" : self.position, "eini" : enu})
+                elif p0 > .18 and p0 < .36:
                     cdf = np.load('antinue_cdf.npy')
                     sec_flavor = 1
-                # sample energy of tau secondary
-                bins = list(np.logspace(-5,0,101))[:-1]
-                sample = (iuvs(bins,cdf-np.random.uniform(0,1)).roots())[0]
-                enu = sample*self.energy*units.GeV
-                # add secondary to basket, prepare propagation
-                self.basket.append({"flavor" : sec_flavor, "posini" : self.position, "eini" : enu})
+                     # sample energy of tau secondary
+                    sample = (iuvs(bins,cdf-np.random.uniform(0,1)).roots())[0]
+                    enu = sample*self.energy*units.GeV
+                    # add secondary to basket, prepare propagation
+                    self.basket.append({"flavor" : sec_flavor, "posini" : self.position, "eini" : enu})
             self.energy = self.energy*self.rand.choice(zz, p=TauDecayWeights)
             self.particle_id = "neutrino"
             self.SetParticleProperties()
@@ -495,7 +500,7 @@ class CasinoEvent(object):
         if self.particle_id == "mu":
             self.survived=False
         if self.particle_id == "e":
-            raise ValueError("An electron decayed??") # REVISIT
+            self.survived=False
 
     def check_boundaries(self, charged_position):
         r'''
@@ -556,10 +561,6 @@ class CasinoEvent(object):
             
             return
 
-        elif self.particle_id == "antineutrino":
-            self.basket = []
-            return
-
         elif np.logical_or(self.particle_id == "tau", self.particle_id == "mu") or self.particle_id == "e":
             print("Im not supposed to be here")
             raise ValueError("tau/mu/e interactions don't happen here")
@@ -574,7 +575,7 @@ class CasinoEvent(object):
 def RollDice(event):
 
     while(not np.any((event.position >= event.TotalDistance) or (event.energy <= event.GetMass()) or (event.isCC))):
-        if(event.particle_id == 'neutrino'):
+        if(event.particle_id == "neutrino"):
             if(event.energy/units.GeV <= 1e3):
                 event.position = event.TotalDistance
                 continue
