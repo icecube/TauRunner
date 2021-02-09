@@ -7,8 +7,8 @@ from scipy.interpolate import interp1d
 import time
 import subprocess
 import nuSQUIDSpy as nsq
-from earth import *
-import earth
+from earth import get_radii_densities, GetDistancesPerSection
+#import earth
 
 units = nsq.Const()
 dis = nsq.NeutrinoDISCrossSectionsFromTables()
@@ -314,13 +314,17 @@ class CasinoEvent(object):
                     self.buff -= region_lengths[-1]
                     region_lengths = np.delete(region_lengths, -1)
                     del regions[-1]
+            print(region_lengths)
             for i in range(len(region_lengths)):
                 region_lengths[i] = region_lengths[i] * units.km
                 densities.append(earth_model_densities[regions[i]] * units.gr/(units.cm**3))
+            print(np.array(densities)/(units.gr/(units.cm**3)))
        
         elif body=='sun':
-            densities      = [152.9 * units.gr/units.cm**3]
-            region_lengths = [6.957e5 * units.km, 2*units.km]
+            from sun import Sun
+            sun = Sun()
+            densities      = sun.mass_density()
+            region_lengths = None
         elif body=='christ':
             a_file = open(".ascii_art.txt")
             lines = a_file.readlines()
@@ -402,6 +406,7 @@ class CasinoEvent(object):
         return -np.log(p)/step
 
     def GetCurrentDensity(self):
+        if self.densit
         return self.densities[self.region_index]
 
     def GetTotalRegionLength(self):

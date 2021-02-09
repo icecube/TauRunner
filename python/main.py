@@ -42,7 +42,7 @@ def initialize_parser():
         help="Enter 'CSMS' if you would like to run the simulation with a pQCD xs model")
     parser.add_argument('-tau_losses', dest='tau_losses', default=True, action='store_false',
         help="Raise this flag if you want to turn off tau losses. In this case, taus will decay at rest.")
-    parser.add_argument('-body', dest='body', type=str, default='earth',
+    parser.add_argument('--body', dest='body', type=str, default='earth',
         help="Raise this flag if you want to turn off tau losses. In this case, taus will decay at rest.")
     
     args = parser.parse_args()
