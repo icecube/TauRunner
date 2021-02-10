@@ -117,6 +117,10 @@ def DifferentialOutGoingLeptonDistribution(ein, eout, interaction, xs):
                         interaction) 
         return diff
 
+def chunks(lst, n):
+    for i in range(0, len(lst), n):
+        yield lst[i:i+n]
+
 def DoAllCCThings(objects, xs, flavor, losses=True):
     r'''
     Calling MMC requires overhead, so handle all MMC calls per iterations
@@ -137,10 +141,10 @@ def DoAllCCThings(objects, xs, flavor, losses=True):
     final_values= []
     efinal, distance = [], []
     flavor = objects[0][-1]
-    e      = [obj[0]/units.GeV for obj in objects]                    #MMC takes initial energy in GeV 
-    dists  = [1e3*(obj[-4] - obj[1])/units.km for obj in objects]     #distance to propagate in m 
-    mult   = [obj[-2]*(units.cm**3)/units.gr/2.7 for obj in objects]  #convert density back to normal (not natural) units
-                                                                      #factor of 2.7 because we're scaling the default rho in MMC
+    e      = [obj[0]/units.GeV for obj in objects]                          #MMC takes initial energy in GeV 
+    dists  = [1e3*np.abs(obj[-4] - obj[1])/units.km for obj in objects]     #distance to propagate in m 
+    mult   = [obj[-2]*(units.cm**3)/units.gr/2.7 for obj in objects]        #convert density back to normal (not natural) units
+
     sort         = sorted(list(zip(mult, e, dists, objects)))
     sorted_mult  = np.asarray(list(zip(*sort))[0])
     sorted_e     = np.asarray(list(zip(*sort))[1])
@@ -169,17 +173,9 @@ def DoAllCCThings(objects, xs, flavor, losses=True):
         eni = sorted_e[split[i]+1:split[i+1]+1]
         din = sorted_dists[split[i]+1:split[i+1]+1]
         max_arg = 500
-        nbatch = np.ceil(len(eni)/max_arg)
-        eni_str = []
-        for i in range(int(nbatch)):
-            if i != int(nbatch) - 1:
-                eni_str.append(['{} {}'.format(eni[i*max_arg + x], din[i*max_arg + x]) for x in range(max_arg)])
-            else:
-                eni_str.append(['{} {}'.format(eni[i*max_arg + x], din[i*max_arg + x]) for x in range(len(eni)%max_arg)])
-
-        num_args = len(eni)/max_arg
-        if len(eni) % max_arg != 0:
-            eni_str.append(["{} {}".format(eni[x], din[x]) for x in range(int(max_arg*num_args), len(eni))])
+        eni_str = ['{} {}'.format(e, d) for e,d in list(zip(eni, din))]
+        eni_str = list(chunks(eni_str, max_arg))
+       
         for kk in range(len(eni_str)):
             eni_str[kk].append(str(multis[0]))
             eni_str[kk].insert(0, propagate_path)
