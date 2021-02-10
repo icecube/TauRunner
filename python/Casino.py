@@ -142,7 +142,7 @@ def DoAllCCThings(objects, xs, flavor, losses=True):
     efinal, distance = [], []
     flavor = objects[0][-1]
     e      = [obj[0]/units.GeV for obj in objects]                          #MMC takes initial energy in GeV 
-    dists  = [1e3*np.abs(obj[-4] - obj[1])/units.km for obj in objects]     #distance to propagate in m 
+    dists  = [1e3*np.abs(obj[-3] - obj[1])/units.km for obj in objects]     #distance to propagate in m 
     mult   = [obj[-2]*(units.cm**3)/units.gr/2.7 for obj in objects]        #convert density back to normal (not natural) units
 
     sort         = sorted(list(zip(mult, e, dists, objects)))
