@@ -37,24 +37,3 @@ class Body():
         current_density = self.density[layer_index]
         return current_density(r)
 
-    def total_column_depth(self, track, safe_mode=False):
-        r'''
-        params
-        ______
-        track (Track) :
-
-        returns
-        _______
-        column_depth (float) :
-        '''
-        integrand = lambda x: self.get_density(track.x_to_r(x))*track.x_to_r_prime(x)*self.radius
-        xx        = np.append(sorted(track.r_to_x(self.layer_boundaries)), 1)
-        xx        = xx[np.where(~np.isnan(xx))[0]] # non-nanize
-        II        = []
-        for xi, xf in zip(xx[:-1], xx[1:]):
-            I = quad(integrand, xi, xf)
-            if safe_mode:
-               if I[1]/I[0] > 1e-4:
-                    raise RuntimeError('Error too large')
-            II.append(np.abs(I[0]))
-        return np.sum(II)/units.gr*units.cm**2
