@@ -428,8 +428,8 @@ class CasinoEvent(object):
         return -np.log(p)/step
 
     def GetCurrentDensity(self):
-        if self.densit
-        return self.densities[self.region_index]
+        if self.density:
+            return self.densities[self.region_index]
 
     def GetTotalRegionLength(self):
         return self.region_lengths[self.region_index]
