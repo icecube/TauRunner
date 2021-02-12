@@ -317,13 +317,18 @@ public class Frejus{
 		//line+=" "+Output.f(result>0?result*1.e-3:result*1.e-2);
 		String Stuff;
                 String OtherStuff;
-		Stuff=Output.f(result>0?result:result*1.e-2);
+		Stuff=Output.f(result>=0?result:result*1.e-2);
 		OtherStuff=Output.f(x);
                 //line+=" "+Output.f(result>0?result*1.e-3:result*1.e-2);
   		//if(timef) line+=" "+Output.f(p.p.t
-  		Output.out.println(Stuff);
-		if(result>0) Output.out.println(OtherStuff);
-	    }
+  		String muonStuff;
+                muonStuff=Output.f(105.7);
+  		if(type=="mu"&&result<0) Output.out.println(muonStuff);
+                Output.out.println(Stuff);
+		if(result>=0) Output.out.println(OtherStuff);
+	      	//Output.out.println(result);
+                //Output.out.println(OtherStuff);
+           }
 
 	}catch(Exception error){
 //	    Output.err.println("Program finished with exception: "+error.toString());
