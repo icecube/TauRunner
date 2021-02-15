@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.integrate import quad
 import sys
-sys.path.append('./modules/')
+sys.path.append('../modules/')
 from physicsconstants import PhysicsConstants
 units = PhysicsConstants()
 
@@ -26,14 +26,17 @@ class Body():
             elif len(layer_boundaries)!=len(density)+1:
                 raise RuntimeError('Density and layer_boundaries must have same length.')
             else:
-                self.density          = [units.gr/units.cm**3*Callable(obj) for obj in density]
+                self._density          = [units.gr/units.cm**3*Callable(obj) for obj in density]
                 self.layer_boundaries = layer_boundaries
         else:
-            self.density = [units.gr/units.cm**3*Callable(density)]
+            self._density = [units.gr/units.cm**3*Callable(density)]
             self.layer_boundaries = np.array([0.0, 1.0])
 
     def get_density(self, r):
-        layer_index     = np.digitize(r, self.layer_boundaries)-1
-        current_density = self.density[layer_index]
+        if r==1:
+            layer_index = -1
+        else:
+            layer_index = np.digitize(r, self.layer_boundaries)-1
+        current_density = self._density[layer_index]
         return current_density(r)
 
