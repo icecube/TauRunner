@@ -15,6 +15,12 @@ class Chord(Track):
         desc = (self.theta, self._m)
         return 'theta = %f radians\nm     = %f' % desc
 
+    def d_to_x(self, d, body=None):
+        return d/self._m
+
+    def x_to_d(self, x, body=None):
+        return self._m*x
+
     def r_to_x(self, r):
         return (self._c - np.sqrt(r**2- self._s**2))/self._m
 
