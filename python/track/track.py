@@ -9,7 +9,7 @@ class Track(object):
         self.depth                   = depth
         self._column_depth_functions = {}
       
-    def _column_depth(self, body, xi, xf, safe_mode=True, debug=False):
+    def _column_depth(self, body, xi, xf, safe_mode=True):
         '''
         params
         ______
@@ -25,11 +25,6 @@ class Track(object):
             raise RuntimeError('xi must be less than or equal to xf')
         integrand = lambda x: body.get_density(self.x_to_r(x))*self.x_to_d_prime(x)*body.radius
         #integrand = lambda x: body.get_density(self.x_to_r(x))*self.x_to_d(x)*self.x_to_d_prime(x)*body.radius
-        if debug:
-            print(self.x_to_r(xi))
-            print(body.get_density(self.x_to_r(xi))/units.gr*units.cm**3)
-            print(self.x_to_d(xi)*body.radius)
-            print(self.x_to_d_prime(xi))
         # find where the path intersects layer boundaries
         xx        = []
         for r in body.layer_boundaries:
