@@ -1,5 +1,4 @@
 import numpy as np
-from scipy.integrate import quad
 import sys
 sys.path.append('../modules/')
 from physicsconstants import PhysicsConstants
@@ -7,9 +6,9 @@ units = PhysicsConstants()
 
 from callable import Callable
 
-class Body():
+class Body(object):
 
-    def __init__(self, density, radius, layer_boundaries=None):
+    def __init__(self, density, radius, layer_boundaries=None, name=None):
         r'''
         params
         ______
@@ -18,7 +17,8 @@ class Body():
 
         '''
 
-        self.radius  = radius*units.km
+        self.radius = radius*units.km
+        self._name  = name
         # Check if body is segmented
         if hasattr(density, '__iter__'):
             if layer_boundaries is None:
@@ -39,4 +39,3 @@ class Body():
             layer_index = np.digitize(r, self.layer_boundaries)-1
         current_density = self._density[layer_index]
         return current_density(r)
-

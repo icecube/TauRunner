@@ -24,4 +24,4 @@ earth_densities  = [helper(param) for param in prem_params]
 layer_boundaries = np.array([0, 1221, 3480, 5701, 5771, 5971, 6151, 6346.6, 6356, 6368], 
                             dtype=float) / r_earth
 
-Earth = Body(earth_densities, r_earth, layer_boundaries=layer_boundaries)
+Earth = Body(earth_densities, r_earth, layer_boundaries=layer_boundaries, name='PREM_earth')

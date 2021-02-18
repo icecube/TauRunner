@@ -1,20 +1,18 @@
-"""
-doc_inherit decorator
-
-Usage:
-
-class Foo(object):
-    def foo(self):
-        "Frobber"
-        pass
-
-class Bar(Foo):
-    @doc_inherit
-    def foo(self):
-        pass 
-
-Now, Bar.foo.__doc__ == Bar().foo.__doc__ == Foo.foo.__doc__ == "Frobber"
-"""
+#doc_inherit decorator
+#
+#Usage:
+#
+#class Foo(object):
+#    def foo(self):
+#        "Frobber"
+#        pass
+#
+#class Bar(Foo):
+#    @doc_inherit
+#    def foo(self):
+#        pass 
+#
+#Now, Bar.foo.__doc__ == Bar().foo.__doc__ == Foo.foo.__doc__ == "Frobber"
 
 from functools import wraps
 

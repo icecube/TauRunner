@@ -20,9 +20,9 @@ class RadialTrack(Track):
         return (1-self.depth)*x
 
     @doc_inherit
-    def x_to_r(self, x):
-        return x*(1-self.depth)
+    def x_to_d_prime(self, x):
+        return (1-self.depth)
 
     @doc_inherit
-    def x_to_r_prime(self, x):
-        return (1-self.depth)
+    def x_to_r(self, x):
+        return x*(1-self.depth)

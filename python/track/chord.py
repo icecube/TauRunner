@@ -1,6 +1,9 @@
 import numpy as np
+import sys
+sys.path.append('../modules/')
 
 from track import Track
+from doc_inherit import doc_inherit
 
 class Chord(Track):
 
@@ -16,16 +19,25 @@ class Chord(Track):
         return 'theta = %f radians\nm     = %f' % desc
 
     @doc_inherit
-    def d_to_x(self, d, body=None):
+    def d_to_x(self, d):
         return d/self._m
 
     @doc_inherit
-    def x_to_d(self, x, body=None):
+    def x_to_d_prime(self, x):
+        return self._m
+
+    @doc_inherit
+    def x_to_d(self, x):
         return self._m*x
 
     @doc_inherit
     def r_to_x(self, r):
-        return (self._c - np.sqrt(r**2- self._s**2))/self._m
+        val1 = (self._c - np.sqrt(r**2- self._s**2))/self._m
+        val2 = (self._c + np.sqrt(r**2- self._s**2))/self._m
+        if val1!=val2:
+            return [val1, val2]       
+        else:
+            return val1
 
     @doc_inherit
     def x_to_r(self, x):
