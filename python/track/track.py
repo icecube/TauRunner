@@ -9,7 +9,7 @@ class Track(object):
         self.depth                   = depth
         self._column_depth_functions = {}
       
-    def _column_depth(self, body, xi, xf, safe_mode=True):
+    def _column_depth(self, body, xi, xf, safe_mode=True, debug=False):
         '''
         params
         ______
@@ -23,7 +23,13 @@ class Track(object):
         '''
         if not (xi<=xf):
             raise RuntimeError('xi must be less than or equal to xf')
-        integrand = lambda x: body.get_density(self.x_to_r(x))*self.x_to_d(x)*self.x_to_d_prime(x)*body.radius
+        integrand = lambda x: body.get_density(self.x_to_r(x))*self.x_to_d_prime(x)*body.radius
+        #integrand = lambda x: body.get_density(self.x_to_r(x))*self.x_to_d(x)*self.x_to_d_prime(x)*body.radius
+        if debug:
+            print(self.x_to_r(xi))
+            print(body.get_density(self.x_to_r(xi))/units.gr*units.cm**3)
+            print(self.x_to_d(xi)*body.radius)
+            print(self.x_to_d_prime(xi))
         # find where the path intersects layer boundaries
         xx        = []
         for r in body.layer_boundaries:
@@ -65,7 +71,7 @@ class Track(object):
         X_to_x_tck    = splrep(column_depths, xx)
         x_to_X        = lambda x: splev(x, x_to_X_tck)
         X_to_x        = lambda X: splev(X, X_to_x_tck)
-        self._column_depth_functions[body._name] = (x_to_X, (column_depths[-1], X_to_x))
+        self._column_depth_functions[body._name] = (column_depths[-1], x_to_X, X_to_x)
 
 
     def r_to_x(self, r):
@@ -93,10 +99,8 @@ class Track(object):
         column_depth (float) : total column depth for the entire track [natural units]
         '''
         if body._name not in self._column_depth_functions.keys():
-            print('Need to make column depth splines.')
-            print('Initializing...')
             self._initialize_column_depth_functions(body)
-        return self._column_depth_functions[body._name][1][0]
+        return self._column_depth_functions[body._name][0]
 
     def x_to_d(self, x):
         '''
@@ -155,18 +159,14 @@ class Track(object):
         x (float): Affine track parameter
         '''
         if body._name not in self._column_depth_functions.keys():
-            print('Need to make column depth splines.')
-            print('Initializing...')
             self._initialize_column_depth_functions(body)
-        max_X = self._column_depth_functions[body._name][1][0]
+        max_X = self._column_depth_functions[body._name][0]
         if X<=max_X:
-            return self._column_depth_functions[body._name][1][1](X)
+            return self._column_depth_functions[body._name][2](X)
         else:
             raise ValueError('Column depth was greater than total')
 
     def x_to_X(self, body, x):
         if body._name not in self._column_depth_functions.keys():
-            print('Need to make column depth splines.')
-            print('Initializing...')
             self._initialize_column_depth_functions(body)
-        return self._column_depth_functions[body._name][0](x)
+        return self._column_depth_functions[body._name][1](x)
