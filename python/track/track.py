@@ -62,8 +62,17 @@ class Track(object):
         from scipy.interpolate import splrep, splev
         xx            = np.linspace(0, 1, 101)
         column_depths = np.append(0, np.cumsum([self._column_depth(body, x[0], x[1]) for x in zip(xx[:-1], xx[1:])]))
-        x_to_X_tck    = splrep(xx, column_depths)
-        X_to_x_tck    = splrep(column_depths, xx)
+        # Pad arrays to help spliine stability
+        npad          = 5
+        xpad          = np.linspace(0.01, 0.05, npad)
+        padded_xx     = np.hstack([-xpad[::-1], xx, 1+xpad])
+        print(padded_xx)
+        print(len(padded_xx))
+        padded_cds    = np.hstack([np.full(npad, column_depths[0]), column_depths, np.full(npad, column_depths[-1])])
+        print(padded_cds)
+        print(len(padded_cds))
+        x_to_X_tck    = splrep(padded_xx, padded_cds)
+        X_to_x_tck    = splrep(padded_cds, padded_xx)
         x_to_X        = lambda x: splev(x, x_to_X_tck)
         X_to_x        = lambda X: splev(X, X_to_x_tck)
         self._column_depth_functions[body._name] = (column_depths[-1], x_to_X, X_to_x)
