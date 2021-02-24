@@ -3,12 +3,16 @@
 import os, sys
 os.environ['HDF5_DISABLE_VERSION_CHECK']='2'
 import argparse
+
+sys.path.append('./modules')
+from physicsconstants import PhysicsConstants
 import nuSQUIDSpy as nsq
 
 info = sys.version_info
 pyv  = int(info.major)
 
-units = nsq.Const()
+#units = nsq.Const()
+units = PhysicsConstants()
 dis = nsq.NeutrinoDISCrossSectionsFromTables()
 tds = nsq.TauDecaySpectra()
 

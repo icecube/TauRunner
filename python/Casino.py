@@ -8,9 +8,12 @@ import time
 import subprocess
 import nuSQUIDSpy as nsq
 from earth import get_radii_densities, GetDistancesPerSection
+sys.path.append('./modules')
+from physicsconstants import PhysicsConstants
 #import earth
 
-units = nsq.Const()
+#units = nsq.Const()
+units = PhysicsConstants()
 dis = nsq.NeutrinoDISCrossSectionsFromTables()
 info = sys.version_info
 pyv  = int(info.major)
