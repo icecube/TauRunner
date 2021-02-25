@@ -6,15 +6,15 @@ import argparse
 
 sys.path.append('./modules')
 from physicsconstants import PhysicsConstants
-import nuSQUIDSpy as nsq
+#import nuSQUIDSpy as nsq
+import track
 
 info = sys.version_info
 pyv  = int(info.major)
 
-#units = nsq.Const()
 units = PhysicsConstants()
-dis = nsq.NeutrinoDISCrossSectionsFromTables()
-tds = nsq.TauDecaySpectra()
+#dis = nsq.NeutrinoDISCrossSectionsFromTables()
+#tds = nsq.TauDecaySpectra()
 
 def initialize_parser():
     parser = argparse.ArgumentParser()
@@ -34,8 +34,6 @@ def initialize_parser():
         help='If you want a power law, provide spectral index here')
     parser.add_argument('--range', dest='range', nargs='+', 
         help='Range for injected spectrum in format "low high"')
-    parser.add_argument('-buff', dest='buff', type=float, default=0., 
-        help="Simulate to a finite distance beneath the edge of the Earth (in km)")
     parser.add_argument('-p', dest='path' , type=str, default = './', 
         help='Path to script. Default assumes you are running from within the same directory')
     parser.add_argument('-d', dest='debug', default=False, action='store_true', 
@@ -71,10 +69,18 @@ nevents = int(args.nevents)
 flavor=args.flavor
 seed = args.seed
 debug = args.debug
-xs = args.xs_model
+xs_model = args.xs_model
 water_layer = args.water_layer
 losses = args.losses
 body = args.body
+
+if(body=='earth'):
+    from body import Earth
+    body = Earth
+elif(body=='sun'):
+    import body
+    body = Sun
+
 if debug:
     message = ''
 if args.gzk is not None:
@@ -93,8 +99,6 @@ else:
 
 from Casino import *
 import Casino
-
-cross_section_path = base_path+'../cross_sections/'
 
 def rndm(a, b, g, size=1):
     #Random spectrum function. g is gamma+1 (use -1 for E^-2)
@@ -164,11 +168,12 @@ while inds_left:
     for j in range(len(inds_left) - 1, -1, -1):
         i = inds_left[j] #Unique event index
     
-        EventObject = CasinoEvent(iter_particleID[i], flavors[i], iter_energies[i], thetas[i],
-			iter_positions[i], i, np.random.randint(low=1e9), iter_ChargedPosition[i],
-			water_layer, xs_model=xs, buff=args.buff, body=body)
+        particle = Particle(iter_particleID[i], flavors[i], iter_energies[i], 
+                            thetas[i], iter_positions[i], i, np.random.randint(low=1e9),
+                            iter_ChargedPosition[i], xs_model=xs_model)
 
-        out = RollDice(EventObject)
+        track = track.Chord(thetas[i])
+        out = Propagate(particle, track, body)
 
         iter_nCC[i]+=out.nCC
         iter_nNC[i]+=out.nNC      
@@ -176,19 +181,23 @@ while inds_left:
             del inds_left[j]
             del out
         elif (out.isCC):
-            cc_stack.append((float(out.energy), float(out.position), int(out.index),
-		 str(out.particle_id), 0, float(out.TotalDistance), float(out.GetCurrentDensity()), str(out.flavor)))
+            current_distance=track.x_to_d(out.position)*body.radius
+            total_distance=track.x_to_d(1.)*body.radius
+            print(out.position)
+            current_density=body.get_density(track.x_to_r(out.position))
+            cc_stack.append((float(out.energy), float(current_distance), int(out.index),
+		 str(out.ID), 0, float(total_distance), float(current_density), str(out.flavor)))
             del out
         else:
             ind = int(out.index)
             if ind != i:
                 message += "Index mismatch: {} {}".format(ind, i)
-            if (out.particle_id == 'tau'):
+            if (out.ID == 'tau'):
                 taus_e.append((eini[ind], float(out.energy), thetas[ind], cdf_indices[ind], iter_nCC[ind], iter_nNC[ind]))
                	iter_positions[out.index] = float(out.position)
                 del inds_left[j]
                 del out
-            elif (out.particle_id == 'mu'):
+            elif (out.ID == 'mu'):
                 mus_e.append((eini[ind], float(out.energy), thetas[ind], cdf_indices[ind], iter_nCC[ind], iter_nNC[ind]))
                 iter_positions[out.index] = float(out.position)
                 del inds_left[j]
@@ -201,7 +210,7 @@ while inds_left:
     if (len(cc_stack) > 0):
         if debug:
             message += "{} events passed to MMC in loop iteration {}\n".format(len(cc_stack), counter)
-        EventCollection = DoAllCCThings(cc_stack, xs, losses)
+        EventCollection = DoAllCCThings(cc_stack, xs_model, losses)
         for event in EventCollection:
             iter_positions[int(event[2])] = float(event[1])
             iter_energies[int(event[2])] = float(event[0])
