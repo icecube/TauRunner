@@ -68,7 +68,7 @@ class Track(object):
         padded_xx     = np.hstack([-xpad[::-1], xx, 1+xpad])
         padded_cds    = np.hstack([np.full(npad, column_depths[0]), column_depths, np.full(npad, column_depths[-1])])
         x_to_X_tck    = splrep(padded_xx, padded_cds)
-        X_to_x_tck    = splrep(padded_cds, padded_xx)
+        X_to_x_tck    = splrep(column_depths, xx)
         x_to_X        = lambda x: splev(x, x_to_X_tck)
         X_to_x        = lambda X: splev(X, X_to_x_tck)
         self._column_depth_functions[body._name] = (column_depths[-1], x_to_X, X_to_x)

@@ -172,8 +172,8 @@ while inds_left:
                             thetas[i], iter_positions[i], i, np.random.randint(low=1e9),
                             iter_ChargedPosition[i], xs_model=xs_model)
 
-        track = track.Chord(thetas[i])
-        out = Propagate(particle, track, body)
+        my_track = track.Chord(thetas[i])
+        out = Propagate(particle, my_track, body)
 
         iter_nCC[i]+=out.nCC
         iter_nNC[i]+=out.nNC      
@@ -181,10 +181,9 @@ while inds_left:
             del inds_left[j]
             del out
         elif (out.isCC):
-            current_distance=track.x_to_d(out.position)*body.radius
-            total_distance=track.x_to_d(1.)*body.radius
-            print(out.position)
-            current_density=body.get_density(track.x_to_r(out.position))
+            current_distance=my_track.x_to_d(out.position)*body.radius
+            total_distance=my_track.x_to_d(1.)*body.radius
+            current_density=body.get_density(my_track.x_to_r(out.position))
             cc_stack.append((float(out.energy), float(current_distance), int(out.index),
 		 str(out.ID), 0, float(total_distance), float(current_density), str(out.flavor)))
             del out

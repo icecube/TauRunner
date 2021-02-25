@@ -2,7 +2,7 @@ import numpy as np
 import sys
 sys.path.append('../modules/')
 
-from .track import Track
+from track import Track
 from doc_inherit import doc_inherit
 
 class Chord(Track):

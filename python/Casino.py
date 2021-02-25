@@ -8,6 +8,7 @@ import time
 import subprocess
 import nuSQUIDSpy as nsq
 sys.path.append('./modules')
+sys.path.append('./')
 from physicsconstants import PhysicsConstants
 from cross_sections import xs
 units = PhysicsConstants()
@@ -391,15 +392,10 @@ def Propagate(particle, track, body):
             p2 = particle.rand.random_sample()
             CC_lint = particle.GetInteractionDepth(interaction='CC')
             p_int_CC = particle.GetTotalInteractionDepth() / CC_lint
-            print(particle.position)
             if(p2 <= p_int_CC):
                 particle.Interact('CC')
                 CurrentDepth=track.x_to_X(body, particle.position)
-                print('current depth: {}'.format(CurrentDepth))
-                print('depth step: {}'.format(DepthStep))
-                print('output of track.X_to_x: {}'.format(track.X_to_x(body, CurrentDepth+DepthStep)))
                 particle.position+=track.X_to_x(body, CurrentDepth+DepthStep)
-                print(particle.position)
             else:
                 particle.Interact('NC')
                 CurrentDepth=track.x_to_X(body, particle.position)
