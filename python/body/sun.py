@@ -1,23 +1,26 @@
 import numpy as np
 from scipy.interpolate import splev, splrep
 
-from physicsconstants import PhysicsConstants
-units = PhysicsConstants()
 from body import Body
+from physicsconstants import PhysicsConstants
+from callable import Callable
+units = PhysicsConstants()
 
 def mass_density_from_model(solar_model_file):
     model   = np.genfromtxt(solar_model_file)
     xx      = model[:,0]
     density = model[:,1]
     tck = splrep(xx, np.log(density))
-    return lambda x: np.exp(splev(x, tck))
+    func = lambda x: np.exp(splev(x, tck))
+    return func
 
 def e_density_from_model(solar_model_file):
     model    = np.genfromtxt(solar_model_file)
     xx       = model[:,0]
     density  = model[:,2]
-    tck      = splrep(xx, np.log(density)
-    return lambda x: np.exp(splev(x, tck))
+    tck      = splrep(xx, np.log(density))
+    func = lambda x: np.exp(splev(x, tck))
+    return func
 
 class Sun(Body):
 
@@ -42,5 +45,5 @@ def make_sun(model_file):
     edensity = e_density_from_model(model_file)
     return Sun(density, 6.963e5, edensity)
 
-HZ_sun = make_sun('../solar_models/Hybrid_model_DM_SUN_HZ.txt')  
-LZ_sun = make_sun('../solar_models/Hybrid_model_DM_SUN_LZ.txt')  
+HZ_Sun = make_sun('../../solar_models/Hybrid_model_DM_SUN_HZ.txt')  
+LZ_Sun = make_sun('../../solar_models/Hybrid_model_DM_SUN_LZ.txt')  
