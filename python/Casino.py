@@ -8,7 +8,6 @@ import time
 import subprocess
 import nuSQUIDSpy as nsq
 sys.path.append('./modules')
-sys.path.append('./')
 from physicsconstants import PhysicsConstants
 from cross_sections import xs
 units = PhysicsConstants()
@@ -35,15 +34,14 @@ def DoAllCCThings(objects, xs, flavor, losses=True):
     efinal, distance = [], []
     flavor = objects[0][-1]
     e      = [obj[0]/units.GeV for obj in objects]                    #MMC takes initial energy in GeV 
-    dists  = [1e3*(obj[-4] - obj[1])/units.km for obj in objects]     #distance to propagate is total distance minus the current position in m 
+    dists  = [1e3*(obj[6] - obj[2])/units.km for obj in objects]     #distance to propagate is total distance minus the current position in m 
     mult   = [obj[-2]*(units.cm**3)/units.gr/2.7 for obj in objects]  #convert density back to normal (not natural) units
-                                                                      #factor of 2.7 because we're scaling the default rho in MMC
     sort         = sorted(list(zip(mult, e, dists, objects)))
     sorted_mult  = np.asarray(list(zip(*sort))[0])
     sorted_e     = np.asarray(list(zip(*sort))[1])
     sorted_dists = np.asarray(list(zip(*sort))[2])
     sorted_obj   = np.asarray(list(zip(*sort))[3])
-
+    
     if(not losses):
         final_energies = sorted_e
         final_distances = np.zeros(len(sorted_e))
@@ -54,11 +52,11 @@ def DoAllCCThings(objects, xs, flavor, losses=True):
 
     split = np.append(np.append([-1], np.where(sorted_mult[:-1] != sorted_mult[1:])[0]), len(sorted_mult))
     
-    propagate_path = sys.path[-1]
+    propagate_path = os.path.dirname(os.path.realpath(__file__))
     if(xs=='dipole'):
-        propagate_path+='propagate_{}s.sh'.format(flavor)
+        propagate_path+='/propagate_{}s.sh'.format(flavor)
     elif(xs=='CSMS'):
-        propagate_path+='propagate_{}s_ALLM.sh'.format(flavor)
+        propagate_path+='/propagate_{}s_ALLM.sh'.format(flavor)
     else:
         raise ValueError("Cross section model error.")
     for i in range(len(split)-1):
@@ -304,33 +302,8 @@ class Particle(object):
         if self.ID == "tau":
             raise ValueError("Tau interaction length should never be sampled.")
 
-    def GetInteractionLength(self,density,interaction):
-        r'''
-        Calculates the mean interaction length.
-        
-        Parameters
-        -----------
-        density: float
-            medium density in natural units
-        interaction: nusquids obj
-            nusquids object defining the interaction type (CC or NC).
-        Returns
-        ----------
-        Interaction length: float
-            mean interaction length in natural units
-        '''
-        if self.ID == "neutrino":
-            return proton_mass/(xs.TotalNeutrinoCrossSection(self.energy, interaction = interaction, xs_model=self.xs_model)*density)
-        if self.ID == "tau":
-            raise ValueError("Tau interaction length should never be sampled.")
-
-    def GetInteractionProbability(self,dL,density,interaction):
-        return 1.-np.exp(-dL/self.GetInteractionLength(density,interaction))
-
-    def GetDensityRatio(self):
-        current_density = self.GetCurrentDensity()
-        next_density = self.densities[self.region_index + 1]
-        return current_density / next_density
+    def GetInteractionProbability(self,ddepth,interaction):
+        return 1.-np.exp(-ddepth/self.GetInteractionDepth(interaction))
 
     def Decay(self):
         if self.ID == "neutrino":
@@ -383,7 +356,6 @@ def Propagate(particle, track, body):
     #keep iterating until final column depth is reached or a charged lepton is made
     while(not np.any((particle.position >= 1.) or (particle.isCC))):
         if(particle.ID == 'neutrino'):
-    
            #Determine how far you're going
             p1 = particle.rand.random_sample()
             DepthStep = particle.GetProposedDepthStep(p1)
@@ -392,24 +364,35 @@ def Propagate(particle, track, body):
             p2 = particle.rand.random_sample()
             CC_lint = particle.GetInteractionDepth(interaction='CC')
             p_int_CC = particle.GetTotalInteractionDepth() / CC_lint
+
+            CurrentDepth=track.x_to_X(body, particle.position)
             if(p2 <= p_int_CC):
-                particle.Interact('CC')
-                CurrentDepth=track.x_to_X(body, particle.position)
-                particle.position+=track.X_to_x(body, CurrentDepth+DepthStep)
+                if(CurrentDepth+DepthStep >= total_column_depth):
+                    particle.position=1.
+                    return particle
+                else:
+                    particle.position=track.X_to_x(body, CurrentDepth+DepthStep)
+                    particle.Interact('CC')
             else:
-                particle.Interact('NC')
-                CurrentDepth=track.x_to_X(body, particle.position)
-                particle.position += track.X_to_x(body, CurrentDepth+DepthStep)
+                if(CurrentDepth+DepthStep >= total_column_depth):
+                    particle.position=1.
+                    return particle
+                else:
+                    particle.position=track.X_to_x(body, CurrentDepth+DepthStep)
+                    particle.Interact('NC')
             if(particle.isCC):
                 continue
         elif(np.logical_or(particle.ID == 'tau', particle.ID == 'mu')):
-            current_distance=track.x_to_d(body, particle.position)
-            current_distance+=particle.chargedposition/body.radius
-            particle.position=track.d_to_x(body, current_distance)
+            current_distance=track.x_to_d(particle.position)
+            charged_distance = particle.chargedposition*units.km/body.radius
+            if(track.d_to_x(current_distance+charged_distance) >=1.):
+                particle.position=1.
+            else:
+                current_distance+=charged_distance
+                particle.position=track.d_to_x(current_distance)
             if(particle.position >= 1.):
                 return particle
                 continue
             else:
                 particle.Decay()
     return particle
-

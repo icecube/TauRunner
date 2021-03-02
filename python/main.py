@@ -158,7 +158,7 @@ iter_nNC = list(np.zeros(nevents))
 # All CC interactions are handled together, and then the next iteration occurs
 # This repeats until all leptons have reached the total distance
 t0 = time.time()
-
+rand_state = np.random.RandomState(seed=seed)
 while inds_left:
     counter += 1
     if debug:
@@ -169,10 +169,10 @@ while inds_left:
         i = inds_left[j] #Unique event index
     
         particle = Particle(iter_particleID[i], flavors[i], iter_energies[i], 
-                            thetas[i], iter_positions[i], i, np.random.randint(low=1e9),
+                            thetas[i], iter_positions[i], i, rand_state.randint(low=1e9),
                             iter_ChargedPosition[i], xs_model=xs_model)
 
-        my_track = track.Chord(thetas[i])
+        my_track = track.Chord(theta=thetas[i])
         out = Propagate(particle, my_track, body)
 
         iter_nCC[i]+=out.nCC
@@ -182,9 +182,10 @@ while inds_left:
             del out
         elif (out.isCC):
             current_distance=my_track.x_to_d(out.position)*body.radius
+            current_x = out.position
             total_distance=my_track.x_to_d(1.)*body.radius
             current_density=body.get_density(my_track.x_to_r(out.position))
-            cc_stack.append((float(out.energy), float(current_distance), int(out.index),
+            cc_stack.append((float(out.energy), current_x, float(current_distance), int(out.index),
 		 str(out.ID), 0, float(total_distance), float(current_density), str(out.flavor)))
             del out
         else:
@@ -209,12 +210,12 @@ while inds_left:
     if (len(cc_stack) > 0):
         if debug:
             message += "{} events passed to MMC in loop iteration {}\n".format(len(cc_stack), counter)
-        EventCollection = DoAllCCThings(cc_stack, xs_model, losses)
+        EventCollection = DoAllCCThings(cc_stack, xs_model, flavor, losses)
         for event in EventCollection:
-            iter_positions[int(event[2])] = float(event[1])
-            iter_energies[int(event[2])] = float(event[0])
-            iter_particleID[int(event[2])] = str(event[7])
-            iter_ChargedPosition[int(event[2])] = float(event[4])
+            iter_positions[int(event[3])] = float(event[1])
+            iter_energies[int(event[3])] = float(event[0])
+            iter_particleID[int(event[3])] = str(event[-1])
+            iter_ChargedPosition[int(event[3])] = float(event[5])
             del event
 
 print("Simulating {} events at {} degrees took {} seconds.".format(nevents, args.theta, time.time() - t0))

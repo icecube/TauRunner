@@ -27,7 +27,7 @@ class Body(object):
                 raise RuntimeError('Density and layer_boundaries must have same length.')
             else:
                 self._is_layered      = True
-                self._density         = [unts.gr/units.cm**3*Callable(obj) for obj in density]
+                self._density         = [units.gr/units.cm**3*Callable(obj) for obj in density]
                 self.layer_boundaries = layer_boundaries
         else:
             self._is_layered      = False
