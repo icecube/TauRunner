@@ -1,58 +1,46 @@
 import numpy as np
 from scipy.interpolate import splev, splrep
 
-import nuSQUIDSpy as nsq
-units = nsq.Const()
+from physicsconstants import PhysicsConstants
+units = PhysicsConstants()
+from body import Body
 
-class Sun:
+def mass_density_from_model(solar_model_file):
+    model   = np.genfromtxt(solar_model_file)
+    xx      = model[:,0]
+    density = model[:,1]
+    tck = splrep(xx, np.log(density))
+    return lambda x: np.exp(splev(x, tck))
 
-    def __init__(self, solar_model_file):
+def e_density_from_model(solar_model_file):
+    model    = np.genfromtxt(solar_model_file)
+    xx       = model[:,0]
+    density  = model[:,2]
+    tck      = splrep(xx, np.log(density)
+    return lambda x: np.exp(splev(x, tck))
 
-        self.is_discretized   = False
-        self.solar_model_file = solar_model_file
-        self.model            = np.genfromtxt(solar_model_file)
-        self.radius           = 6.957e5 * units.km
+class Sun(Body):
 
-        xx       = self.model[:,0]
-        mdensity = self.model[:,1]
-        edensity = self.model[:,2]
-        self.max_x = xx[-1]
-        self._mdensity_tck = splrep(xx, np.log(mdensity))
-        self._edensity_tck = splrep(xx, np.log(edensity))
+    def __init__(self, density, radius, edensity, layer_boundaries=None, name='Sun'):
 
-    def mass_density(self, x):
-        r'''
-        Returns mass density at radius $x=r/r_{\odot}$
-
-        params
-        ______
-        x (float) position along solar radius. Must be between 0 and 1
-
-        returns
-        _______
-        density (float) mass density at input position [gr/cm^3]
-        '''
-        if x > self.max_x:
-            raise RuntimeError('Radius too large. Maximum radius is x=%f' % self.max_x)
-        elif x < 0:
-            raise RuntimeError('Radius must be great than 0')
+        Body.__init__(self, density, radius, layer_boundaries=layer_boundaries, name=name)
+        if self._is_layered:
+            self._edensity = [1./units.cm**3*Callable(obj) for obj in density]
         else:
-            return np.exp(splev(x, self._mdensity_tck))
+            self._edensity = [1./units.cm**3*Callable(density)]
 
-    def electron_density(self, x):
-        r'''
-        Returns electron density at radius $x=r/r_{\odot}$
+    def get_edensity(self, r):
+        if r==1:
+            layer_index = -1
+        else:
+            layer_index = np.digitize(r, self.layer_boundaries)-1
+        current_edensity = self._edensity[layer_index]
+        return current_edensity(r)
 
-        params
-        ______
-        x (float) position along solar radius. Must be between 0 and 1
+def make_sun(model_file):
+    density  = mass_density_from_model(model_file)
+    edensity = e_density_from_model(model_file)
+    return Sun(density, 6.963e5, edensity)
 
-        returns
-        _______
-        density (float) electron density at input position [1/cm^3/NA]
-        '''
-        if x > self.max_x:
-            raise RuntimeError('Radius too large. Maximum radius is x=%f' % self.max_x)
-        elif x < 0:
-            raise RuntimeError('Radius must be great than 0')
-        return np.exp(splev(x, self._edensity_tck))
+HZ_sun = make_sun('../solar_models/Hybrid_model_DM_SUN_HZ.txt')  
+LZ_sun = make_sun('../solar_models/Hybrid_model_DM_SUN_LZ.txt')  

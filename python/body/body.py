@@ -26,10 +26,12 @@ class Body(object):
             elif len(layer_boundaries)!=len(density)+1:
                 raise RuntimeError('Density and layer_boundaries must have same length.')
             else:
-                self._density          = [units.gr/units.cm**3*Callable(obj) for obj in density]
+                self._is_layered      = True
+                self._density         = [unts.gr/units.cm**3*Callable(obj) for obj in density]
                 self.layer_boundaries = layer_boundaries
         else:
-            self._density = [units.gr/units.cm**3*Callable(density)]
+            self._is_layered      = False
+            self._density         = [units.gr/units.cm**3*Callable(density)]
             self.layer_boundaries = np.array([0.0, 1.0])
 
     def get_density(self, r):
