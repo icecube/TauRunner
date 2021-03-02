@@ -11,16 +11,14 @@ def mass_density_from_model(solar_model_file):
     xx      = model[:,0]
     density = model[:,1]
     tck = splrep(xx, np.log(density))
-    func = lambda x: np.exp(splev(x, tck))
-    return func
+    return lambda x: np.exp(splev(x, tck))
 
 def e_density_from_model(solar_model_file):
     model    = np.genfromtxt(solar_model_file)
     xx       = model[:,0]
     density  = model[:,2]
     tck      = splrep(xx, np.log(density))
-    func = lambda x: np.exp(splev(x, tck))
-    return func
+    return lambda x: np.exp(splev(x, tck))
 
 class Sun(Body):
 
