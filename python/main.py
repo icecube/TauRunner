@@ -29,7 +29,7 @@ def initialize_parser():
     parser.add_argument('-spectrum', dest='spectrum', default=None, type=float, 
         help='If you want a power law, provide spectral index here')
     parser.add_argument('--range', dest='range', nargs='+', 
-        help='Range for injected spectrum in format "low high"')
+        help='Range for injected spectrum in format "low high" (PeV to EeV: 1e6 1e9)')
     parser.add_argument('-buff', dest='buff', type=float, default=0., 
         help="Simulate to a finite distance beneath the edge of the Earth (in km)")
     parser.add_argument('-p', dest='path' , type=str, default = './', 
@@ -131,7 +131,11 @@ else:
     eini = np.ones(nevents)*args.energy*units.GeV
     if args.theta >= 90:
         raise ValueError("Exit angle cannot be greater than 90.")
-    thetas = np.ones(nevents)*np.radians(args.theta)
+    if args.theta is not None:
+        thetas = np.ones(nevents)*np.radians(args.theta)
+    else:
+        cos_thetas = rand.uniform(low=0., high=1.,size=nevents)
+        thetas = np.arccos(cos_thetas)
     if debug:
         message+="Sampled {} events from monochromatic flux\n".format(nevents)
 
