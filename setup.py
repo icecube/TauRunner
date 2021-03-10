@@ -10,9 +10,9 @@ except:
 version = "0.0.1"
 
 setuptools.setup(
-    name="taurunner", # Replace with your own username
+    name="taurunner", 
     version=version,
-    author="Safa, I.",
+    author="Safa, I. et al.",
     author_email="isafa@wisc.edu",
     description="Code for propagating ultra-high-energy neutrinos",
     long_description=long_message,
