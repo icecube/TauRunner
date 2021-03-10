@@ -36,4 +36,5 @@ MMC/MMC/.frejus*
 
 taurunner.egg-info/
 
-*__pycache__/*
+*/__pycache__/*
+taurunner/__pycache__/
