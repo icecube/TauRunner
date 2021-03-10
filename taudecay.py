@@ -24,9 +24,9 @@ for daughter in StableDaughters:
     # make daughters stable
     pythia.particleData.mayDecay(daughter,False)
 
-number_of_decays = 10000
+number_of_decays = 1000000000
 
-# eini in GeV
+# initial energy in GeV
 momenta = [1.e6, 1.e7, 1.e8, 1.e9]
 
 # dicts containing outgoing energies of nus
