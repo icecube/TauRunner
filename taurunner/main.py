@@ -5,9 +5,8 @@ os.environ['HDF5_DISABLE_VERSION_CHECK']='2'
 import argparse
 import nuSQUIDSpy as nsq
 
-from Casino import *
-import Casino
-
+from taurunner.Casino import *
+import taurunner.Casino as Casino
 
 info = sys.version_info
 pyv  = int(info.major)
@@ -36,8 +35,6 @@ def initialize_parser():
         help='Range for injected spectrum in format "low high"')
     parser.add_argument('-buff', dest='buff', type=float, default=0., 
         help="Simulate to a finite distance beneath the edge of the Earth (in km)")
-    parser.add_argument('-p', dest='path' , type=str, default = './', 
-        help='Path to script. Default assumes you are running from within the same directory')
     parser.add_argument('-d', dest='debug', default=False, action='store_true', 
         help='Do you want to print out debug statments? If so, raise this flag') 
     parser.add_argument('-save', dest='save', type=str, default=None, 
@@ -56,6 +53,7 @@ def initialize_parser():
     args = parser.parse_args()
     return args
 
+# LIST OUT ALL OF THE PARAMETERS AS KWARGS SO I CAN STOP THIS GET NONSENSE
 def propagate_neutrinos(**kwargs):
     r'''
     Main simulation code. Propagates a flux of neutrinos and returns or
@@ -69,30 +67,28 @@ def propagate_neutrinos(**kwargs):
     save = False
     isgzk = False
 
-    if ((kwargs['seed'] == None) or (kwargs['nevents'] == None)):
+    if ((kwargs.get('seed', None) == None) or (kwargs.get('nevents', None) == None)):
         raise RuntimeError('You must specify a seed (-s) and number of events to simulate (-n)') 
-    if (kwargs['gzk'] == None and (kwargs['theta']==None or kwargs['energy']==None) and (kwargs['spectrum']==None)):
+    if (kwargs.get('gzk', None) == None and (kwargs.get('theta', None) == None or kwargs.get('energy', None) ==None) and (kwargs.get('spectrum', None)==None)):
         raise RuntimeError('You must either pick an energy and theta, use a spectrum, or use the GZK flux')
 
-    base_path = os.path.join(kwargs['path'], '')
-    sys.path.append(base_path)
     nevents = int(kwargs['nevents'])
-    flavor=kwargs['flavor']
+    flavor=kwargs.get('flavor', 3)
     seed = kwargs['seed']
-    debug = kwargs['debug']
-    xs = kwargs['xs_model']
-    water_layer = kwargs['water_layer']
-    losses = kwargs['losses']
-    body = kwargs['body']
+    debug = kwargs.get('debug', False)
+    xs = kwargs.get('xs_model', 'dipole')
+    water_layer = kwargs.get('water_layer', 0.)
+    losses = kwargs.get('losses', True)
+    body = kwargs.get('body', 'earth')
     if debug:
         message = ''
-    if kwargs['gzk'] is not None:
+    if kwargs.get('gzk', None) is not None:
         isgzk = True
         if not os.path.isfile(kwargs['gzk']):
             raise RuntimeError("GZK CDF Spline file does not exist")
         else:
             gzk = kwargs['gzk']
-    if kwargs['save'] is not None:
+    if kwargs.get('save', None) is not None:
         savedir = os.path.join(kwargs['save'], '')
         save = True
         if not os.path.isdir(savedir):
@@ -100,7 +96,7 @@ def propagate_neutrinos(**kwargs):
     else:
         savedir = None
 
-    cross_section_path = base_path+'../cross_sections/'
+    cross_section_path = os.path.dirname(taurunner.earth.__file__) + '/../cross_sections/'
 
     def rndm(a, b, g, size=1):
         #Random spectrum function. g is gamma+1 (use -1 for E^-2)
@@ -114,7 +110,7 @@ def propagate_neutrinos(**kwargs):
 
     rand = np.random.RandomState(seed=seed)
 
-    if kwargs['gzk'] is not None:
+    if isgzk:
         # sample initial energies and incoming angles from GZK parameterization
         cos_thetas = rand.uniform(low=0., high=1.,size=nevents)
         cdf_indices= rand.uniform(low=0., high=1.,size=nevents)
@@ -123,9 +119,9 @@ def propagate_neutrinos(**kwargs):
         eini = gzk_cdf(cdf_indices)*units.GeV
         if debug:
             message+="Sampled {} events from the GZK flux\n".format(nevents)
-    elif kwargs['spectrum'] is not None:
+    elif kwargs.get('spectrum', None) is not None:
         cdf_indices = np.ones(nevents)
-        if kwargs['theta'] is None:
+        if kwargs.get('theta', None) is None:
             cos_thetas = rand.uniform(low=0., high=1.,size=nevents)
             thetas = np.arccos(cos_thetas)
         else:
@@ -156,9 +152,9 @@ def propagate_neutrinos(**kwargs):
     iter_energies = list(eini)[:]
     iter_positions = list(np.zeros(nevents))
     iter_particleID = ['neutrino']*nevents
-    if(kwargs['flavor']==2):
+    if(flavor==2):
         flavors = ['mu']*nevents
-    elif(kwargs['flavor']==3):
+    elif(flavor==3):
         flavors = ['tau']*nevents
     iter_ChargedPosition = list(np.zeros(nevents))
     iter_nCC = list(np.zeros(nevents))
@@ -181,7 +177,7 @@ def propagate_neutrinos(**kwargs):
         
             EventObject = CasinoEvent(iter_particleID[i], flavors[i], iter_energies[i], thetas[i],
                 iter_positions[i], i, np.random.randint(low=1e9), iter_ChargedPosition[i],
-                water_layer, xs_model=xs, buff=kwargs['buff'], body=body)
+                water_layer, xs_model=xs, buff=kwargs.get('buff', 0.), body=body)
 
             out = RollDice(EventObject)
 
@@ -224,7 +220,7 @@ def propagate_neutrinos(**kwargs):
                 iter_ChargedPosition[int(event[2])] = float(event[4])
                 del event
 
-    print("Simulating {} events at {} degrees took {} seconds.".format(nevents, kwargs['theta'], time.time() - t0))
+    print("Simulating {} events at {} degrees took {} seconds.".format(nevents, kwargs.get('theta', None), time.time() - t0))
     nus_e = np.array(nus_e, dtype = [('Eini', float), ('Eout',float), ('Theta', float), ('CDF_index', float), ('nCC', int), ('nNC', int)])
     taus_e = np.array(taus_e, dtype = [('Eini', float), ('Eout',float), ('Theta', float), ('CDF_index', float), ('nCC', int), ('nNC', int)])
     mus_e = np.array(mus_e, dtype = [('Eini', float), ('Eout',float), ('Theta', float), ('CDF_index', float), ('nCC', int), ('nNC', int)])
@@ -239,7 +235,7 @@ def propagate_neutrinos(**kwargs):
     if save:
         if isgzk:
             fluxtype = "cosmogenic"
-        elif kwargs['spectrum'] is not None:
+        elif kwargs.get('spectrum', None) is not None:
             fluxtype = "powerlaw"
         else:
             fluxtype = "monochromatic_{}_{}".format(kwargs['energy'], kwargs['theta'])
@@ -278,6 +274,7 @@ def propagate_neutrinos(**kwargs):
             print("Outgoing Mus:  ")
             print(mus_e)
 
-if __name__ == "main":
+if __name__ == "__main__":
     args = initialize_parser()
+    print(vars(args))
     propagate_neutrinos(**vars(args))

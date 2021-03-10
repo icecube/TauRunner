@@ -30,3 +30,10 @@
 *.exe
 *.out
 *.app
+
+MMC/tables/.frejus*
+MMC/MMC/.frejus*
+
+taurunner.egg-info/
+
+*__pycache__/*
