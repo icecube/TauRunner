@@ -210,7 +210,7 @@ while inds_left:
     if (len(cc_stack) > 0):
         if debug:
             message += "{} events passed to MMC in loop iteration {}\n".format(len(cc_stack), counter)
-        EventCollection = DoAllCCThings(cc_stack, xs, losses)
+        EventCollection = DoAllCCThings(cc_stack, xs, flavor, losses)
         for event in EventCollection:
             iter_positions[int(event[2])] = float(event[1])
             iter_energies[int(event[2])] = float(event[0])
