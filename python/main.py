@@ -174,7 +174,7 @@ while inds_left:
         i = inds_left[j] #Unique event index
     
         EventObject = CasinoEvent(iter_particleID[i], flavors[i], iter_energies[i], thetas[i],
-			iter_positions[i], i, np.random.randint(low=1e9), iter_ChargedPosition[i],
+			iter_positions[i], i, rand.randint(low=1e9), iter_ChargedPosition[i],
 			water_layer, xs_model=xs, buff=args.buff, body=body)
 
         out = RollDice(EventObject)
