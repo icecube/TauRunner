@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.interpolate import splev, splrep
 
-from body import Body
+from .body import Body
 from physicsconstants import PhysicsConstants
 from callable import Callable
 units = PhysicsConstants()
@@ -43,5 +43,5 @@ def make_sun(model_file):
     edensity = e_density_from_model(model_file)
     return Sun(density, 6.963e5, edensity)
 
-HZ_Sun = make_sun('../../solar_models/Hybrid_model_DM_SUN_HZ.txt')  
-LZ_Sun = make_sun('../../solar_models/Hybrid_model_DM_SUN_LZ.txt')  
+HZ_Sun = make_sun('./solar_models/Hybrid_model_DM_SUN_HZ.txt')  
+LZ_Sun = make_sun('./solar_models/Hybrid_model_DM_SUN_LZ.txt')  

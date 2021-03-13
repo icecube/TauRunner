@@ -78,8 +78,8 @@ if(body=='earth'):
     from body import Earth
     body = Earth
 elif(body=='sun'):
-    import body
-    body = Sun
+    from body import HZ_Sun
+    body = HZ_Sun
 
 if debug:
     message = ''
@@ -247,9 +247,9 @@ if save:
         if debug:
             message += "Subdirectories already existed\n"
     if not args.onlytau:
-        np.save(savedir + 'nus/' + 'nus_{}_body_{}_seed_{}_xs_{}_water_{}.npy'.format(fluxtype, body, seed, xs, water_layer), nus_e)
-    np.save(savedir + 'taus/' + 'taus_{}_body_{}_seed_{}_xs_{}_water_{}.npy'.format(fluxtype, body, seed, xs, water_layer), taus_e)
-    np.save(savedir + 'mus/' + 'mus_{}_body_{}_seed_{}_xs_{}_water_{}.npy'.format(fluxtype, body, seed, xs, water_layer), mus_e)
+        np.save(savedir + 'nus/' + 'nus_{}_body_{}_seed_{}_xs_water_{}.npy'.format(fluxtype, body._name, seed, water_layer), nus_e)
+    np.save(savedir + 'taus/' + 'taus_{}_body_{}_seed_{}_xs_water_{}.npy'.format(fluxtype, body._name, seed, water_layer), taus_e)
+    np.save(savedir + 'mus/' + 'mus_{}_body_{}_seed_{}_xs_water_{}.npy'.format(fluxtype, body._name, seed, water_layer), mus_e)
     if debug:
         print(message)
 else:
