@@ -35,7 +35,7 @@ python main.py -n 500 -t 0.0 -s 1 -e 1000000000
 
 We can simulate 500 tau neutrinos with energies following a power-law distribution from 100 Tev to 10 PeV that travel directly through the core. At the point of emergence from the Earth, we receive the resultant particle ID and energy.
 ```console
-python main.py -n 500 -t 0.0 -s 1 -spectrum 2 --range 1e5 1e7
+python main.py -n 500 -t 0.0 -s 1 -spectrum -2 --range 1e5 1e7
 ```
 `-n` specifies the number of events, `-t` is the nadir angle in degrees, `-s` specifies a unique seed for purposes of reproducibility, `-spectrum` specifies the power-law index, and `--range` gives the range of energies to sample from in GeV. 
 
