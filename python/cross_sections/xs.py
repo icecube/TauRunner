@@ -4,9 +4,9 @@ import sys
 info = sys.version_info
 pyv  = int(info.major)
 import numpy as np
-import nuSQUIDSpy as nsq
-from physicsconstants import PhysicsConstants
-units = PhysicsConstants()
+import nuSQuIDS as nsq
+#import nuSQUIDSpy as nsq
+from python.modules import units
 
 #cross section tables
 ######################################

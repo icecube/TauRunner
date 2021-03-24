@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.integrate import quad
-from physicsconstants import PhysicsConstants
-units = PhysicsConstants()
+from scipy.interpolate import splrep, splev, interp1d
+from python.modules import units
 
 class Track(object):
 
@@ -59,7 +59,6 @@ class Track(object):
         pass 
 
     def _initialize_column_depth_functions(self, body):
-        from scipy.interpolate import splrep, splev
         xx            = np.linspace(0, 1, 101)
         column_depths = np.append(0, np.cumsum([self._column_depth(body, x[0], x[1]) for x in zip(xx[:-1], xx[1:])]))
         # Pad arrays to help spliine stability
@@ -67,16 +66,20 @@ class Track(object):
         xpad          = np.linspace(0.01, 0.05, npad)
         padded_xx     = np.hstack([-xpad[::-1], xx, 1+xpad])
         padded_cds    = np.hstack([np.full(npad, column_depths[0]), column_depths, np.full(npad, column_depths[-1])])
+        #x_to_X        = interp1d(xx, column_depths, kind='linear', bounds_error=False, fill_value=(np.min(column_depths), np.max(column_depths)))
+        #X_to_x        = interp1d(column_depths, xx, kind='linear', bounds_error=False, fill_value=(np.min(xx), np.max(xx)))
         x_to_X_tck    = splrep(padded_xx, padded_cds)
         X_to_x_tck    = splrep(column_depths, xx)
         x_to_X        = lambda x: splev(x, x_to_X_tck)
         X_to_x        = lambda X: splev(X, X_to_x_tck)
+        
         self._column_depth_functions[body._name] = (column_depths[-1], x_to_X, X_to_x)
+        
 
 
     def r_to_x(self, r):
         '''
-        Convert from radiu to track parameter
+        Convert from radius to track parameter
 
         params
         ______
@@ -160,6 +163,7 @@ class Track(object):
         '''
         if body._name not in self._column_depth_functions.keys():
             self._initialize_column_depth_functions(body)
+            print('should only print once')
         max_X = self._column_depth_functions[body._name][0]
         if X<=max_X:
             return self._column_depth_functions[body._name][2](X)
@@ -168,5 +172,6 @@ class Track(object):
 
     def x_to_X(self, body, x):
         if body._name not in self._column_depth_functions.keys():
+            print('should only print once')
             self._initialize_column_depth_functions(body)
         return self._column_depth_functions[body._name][1](x)

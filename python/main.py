@@ -5,14 +5,13 @@ os.environ['HDF5_DISABLE_VERSION_CHECK']='2'
 import argparse
 
 sys.path.append('./modules')
-from physicsconstants import PhysicsConstants
+from python.modules import units
 #import nuSQUIDSpy as nsq
-import track
+from python.track import Chord
 
 info = sys.version_info
 pyv  = int(info.major)
 
-units = PhysicsConstants()
 #dis = nsq.NeutrinoDISCrossSectionsFromTables()
 #tds = nsq.TauDecaySpectra()
 
@@ -50,6 +49,8 @@ def initialize_parser():
         help="Raise this flag if you want to turn off tau losses. In this case, taus will decay at rest.")
     parser.add_argument('--body', dest='body', type=str, default='earth',
         help="Raise this flag if you want to turn off tau losses. In this case, taus will decay at rest.")
+    parser.add_argument('--depth', dest='depth', type=float, default=0.0,
+        help="Depth of the detector in km.")
     
     args = parser.parse_args()
     return args
@@ -73,6 +74,7 @@ xs_model = args.xs_model
 water_layer = args.water_layer
 losses = args.losses
 body = args.body
+depth = args.depth*units.km
 
 if(body=='earth'):
     from body import Earth
@@ -159,6 +161,7 @@ iter_nNC = list(np.zeros(nevents))
 # This repeats until all leptons have reached the total distance
 t0 = time.time()
 rand_state = np.random.RandomState(seed=seed)
+tracks  = {theta:Chord(theta=theta, depth=depth/body.radius) for theta in set(thetas)}
 while inds_left:
     counter += 1
     if debug:
@@ -171,8 +174,7 @@ while inds_left:
         particle = Particle(iter_particleID[i], flavors[i], iter_energies[i], 
                             thetas[i], iter_positions[i], i, rand_state.randint(low=1e9),
                             iter_ChargedPosition[i], xs_model=xs_model)
-
-        my_track = track.Chord(theta=thetas[i])
+        my_track = tracks[thetas[i]]
         out = Propagate(particle, my_track, body)
 
         iter_nCC[i]+=out.nCC

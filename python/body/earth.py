@@ -1,5 +1,5 @@
 import numpy as np
-from body import Body
+from .body import Body
 
 prem_params = [(13.0885,  0.0,    -8.8381,  0.0),
                (12.5815, -1.2638, -3.6426, -5.5281),

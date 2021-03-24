@@ -1,9 +1,7 @@
 import sys
-sys.path.append('../modules/')
 
-from track import Track
-
-from doc_inherit import doc_inherit
+from .track import Track
+from python.modules import doc_inherit
 
 class RadialTrack(Track):
 

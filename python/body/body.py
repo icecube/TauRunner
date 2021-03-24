@@ -1,10 +1,7 @@
 import numpy as np
 import sys
-sys.path.append('../modules/')
-from physicsconstants import PhysicsConstants
-units = PhysicsConstants()
+from python.modules import units, Callable
 
-from callable import Callable
 
 class Body(object):
 

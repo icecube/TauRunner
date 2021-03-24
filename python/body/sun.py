@@ -2,9 +2,7 @@ import numpy as np
 from scipy.interpolate import splev, splrep
 
 from .body import Body
-from physicsconstants import PhysicsConstants
-from callable import Callable
-units = PhysicsConstants()
+from python.modules import Callable, units
 
 def mass_density_from_model(solar_model_file):
     model   = np.genfromtxt(solar_model_file)
