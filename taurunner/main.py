@@ -53,50 +53,81 @@ def initialize_parser():
     args = parser.parse_args()
     return args
 
-# LIST OUT ALL OF THE PARAMETERS AS KWARGS SO I CAN STOP THIS GET NONSENSE
-def propagate_neutrinos(**kwargs):
+def propagate_neutrinos(nevents, seed, flavor=3, energy=None, theta=None,
+    gzk=None, spectrum=None, e_range=" ", debug=False, save=None, onlytau=False,
+    water_layer=0., xs_model='dipole', losses=True, body='earth', buff=0., 
+    return_res=True):
     r'''
     Main simulation code. Propagates a flux of neutrinos and returns or
     saves the outgoing particles
 
     Parameters
     ----------
-    **kwargs: dict-like
-        List of input parameters for the simulation
+    nevents: int
+        Number of neutrinos to propagate
+    seed: int
+        Random number seed
+    flavor: int, default=3
+        Neutrino flavor. Default is 3 for nutau
+    energy: float, default=None
+        Energy in GeV for injecting a monochromatic flux of neutrinos
+    theta: float, default=None
+        nadir angle in degrees for fixed angle simulation
+    gzk: str, default=None
+        Path to a gzk cdf spline to simulate a specific flux
+    spectrum: float, default=None
+        If not None, inject flux as a power-law with given spectral index
+    e_range: str, default=" "
+        If injecting power-law, the energy range to use, format is 'low_en high_en'
+    debug: bool, default=False
+        If true, print various messages as the simulation runs
+    save: str, default=None
+        If not None, a path for saving output
+    onlytau: bool, default=False
+        If true, only save the outgoing taus, not the neutrinos
+    water_layer: float, default=0.
+        Add a layer of water on top of the body
+    xs_model: str, default='dipole'
+        Cross section model to use
+    losses: bool, default=True
+        If false, do not include stochastic losses
+    body: str, default='earth'
+        Name of the body which we propagate through
+    buff: float, default=0.
+        Buffer in km between the end of propagation and the detector
+    return_res: bool, default=True
+        If true, return the results
+    
+    Returns:
+        np.recarray of the outgoing leptons
+    
     '''
-    save = False
     isgzk = False
 
-    if ((kwargs.get('seed', None) == None) or (kwargs.get('nevents', None) == None)):
+    if seed == None or nevents == None:
         raise RuntimeError('You must specify a seed (-s) and number of events to simulate (-n)') 
-    if (kwargs.get('gzk', None) == None and (kwargs.get('theta', None) == None or kwargs.get('energy', None) ==None) and (kwargs.get('spectrum', None)==None)):
+    if (gzk == None and theta == None) or (energy ==None and spectrum ==None):
         raise RuntimeError('You must either pick an energy and theta, use a spectrum, or use the GZK flux')
-
-    nevents = int(kwargs['nevents'])
-    flavor=kwargs.get('flavor', 3)
-    seed = kwargs['seed']
-    debug = kwargs.get('debug', False)
-    xs = kwargs.get('xs_model', 'dipole')
-    water_layer = kwargs.get('water_layer', 0.)
-    losses = kwargs.get('losses', True)
-    body = kwargs.get('body', 'earth')
+    
+    xs = xs_model
     if debug:
         message = ''
-    if kwargs.get('gzk', None) is not None:
+    if gzk is not None:
         isgzk = True
-        if not os.path.isfile(kwargs['gzk']):
+        if not os.path.isfile(gzk):
             raise RuntimeError("GZK CDF Spline file does not exist")
-        else:
-            gzk = kwargs['gzk']
-    if kwargs.get('save', None) is not None:
-        savedir = os.path.join(kwargs['save'], '')
+    if save is not None:
+        savedir = os.path.join(save, '')
         save = True
         if not os.path.isdir(savedir):
             raise RuntimeError("Directory to save output is not a valid directory")
     else:
+        save = False
         savedir = None
 
-    cross_section_path = os.path.dirname(taurunner.earth.__file__) + '/../cross_sections/'
+    cross_section_path = os.path.abspath(
+        os.path.dirname(taurunner.earth.__file__) + '/../cross_sections/'
+        )
 
     def rndm(a, b, g, size=1):
         #Random spectrum function. g is gamma+1 (use -1 for E^-2)
@@ -119,25 +150,25 @@ def propagate_neutrinos(**kwargs):
         eini = gzk_cdf(cdf_indices)*units.GeV
         if debug:
             message+="Sampled {} events from the GZK flux\n".format(nevents)
-    elif kwargs.get('spectrum', None) is not None:
+    elif spectrum is not None:
         cdf_indices = np.ones(nevents)
-        if kwargs.get('theta', None) is None:
+        if theta is None:
             cos_thetas = rand.uniform(low=0., high=1.,size=nevents)
             thetas = np.arccos(cos_thetas)
         else:
-            if kwargs['theta'] >= 90:
+            if theta >= 90:
                 raise ValueError("Exit angle cannot be greater than 90.")
-            thetas = np.ones(nevents)*np.radians(kwargs['theta'])
-        eini = rndm(float(kwargs['range'][0]), float(kwargs['range'][1]), kwargs['spectrum'] + 1, size=nevents)*units.GeV
+            thetas = np.ones(nevents)*np.radians(theta)
+        eini = rndm(float(e_range[0]), float(e_range[1]), spectrum + 1, size=nevents)*units.GeV
         if debug:
             message+="Sampled {} events from power law\n".format(nevents)
     else:
         # Use a monochromatic flux
         cdf_indices = np.ones(nevents)
-        eini = np.ones(nevents)*kwargs['energy']*units.GeV
-        if kwargs['theta'] >= 90:
+        eini = np.ones(nevents)*energy*units.GeV
+        if theta >= 90:
             raise ValueError("Exit angle cannot be greater than 90.")
-        thetas = np.ones(nevents)*np.radians(kwargs['theta'])
+        thetas = np.ones(nevents)*np.radians(theta)
         if debug:
             message+="Sampled {} events from monochromatic flux\n".format(nevents)
 
@@ -177,7 +208,7 @@ def propagate_neutrinos(**kwargs):
         
             EventObject = CasinoEvent(iter_particleID[i], flavors[i], iter_energies[i], thetas[i],
                 iter_positions[i], i, np.random.randint(low=1e9), iter_ChargedPosition[i],
-                water_layer, xs_model=xs, buff=kwargs.get('buff', 0.), body=body)
+                water_layer, xs_model=xs, buff=buff, body=body)
 
             out = RollDice(EventObject)
 
@@ -220,7 +251,7 @@ def propagate_neutrinos(**kwargs):
                 iter_ChargedPosition[int(event[2])] = float(event[4])
                 del event
 
-    print("Simulating {} events at {} degrees took {} seconds.".format(nevents, kwargs.get('theta', None), time.time() - t0))
+    print("Simulating {} events at {} degrees took {} seconds.".format(nevents, theta, time.time() - t0))
     nus_e = np.array(nus_e, dtype = [('Eini', float), ('Eout',float), ('Theta', float), ('CDF_index', float), ('nCC', int), ('nNC', int)])
     taus_e = np.array(taus_e, dtype = [('Eini', float), ('Eout',float), ('Theta', float), ('CDF_index', float), ('nCC', int), ('nNC', int)])
     mus_e = np.array(mus_e, dtype = [('Eini', float), ('Eout',float), ('Theta', float), ('CDF_index', float), ('nCC', int), ('nNC', int)])
@@ -235,10 +266,10 @@ def propagate_neutrinos(**kwargs):
     if save:
         if isgzk:
             fluxtype = "cosmogenic"
-        elif kwargs.get('spectrum', None) is not None:
+        elif spectrum is not None:
             fluxtype = "powerlaw"
         else:
-            fluxtype = "monochromatic_{}_{}".format(kwargs['energy'], kwargs['theta'])
+            fluxtype = "monochromatic_{}_{}".format(energy, theta)
         try:
             os.mkdir(savedir + 'nus/')
             os.mkdir(savedir + 'taus/')
@@ -248,12 +279,14 @@ def propagate_neutrinos(**kwargs):
         except OSError as e:
             if debug:
                 message += "Subdirectories already existed\n"
-        if not kwargs['onlytau']:
+        if not onlytau:
             np.save(savedir + 'nus/' + 'nus_{}_body_{}_seed_{}_xs_{}_water_{}.npy'.format(fluxtype, body, seed, xs, water_layer), nus_e)
         np.save(savedir + 'taus/' + 'taus_{}_body_{}_seed_{}_xs_{}_water_{}.npy'.format(fluxtype, body, seed, xs, water_layer), taus_e)
         np.save(savedir + 'mus/' + 'mus_{}_body_{}_seed_{}_xs_{}_water_{}.npy'.format(fluxtype, body, seed, xs, water_layer), mus_e)
         if debug:
             print(message)
+    elif return_res:
+        return nus_e, taus_e, mus_e
     else:
         if debug:
             print(message)
@@ -276,5 +309,9 @@ def propagate_neutrinos(**kwargs):
 
 if __name__ == "__main__":
     args = initialize_parser()
-    print(vars(args))
-    propagate_neutrinos(**vars(args))
+    propagate_neutrinos(args.nevents, args.seed, flavor=args.flavor, 
+        energy=args.energy, theta=args.theta, gzk=args.gzk, 
+        spectrum=args.spectrum, e_range=args.range, debug=args.debug,
+        save=args.save, onlytau=args.onlytau, water_layer=args.water_layer,
+        xs_model=args.xs_model, losses=args.losses, body=args.body, buff=args.buff,
+        return_res=False)
