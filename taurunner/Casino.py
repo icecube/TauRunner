@@ -7,8 +7,9 @@ from scipy.interpolate import interp1d
 import time
 import subprocess
 import nuSQUIDSpy as nsq
-from earth import *
-import earth
+
+from taurunner.earth import *
+import taurunner.earth
 
 units = nsq.Const()
 dis = nsq.NeutrinoDISCrossSectionsFromTables()
@@ -17,7 +18,7 @@ pyv  = int(info.major)
 
 #cross section tables
 ######################################
-cross_section_path = sys.path[-1]+'../cross_sections/'
+cross_section_path = os.path.dirname(taurunner.earth.__file__) + '/../cross_sections/'
 
 if(pyv==3):
     f_NC = np.load(cross_section_path+'NC_table_py3.npy', allow_pickle=True).item()
@@ -162,6 +163,7 @@ def DoAllCCThings(objects, xs, flavor, losses=True):
     split = np.append(np.append([-1], np.where(sorted_mult[:-1] != sorted_mult[1:])[0]), len(sorted_mult))
     
     propagate_path = sys.path[-1]
+    propagate_path = os.path.dirname(taurunner.earth.__file__) + '/'
     if(xs=='dipole'):
         propagate_path+='propagate_{}s.sh'.format(flavor)
     elif(xs=='CSMS'):
