@@ -1,5 +1,5 @@
 import unittest
-# from taurunner import Casino
+from taurunner import Casino
 
 class TestXSecMethods(unittest.TestCase):
 
