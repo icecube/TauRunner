@@ -31,6 +31,8 @@
 *.out
 *.app
 
+*.pyc
+
 MMC/tables/.frejus*
 MMC/MMC/.frejus*
 

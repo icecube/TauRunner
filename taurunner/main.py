@@ -32,7 +32,7 @@ def initialize_parser():
     parser.add_argument('-spectrum', dest='spectrum', default=None, type=float, 
         help='If you want a power law, provide spectral index here')
     parser.add_argument('--range', dest='range', nargs='+', 
-        help='Range for injected spectrum in format "low high"')
+        help='Range for injected spectrum in format "low high" (Pev to EeV: 1e6 1e9)')
     parser.add_argument('-buff', dest='buff', type=float, default=0., 
         help="Simulate to a finite distance beneath the edge of the Earth (in km)")
     parser.add_argument('-d', dest='debug', default=False, action='store_true', 
@@ -158,7 +158,11 @@ def propagate_neutrinos(nevents, seed, flavor=3, energy=None, theta=None,
         else:
             if theta >= 90:
                 raise ValueError("Exit angle cannot be greater than 90.")
-            thetas = np.ones(nevents)*np.radians(theta)
+            if theta is not None:
+                thetas = np.ones(nevents)*np.radians(theta)
+            else:
+                cos_thetas = rand.uniform(low=0., high=1., size=nevents)
+                thetas = np.arccos(cos_thetas)
         eini = rndm(float(e_range[0]), float(e_range[1]), spectrum + 1, size=nevents)*units.GeV
         if debug:
             message+="Sampled {} events from power law\n".format(nevents)
@@ -207,7 +211,7 @@ def propagate_neutrinos(nevents, seed, flavor=3, energy=None, theta=None,
             i = inds_left[j] #Unique event index
         
             EventObject = CasinoEvent(iter_particleID[i], flavors[i], iter_energies[i], thetas[i],
-                iter_positions[i], i, np.random.randint(low=1e9), iter_ChargedPosition[i],
+                iter_positions[i], i, rand.randint(low=1e9), iter_ChargedPosition[i],
                 water_layer, xs_model=xs, buff=buff, body=body)
 
             out = RollDice(EventObject)
@@ -243,7 +247,7 @@ def propagate_neutrinos(nevents, seed, flavor=3, energy=None, theta=None,
         if (len(cc_stack) > 0):
             if debug:
                 message += "{} events passed to MMC in loop iteration {}\n".format(len(cc_stack), counter)
-            EventCollection = DoAllCCThings(cc_stack, xs, losses)
+            EventCollection = DoAllCCThings(cc_stack, xs, flavor, losses)
             for event in EventCollection:
                 iter_positions[int(event[2])] = float(event[1])
                 iter_energies[int(event[2])] = float(event[0])
