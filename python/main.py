@@ -1,11 +1,12 @@
 #!/usr/bin/env python
 
 import os, sys
+import json
 os.environ['HDF5_DISABLE_VERSION_CHECK']='2'
 import argparse
 
 sys.path.append('./modules')
-from python.modules import units
+from python.modules import units, make_outdir, todaystr
 #import nuSQUIDSpy as nsq
 from python.track import Chord
 
@@ -55,27 +56,54 @@ def initialize_parser():
     args = parser.parse_args()
     return args
 
-args = initialize_parser()
-save = False
+args  = initialize_parser()
+save  = False
 isgzk = False
+if args.save is not None:
+    savedir = os.path.join(args.save, '')
+    save    = True
+    if not os.path.isdir(savedir):
+        raise RuntimeError("Directory to save output is not a valid directory")
 
-if ((args.seed == None) or (args.nevents == None)):
-    raise RuntimeError('You must specify a seed (-s) and number of events to simulate (-n)') 
+if args.nevents is None:
+    raise RuntimeError('You must specify a number of events to simulate (-n)') 
 if (args.gzk == None and (args.theta==None or args.energy==None) and (args.spectrum==None)):
     raise RuntimeError('You must either pick an energy and theta, use a spectrum, or use the GZK flux')
+savedir = make_outdir(args.save, todaystr)
+if args.save is not None:
+    os.mkdir(savedir)
+
+if args.seed is None:
+    seed = int(float(savedir.split('/')[-1].replace('_', ''))) % 2**32
+else:
+    seed = args.seed
+
+if args.save is not None:
+    d = vars(args)
+    d['seed'] = seed
+    j = json.dumps(d)
+    f = open(savedir+"/params.json","w")
+    f.write(j)
+    f.close()
+
+params={}
+
+nevents     = int(args.nevents)
+flavor      = args.flavor
+debug       = args.debug
+xs_model    = args.xs_model
+water_layer = args.water_layer
+losses      = args.losses
+body        = args.body
+depth       = args.depth*units.km
+gzk         = args.gzk
+theta       = args.theta
+base_path   = args.path
+
+
 
 base_path = os.path.join(args.path,'')
 sys.path.append(base_path)
-nevents = int(args.nevents)
-flavor=args.flavor
-seed = args.seed
-debug = args.debug
-xs_model = args.xs_model
-water_layer = args.water_layer
-losses = args.losses
-body = args.body
-depth = args.depth*units.km
-
 if(body=='earth'):
     from body import Earth
     body = Earth
@@ -91,11 +119,6 @@ if args.gzk is not None:
         raise RuntimeError("GZK CDF Spline file does not exist")
     else:
         gzk = args.gzk
-if args.save is not None:
-    savedir = os.path.join(args.save, '')
-    save = True
-    if not os.path.isdir(savedir):
-        raise RuntimeError("Directory to save output is not a valid directory")
 else:
     savedir = None
 
