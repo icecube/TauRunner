@@ -7,6 +7,7 @@ import argparse
 
 from taurunner.modules import units, make_outdir, todaystr, cleanup_outdir
 from taurunner.track import Chord
+from taurunner.Casino import *
 
 info = sys.version_info
 pyv  = int(info.major)
@@ -49,7 +50,7 @@ def initialize_parser():
 
 def propagate_neutrinos(nevents, seed, flavor=3, energy=None, theta=None,
     gzk=None, spectrum=None, e_range=" ", debug=False, save=None, onlytau=False,
-    water_layer=0., xs_model='dipole', losses=True, body='earth', buff=0., 
+    water_layer=0., xs_model='dipole', losses=True, body='earth', depth=0., 
     return_res=True):
     r'''
     Main simulation code. Propagates a flux of neutrinos and returns or
@@ -96,6 +97,7 @@ def propagate_neutrinos(nevents, seed, flavor=3, energy=None, theta=None,
         np.recarray of the outgoing leptons
     
     '''
+
     args = locals()
     isgzk = False
     if save is not None:
@@ -133,8 +135,8 @@ def propagate_neutrinos(nevents, seed, flavor=3, energy=None, theta=None,
         print('Beggining simulation')
         nevents     = int(nevents)
         depth       = depth*units.km
-        gzk         = args.gzk
-        theta       = args.theta
+        gzk         = gzk
+        theta       = theta
 
         if(body=='earth'):
             from taurunner.body import Earth
@@ -145,8 +147,6 @@ def propagate_neutrinos(nevents, seed, flavor=3, energy=None, theta=None,
 
         if debug:
             message = ''
-
-        from taurunner.Casino import *
 
         def rndm(a, b, g, size=1):
             #Random spectrum function. g is gamma+1 (use -1 for E^-2)
@@ -285,7 +285,7 @@ def propagate_neutrinos(nevents, seed, flavor=3, energy=None, theta=None,
                     iter_ChargedPosition[int(event[3])] = float(event[5])
                     del event
 
-        print("Simulating {} events at {} degrees took {} seconds.".format(nevents, args.theta, time.time() - t0))
+        print("Simulating {} events at {} degrees took {} seconds.".format(nevents, theta, time.time() - t0))
         nus_e = np.array(nus_e, dtype = [('Eini', float), ('Eout',float), ('Theta', float), ('CDF_index', float), ('nCC', int), ('nNC', int), ('PDG_Encoding', int)])
         taus_e = np.array(taus_e, dtype = [('Eini', float), ('Eout',float), ('Theta', float), ('CDF_index', float), ('nCC', int), ('nNC', int), ('PDG_Encoding', int)])
         mus_e = np.array(mus_e, dtype = [('Eini', float), ('Eout',float), ('Theta', float), ('CDF_index', float), ('nCC', int), ('nNC', int), ('PDG_Encoding', int)])
@@ -339,6 +339,5 @@ if __name__ == "__main__":
     propagate_neutrinos(args.nevents, args.seed, flavor=args.flavor, 
         energy=args.energy, theta=args.theta, gzk=args.gzk, 
         spectrum=args.spectrum, e_range=args.range, debug=args.debug,
-        save=args.save, onlytau=args.onlytau, water_layer=args.water_layer,
-        xs_model=args.xs_model, losses=args.losses, body=args.body, buff=args.buff,
-        return_res=False)
+        save=args.save, water_layer=args.water_layer, xs_model=args.xs_model,
+        losses=args.losses, body=args.body, depth=args.depth, return_res=False)

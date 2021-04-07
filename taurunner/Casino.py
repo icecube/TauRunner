@@ -7,7 +7,7 @@ from scipy.interpolate import interp1d
 import time
 import subprocess
 try:
-    import nuSQuIDSpy as nsq
+    import nuSQUIDSpy as nsq
 except:
     import nuSQUIDS as nsq
 from taurunner.modules import PhysicsConstants
