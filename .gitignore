@@ -31,5 +31,14 @@
 *.out
 *.app
 
+
 # Comiled Python
 *.pyc
+
+MMC/tables/.frejus*
+MMC/MMC/.frejus*
+
+taurunner.egg-info/
+
+*/__pycache__/*
+taurunner/__pycache__/

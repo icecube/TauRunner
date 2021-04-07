@@ -158,7 +158,7 @@ public class Output{
 	String str="";
 	if(wint==1) {
             str=f(de);
-	    Output.out.println(str);
+	    if(p.type==2) Output.out.println(str);
 	}
 	if(DEBUG) Output.err.print(str);
 	if(DEBUG || (HIST==1)){

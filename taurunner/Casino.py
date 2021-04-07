@@ -6,12 +6,10 @@ import pickle
 from scipy.interpolate import interp1d
 import time
 import subprocess
-
 try:
     import nuSQuIDSpy as nsq
 except:
     import nuSQUIDS as nsq
-
 from taurunner.modules import PhysicsConstants
 from cross_sections import xs
 units = PhysicsConstants()
@@ -49,7 +47,7 @@ def DoAllCCThings(objects, xs, flavor, losses=True):
     sorted_e     = np.asarray(list(zip(*sort))[1])
     sorted_dists = np.asarray(list(zip(*sort))[2])
     sorted_obj   = np.asarray(list(zip(*sort))[3])
-    
+
     if(not losses):
         final_energies = sorted_e
         final_distances = np.zeros(len(sorted_e))
@@ -164,6 +162,7 @@ NeutrinoDifferentialEnergyFractions = np.linspace(0.0,1.0,300)[1:-1]
 ##########################################################
 ##########################################################
 proton_mass = ((0.9382720813+0.9395654133)/2.)*units.GeV
+
 
 #Particle object. 
 class Particle(object):

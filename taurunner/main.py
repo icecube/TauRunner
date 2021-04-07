@@ -54,6 +54,7 @@ def propagate_neutrinos(nevents, seed, flavor=3, energy=None, theta=None,
     r'''
     Main simulation code. Propagates a flux of neutrinos and returns or
     saves the outgoing particles
+
     Parameters
     ----------
     nevents: int
