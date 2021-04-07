@@ -110,7 +110,7 @@ def propagate_neutrinos(nevents, seed, flavor=3, energy=None, theta=None,
         raise RuntimeError('You must specify a number of events to simulate (-n)') 
     if (gzk == None and theta == None) or (energy ==None and spectrum ==None):
         raise RuntimeError('You must either pick an energy and theta, use a spectrum, or use the GZK flux')
-    savedir = make_outdir(save, todaystr)
+    savedir = make_outdir(savedir, todaystr)
     if save:
         os.mkdir(savedir)
         params_file = savedir+"/params.json"
