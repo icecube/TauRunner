@@ -1,5 +1,4 @@
 import numpy as np
-import sys
 from taurunner.modules import units, Callable
 
 
