@@ -53,7 +53,7 @@ def DoAllCCThings(objects, xs, flavor, losses=True):
         final_distances = np.zeros(len(sorted_e))
         for i, obj in enumerate(sorted_obj):
             obj[0] = final_energies[i]*units.GeV
-            obj[4] = final_distances[i]
+            obj[5] = final_distances[i]
         return(sorted_obj)
 
     split = np.append(np.append([-1], np.where(sorted_mult[:-1] != sorted_mult[1:])[0]), len(sorted_mult))
@@ -84,7 +84,7 @@ def DoAllCCThings(objects, xs, flavor, losses=True):
     final_distances = np.abs(np.asarray(final_values)[1::2])/1e3
     for i, obj in enumerate(sorted_obj):
         obj[0] = final_energies[i]*units.GeV/1e3
-        obj[4] = final_distances[i]
+        obj[5] = final_distances[i]
     return(sorted_obj)
 
 ##########################################################
@@ -215,15 +215,15 @@ class Particle(object):
         r'''
         Sets particle properties, either when initializing or after an interaction.
         '''
-        if self.ID == "neutrino":
-            self.mass = 0.0
-            self.lifetime = np.inf
-        if self.ID == "tau":
-            self.mass = 1.7*units.GeV
-            self.lifetime = 1.*units.sec
-        if self.ID == "mu":
+        if self.ID in [12, 14, 16]:
+            self.mass = 0.0          #this is not true
+            self.lifetime = np.inf   #this is unknown
+        if self.ID == 15:
+            self.mass = 1.776*units.GeV
+            self.lifetime = 2.9e-13*units.sec
+        if self.ID == 13:
             self.mass = 0.105*units.GeV
-            self.livetime = 1.e-6*units.sec
+            self.livetime = 2.2e-6*units.sec
  
     def GetParticleId(self):
         r'''
@@ -296,28 +296,28 @@ class Particle(object):
         Interaction depth: float
             mean column depth to interaction in natural units
         '''
-        if self.ID == "neutrino":
+        if self.ID in [12, 14, 16]:
             return proton_mass/(xs.TotalNeutrinoCrossSection(self.energy, interaction = interaction, xs_model=self.xs_model))
-        if self.ID == "tau":
+        if self.ID == 15:
             raise ValueError("Tau interaction length should never be sampled.")
 
     def GetInteractionProbability(self,ddepth,interaction):
         return 1.-np.exp(-ddepth/self.GetInteractionDepth(interaction))
 
     def Decay(self):
-        if self.ID == "neutrino":
+        if self.ID in [12, 14, 16]:
             raise ValueError("No, you did not just discover neutrino decays..")
-        if self.ID == "tau":
+        if self.ID == 15:
             self.energy = self.energy*self.rand.choice(TauDecayFractions, p=TauDecayWeights)
-            self.ID = "neutrino"
+            self.ID = 16
             self.SetParticleProperties()
             return
-        if self.ID == "mu":
+        if self.ID == 13:
             self.survived=False
 
     def Interact(self, interaction):
 
-        if self.ID == "neutrino":
+        if self.ID in [12, 14, 16]:
 
             #Sample energy lost from differential distributions
             dNdEle = lambda y: xs.DifferentialOutGoingLeptonDistribution(self.energy/units.GeV,
@@ -331,21 +331,21 @@ class Particle(object):
                 #make a charged particle
                 self.isCC = True
                 if(self.flavor == 3):
-                    self.ID = "tau"
+                    self.ID = 15
                 elif(self.flavor== 2):
-                    self.ID = "mu"
+                    self.ID = 13
                 self.SetParticleProperties()
                 self.nCC += 1
 
             elif interaction == 'NC':
                 #continue being a neutrino
-                self.ID = "neutrino"
+                self.ID = self.ID
                 self.SetParticleProperties()
                 self.nNC += 1
 
             return
 
-        elif np.logical_or(self.ID == "tau", self.ID == "mu"):
+        elif np.logical_or(self.ID == 15, self.ID == 13):
             print("Im not supposed to be here")
             raise ValueError("tau/mu interactions don't happen here")
 
@@ -354,7 +354,7 @@ def Propagate(particle, track, body):
     total_column_depth = track.total_column_depth(body)
     #keep iterating until final column depth is reached or a charged lepton is made
     while(not np.any((particle.position >= 1.) or (particle.isCC))):
-        if(particle.ID == 'neutrino'):
+        if(particle.ID in [12, 14, 16]):
            #Determine how far you're going
             p1 = particle.rand.random_sample()
             DepthStep = particle.GetProposedDepthStep(p1)
@@ -381,7 +381,7 @@ def Propagate(particle, track, body):
                     particle.Interact('NC')
             if(particle.isCC):
                 continue
-        elif(np.logical_or(particle.ID == 'tau', particle.ID == 'mu')):
+        elif(np.logical_or(particle.ID == 15, particle.ID == 13)):
             current_distance=track.x_to_d(particle.position)
             charged_distance = particle.chargedposition*units.km/body.radius
             if(track.d_to_x(current_distance+charged_distance) >=1.):

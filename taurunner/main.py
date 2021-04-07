@@ -63,7 +63,7 @@ def propagate_neutrinos(nevents, seed, flavor=3, energy=None, theta=None,
     seed: int
         Random number seed
     flavor: int, default=3
-        Neutrino flavor. Default is 3 for nutau
+        Neutrino flavor. select 1, 2, 3, for nue, numu and nutau respectively.
     energy: float, default=None
         Energy in GeV for injecting a monochromatic flux of neutrinos
     theta: float, default=None
@@ -100,23 +100,22 @@ def propagate_neutrinos(nevents, seed, flavor=3, energy=None, theta=None,
 
     args = locals()
     isgzk = False
-    if save is not None:
-        savedir = os.path.join(save, '')
-        save    = True
-        if not os.path.isdir(savedir):
-            raise RuntimeError("Directory to save output is not a valid directory")
 
     if nevents is None:
         raise RuntimeError('You must specify a number of events to simulate (-n)') 
     if (gzk == None and theta == None) or (energy ==None and spectrum ==None):
         raise RuntimeError('You must either pick an energy and theta, use a spectrum, or use the GZK flux')
-    savedir = make_outdir(savedir, todaystr)
-    if save:
+ 
+    if save is not None:
+        savedir = os.path.join(save, '')
+        save    = True
+        if not os.path.isdir(savedir):
+            raise RuntimeError("Directory to save output is not a valid directory")
+        savedir = make_outdir(savedir, todaystr)
         os.mkdir(savedir)
         params_file = savedir+"/params.json"
         output_file = savedir+'/output.npy'
-
-
+   
     if seed is None:
         seed = int(float(savedir.split('/')[-1].replace('_', ''))) % 2**32
     else:
@@ -206,16 +205,15 @@ def propagate_neutrinos(nevents, seed, flavor=3, energy=None, theta=None,
         propagated_stack = []
         inds_left = list(range(nevents))
 
-        taus_e = []
-        nus_e = []
-        mus_e = []
+        output  = []
         counter = 0
         iter_energies = list(eini)[:]
         iter_positions = list(np.zeros(nevents))
-        iter_particleID = ['neutrino']*nevents
         if(flavor==2):
+            iter_particleID = np.ones(nevents, dtype=int)*14
             flavors = ['mu']*nevents
         elif(flavor==3):
+            iter_particleID = np.ones(nevents, dtype=int)*16
             flavors = ['tau']*nevents
         iter_ChargedPosition = list(np.zeros(nevents))
         iter_nCC = list(np.zeros(nevents))
@@ -245,6 +243,9 @@ def propagate_neutrinos(nevents, seed, flavor=3, energy=None, theta=None,
                 iter_nCC[i]+=out.nCC
                 iter_nNC[i]+=out.nNC      
                 if (out.survived==False):
+                    # these were absorbed. we record them in the output with outgoing energy 0
+                    output.append((eini[ind], 0., thetas[ind], cdf_indices[ind], iter_nCC[ind], iter_nNC[ind], out.ID))
+                    iter_positions[int(out.index)] = float(out.position)
                     del inds_left[j]
                     del out
                 elif (out.isCC):
@@ -253,27 +254,17 @@ def propagate_neutrinos(nevents, seed, flavor=3, energy=None, theta=None,
                     total_distance=my_track.x_to_d(1.)*body.radius
                     current_density=body.get_density(my_track.x_to_r(out.position))
                     cc_stack.append((float(out.energy), current_x, float(current_distance), int(out.index),
-                     str(out.ID), 0, float(total_distance), float(current_density), str(out.flavor)))
+                     int(out.ID), 0, float(total_distance), float(current_density), str(out.flavor)))
                     del out
                 else:
                     ind = int(out.index)
                     if ind != i:
                         message += "Index mismatch: {} {}".format(ind, i)
-                    if (out.ID == 'tau'):
-                        taus_e.append((eini[ind], float(out.energy), thetas[ind], cdf_indices[ind], iter_nCC[ind], iter_nNC[ind], 15))
-                        iter_positions[out.index] = float(out.position)
-                        del inds_left[j]
-                        del out
-                    elif (out.ID == 'mu'):
-                        mus_e.append((eini[ind], float(out.energy), thetas[ind], cdf_indices[ind], iter_nCC[ind], iter_nNC[ind], 13))
-                        iter_positions[out.index] = float(out.position)
-                        del inds_left[j]
-                        del out
-                    else:
-                        nus_e.append((eini[ind], float(out.energy), thetas[ind], cdf_indices[ind], iter_nCC[ind], iter_nNC[ind], 16))
-                        iter_positions[int(out.index)] = float(out.position)
-                        del inds_left[j]
-                        del out
+                        raise RuntimeError('Index mismatch -- particles are getting jumbled somewhere (thats a bad thing)')
+                    output.append((eini[ind], float(out.energy), thetas[ind], cdf_indices[ind], iter_nCC[ind], iter_nNC[ind], out.ID))
+                    iter_positions[int(out.index)] = float(out.position)
+                    del inds_left[j]
+                    del out
             if (len(cc_stack) > 0):
                 if debug:
                     message += "{} events passed to MMC in loop iteration {}\n".format(len(cc_stack), counter)
@@ -281,18 +272,14 @@ def propagate_neutrinos(nevents, seed, flavor=3, energy=None, theta=None,
                 for event in EventCollection:
                     iter_positions[int(event[3])] = float(event[1])
                     iter_energies[int(event[3])] = float(event[0])
-                    iter_particleID[int(event[3])] = str(event[-1])
+                    iter_particleID[int(event[3])] = int(event[4])
                     iter_ChargedPosition[int(event[3])] = float(event[5])
                     del event
 
         print("Simulating {} events at {} degrees took {} seconds.".format(nevents, theta, time.time() - t0))
-        nus_e = np.array(nus_e, dtype = [('Eini', float), ('Eout',float), ('Theta', float), ('CDF_index', float), ('nCC', int), ('nNC', int), ('PDG_Encoding', int)])
-        taus_e = np.array(taus_e, dtype = [('Eini', float), ('Eout',float), ('Theta', float), ('CDF_index', float), ('nCC', int), ('nNC', int), ('PDG_Encoding', int)])
-        mus_e = np.array(mus_e, dtype = [('Eini', float), ('Eout',float), ('Theta', float), ('CDF_index', float), ('nCC', int), ('nNC', int), ('PDG_Encoding', int)])
-
-        nus_e['Theta'] *= 180. / np.pi #Give theta in degrees to user
-        taus_e['Theta'] *= 180. / np.pi #Give theta in degrees to user
-        mus_e['Theta'] *= 180. / np.pi #Give theta in degrees to user
+        
+        output = np.array(output, dtype = [('Eini', float), ('Eout',float), ('Theta', float), ('CDF_index', float), ('nCC', int), ('nNC', int), ('PDG_Encoding', int)])
+        output['Theta'] *= 180. / np.pi #Give theta in degrees to user
 
         if save:
             if isgzk:
@@ -301,32 +288,22 @@ def propagate_neutrinos(nevents, seed, flavor=3, energy=None, theta=None,
                 fluxtype = "powerlaw"
             else:
                 fluxtype = "monochromatic_{}_{}".format(energy, theta)
-            output = np.append(nus_e, taus_e)
-            output = np.append(output, mus_e)
             np.save(output_file, output)
             if debug:
                 print(message)
         elif return_res:
-            return nus_e, taus_e, mus_e
+            return output
         else:
             if debug:
                 print(message)
             try:
                 from tabulate import tabulate
-                headers = list(nus_e.dtype.names)
-                nus_table = tabulate(nus_e, headers, tablefmt="fancy_grid")
-                taus_table = tabulate(taus_e, headers, tablefmt="fancy_grid")
-                mus_table = tabulate(mus_e, headers, tablefmt="fancy_grid")
-                print(nus_table)
-                print(taus_table)
-                print(mus_table)
+                headers = list(output.dtype.names)
+                out_table = tabulate(output, headers, tablefmt="fancy_grid")
+                print(out_table)
             except ImportError:
-                print("Outgoing Neutrinos: ")
-                print(nus_e)
-                print("Outgoing Taus: ")
-                print(taus_e)
-                print("Outgoing Mus:  ")
-                print(mus_e)
+                print("Outgoing Particles: ")
+                print(output)
     except KeyboardInterrupt as err:
         cleanup_outdir(savedir, output_file, params_file)
         raise err
