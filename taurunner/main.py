@@ -111,155 +111,155 @@ def propagate_neutrinos(nevents, seed, flavor=3, energy=None, theta=None,
     else:
         seed = seed
 
-        print('Beggining simulation')
-        nevents     = int(nevents)
-        depth       = depth*units.km
-        gzk         = gzk
-        theta       = theta
+    print('Beggining simulation')
+    nevents     = int(nevents)
+    depth       = depth*units.km
+    gzk         = gzk
+    theta       = theta
 
-        if(body=='earth'):
-            from taurunner.body import Earth
-            body = Earth
-        elif(body=='sun'):
-            from taurunner.body import HZ_Sun
-            body = HZ_Sun
+    if(body=='earth'):
+        from taurunner.body import Earth
+        body = Earth
+    elif(body=='sun'):
+        from taurunner.body import HZ_Sun
+        body = HZ_Sun
 
+    if debug:
+        message = ''
+
+    def rndm(a, b, g, size=1):
+        #Random spectrum function. g is gamma+1 (use -1 for E^-2)
+        r = np.random.random(size=size)
+        if g == 0.:
+            # E^-1 is uniform sampling in log space
+            log_es = (np.log10(b) - np.log10(a)) * r + np.log10(a)
+            return 10.**log_es
+        ag, bg = a**g, b**g
+        return (ag + (bg - ag)*r)**(1./g)
+
+    rand = np.random.RandomState(seed=seed)
+
+    if gzk is not None:
+        isgzk = True
+        if not os.path.isfile(gzk):
+            raise RuntimeError("GZK CDF Spline file does not exist")
+        # sample initial energies and incoming angles from GZK parameterization
+        cos_thetas = rand.uniform(low=0., high=1.,size=nevents)
+        cdf_indices= rand.uniform(low=0., high=1.,size=nevents)
+        thetas = np.arccos(cos_thetas)
+        gzk_cdf = np.load(gzk, allow_pickle=True).item()
+        eini = gzk_cdf(cdf_indices)*units.GeV
         if debug:
-            message = ''
-
-        def rndm(a, b, g, size=1):
-            #Random spectrum function. g is gamma+1 (use -1 for E^-2)
-            r = np.random.random(size=size)
-            if g == 0.:
-                # E^-1 is uniform sampling in log space
-                log_es = (np.log10(b) - np.log10(a)) * r + np.log10(a)
-                return 10.**log_es
-            ag, bg = a**g, b**g
-            return (ag + (bg - ag)*r)**(1./g)
-
-        rand = np.random.RandomState(seed=seed)
-
-        if gzk is not None:
-            isgzk = True
-            if not os.path.isfile(gzk):
-                raise RuntimeError("GZK CDF Spline file does not exist")
-            # sample initial energies and incoming angles from GZK parameterization
+            message+="Sampled {} events from the GZK flux\n".format(nevents)
+    elif spectrum is not None:
+        cdf_indices = np.ones(nevents)
+        if theta is None:
             cos_thetas = rand.uniform(low=0., high=1.,size=nevents)
-            cdf_indices= rand.uniform(low=0., high=1.,size=nevents)
             thetas = np.arccos(cos_thetas)
-            gzk_cdf = np.load(gzk, allow_pickle=True).item()
-            eini = gzk_cdf(cdf_indices)*units.GeV
-            if debug:
-                message+="Sampled {} events from the GZK flux\n".format(nevents)
-        elif spectrum is not None:
-            cdf_indices = np.ones(nevents)
-            if theta is None:
-                cos_thetas = rand.uniform(low=0., high=1.,size=nevents)
-                thetas = np.arccos(cos_thetas)
-            else:
-                if theta >= 90:
-                    raise ValueError("Exit angle cannot be greater than 90.")
-                if theta is not None:
-                    thetas = np.ones(nevents)*np.radians(theta)
-                else:
-                    cos_thetas = rand.uniform(low=0., high=1., size=nevents)
-                    thetas = np.arccos(cos_thetas)
-            eini = rndm(float(e_range[0]), float(e_range[1]), spectrum + 1, size=nevents)*units.GeV
-            if debug:
-                message+="Sampled {} events from power law\n".format(nevents)
         else:
-            # Use a monochromatic flux
-            cdf_indices = np.ones(nevents)
-            eini = np.ones(nevents)*energy*units.GeV
+            if theta >= 90:
+                raise ValueError("Exit angle cannot be greater than 90.")
             if theta is not None:
-                if theta >= 90:
-                    raise ValueError("Exit angle cannot be greater than 90.")
                 thetas = np.ones(nevents)*np.radians(theta)
             else:
                 cos_thetas = rand.uniform(low=0., high=1., size=nevents)
                 thetas = np.arccos(cos_thetas)
+        eini = rndm(float(e_range[0]), float(e_range[1]), spectrum + 1, size=nevents)*units.GeV
+        if debug:
+            message+="Sampled {} events from power law\n".format(nevents)
+    else:
+        # Use a monochromatic flux
+        cdf_indices = np.ones(nevents)
+        eini = np.ones(nevents)*energy*units.GeV
+        if theta is not None:
+            if theta >= 90:
+                raise ValueError("Exit angle cannot be greater than 90.")
+            thetas = np.ones(nevents)*np.radians(theta)
+        else:
+            cos_thetas = rand.uniform(low=0., high=1., size=nevents)
+            thetas = np.arccos(cos_thetas)
+        if debug:
+            message+="Sampled {} events from monochromatic flux\n".format(nevents)
+
+    cc_left = True
+    propagated_stack = []
+    inds_left = list(range(nevents))
+
+    output  = []
+    counter = 0
+    iter_energies = list(eini)[:]
+    iter_positions = list(np.zeros(nevents))
+    if(flavor==2):
+        iter_particleID = np.ones(nevents, dtype=int)*14
+        flavors = ['mu']*nevents
+    elif(flavor==3):
+        iter_particleID = np.ones(nevents, dtype=int)*16
+        flavors = ['tau']*nevents
+    iter_ChargedPosition = list(np.zeros(nevents))
+    iter_nCC = list(np.zeros(nevents))
+    iter_nNC = list(np.zeros(nevents))
+
+    # Run the algorithm
+    # All neutrinos are propagated until either exiting or undergoing a CC interaction.
+    # All CC interactions are handled together, and then the next iteration occurs
+    # This repeats until all leptons have reached the total distance
+    t0 = time.time()
+    tracks  = {theta:Chord(theta=theta, depth=depth/body.radius) for theta in set(thetas)}
+    while inds_left:
+        counter += 1
+        if debug:
+            message+="Beginning Loop Number {}\n".format(counter)
+        cc_stack = []
+
+        for j in range(len(inds_left) - 1, -1, -1):
+            i = inds_left[j] #Unique event index
+
+            particle = Particle(iter_particleID[i], flavors[i], iter_energies[i], 
+                                thetas[i], iter_positions[i], i, rand.randint(low=1e9),
+                                iter_ChargedPosition[i], xs_model=xs_model)
+            my_track = tracks[thetas[i]]
+            out = Propagate(particle, my_track, body)
+
+            iter_nCC[i]+=out.nCC
+            iter_nNC[i]+=out.nNC      
+            if (out.survived==False):
+                # these were absorbed. we record them in the output with outgoing energy 0
+                output.append((eini[ind], 0., thetas[ind], cdf_indices[ind], iter_nCC[ind], iter_nNC[ind], out.ID))
+                iter_positions[int(out.index)] = float(out.position)
+                del inds_left[j]
+                del out
+            elif (out.isCC):
+                current_distance=my_track.x_to_d(out.position)*body.radius
+                current_x = out.position
+                total_distance=my_track.x_to_d(1.)*body.radius
+                current_density=body.get_density(my_track.x_to_r(out.position))
+                cc_stack.append((float(out.energy), current_x, float(current_distance), int(out.index),
+                 int(out.ID), 0, float(total_distance), float(current_density), str(out.flavor)))
+                del out
+            else:
+                ind = int(out.index)
+                if ind != i:
+                    message += "Index mismatch: {} {}".format(ind, i)
+                    raise RuntimeError('Index mismatch -- particles are getting jumbled somewhere (thats a bad thing)')
+                output.append((eini[ind], float(out.energy), thetas[ind], cdf_indices[ind], iter_nCC[ind], iter_nNC[ind], out.ID))
+                iter_positions[int(out.index)] = float(out.position)
+                del inds_left[j]
+                del out
+        if (len(cc_stack) > 0):
             if debug:
-                message+="Sampled {} events from monochromatic flux\n".format(nevents)
+                message += "{} events passed to MMC in loop iteration {}\n".format(len(cc_stack), counter)
+            EventCollection = DoAllCCThings(cc_stack, xs_model, flavor, losses)
+            for event in EventCollection:
+                iter_positions[int(event[3])] = float(event[1])
+                iter_energies[int(event[3])] = float(event[0])
+                iter_particleID[int(event[3])] = int(event[4])
+                iter_ChargedPosition[int(event[3])] = float(event[5])
+                del event
 
-        cc_left = True
-        propagated_stack = []
-        inds_left = list(range(nevents))
+    print("Simulating {} events at {} degrees took {} seconds.".format(nevents, theta, time.time() - t0))
 
-        output  = []
-        counter = 0
-        iter_energies = list(eini)[:]
-        iter_positions = list(np.zeros(nevents))
-        if(flavor==2):
-            iter_particleID = np.ones(nevents, dtype=int)*14
-            flavors = ['mu']*nevents
-        elif(flavor==3):
-            iter_particleID = np.ones(nevents, dtype=int)*16
-            flavors = ['tau']*nevents
-        iter_ChargedPosition = list(np.zeros(nevents))
-        iter_nCC = list(np.zeros(nevents))
-        iter_nNC = list(np.zeros(nevents))
-
-        # Run the algorithm
-        # All neutrinos are propagated until either exiting or undergoing a CC interaction.
-        # All CC interactions are handled together, and then the next iteration occurs
-        # This repeats until all leptons have reached the total distance
-        t0 = time.time()
-        tracks  = {theta:Chord(theta=theta, depth=depth/body.radius) for theta in set(thetas)}
-        while inds_left:
-            counter += 1
-            if debug:
-                message+="Beginning Loop Number {}\n".format(counter)
-            cc_stack = []
-
-            for j in range(len(inds_left) - 1, -1, -1):
-                i = inds_left[j] #Unique event index
-
-                particle = Particle(iter_particleID[i], flavors[i], iter_energies[i], 
-                                    thetas[i], iter_positions[i], i, rand.randint(low=1e9),
-                                    iter_ChargedPosition[i], xs_model=xs_model)
-                my_track = tracks[thetas[i]]
-                out = Propagate(particle, my_track, body)
-
-                iter_nCC[i]+=out.nCC
-                iter_nNC[i]+=out.nNC      
-                if (out.survived==False):
-                    # these were absorbed. we record them in the output with outgoing energy 0
-                    output.append((eini[ind], 0., thetas[ind], cdf_indices[ind], iter_nCC[ind], iter_nNC[ind], out.ID))
-                    iter_positions[int(out.index)] = float(out.position)
-                    del inds_left[j]
-                    del out
-                elif (out.isCC):
-                    current_distance=my_track.x_to_d(out.position)*body.radius
-                    current_x = out.position
-                    total_distance=my_track.x_to_d(1.)*body.radius
-                    current_density=body.get_density(my_track.x_to_r(out.position))
-                    cc_stack.append((float(out.energy), current_x, float(current_distance), int(out.index),
-                     int(out.ID), 0, float(total_distance), float(current_density), str(out.flavor)))
-                    del out
-                else:
-                    ind = int(out.index)
-                    if ind != i:
-                        message += "Index mismatch: {} {}".format(ind, i)
-                        raise RuntimeError('Index mismatch -- particles are getting jumbled somewhere (thats a bad thing)')
-                    output.append((eini[ind], float(out.energy), thetas[ind], cdf_indices[ind], iter_nCC[ind], iter_nNC[ind], out.ID))
-                    iter_positions[int(out.index)] = float(out.position)
-                    del inds_left[j]
-                    del out
-            if (len(cc_stack) > 0):
-                if debug:
-                    message += "{} events passed to MMC in loop iteration {}\n".format(len(cc_stack), counter)
-                EventCollection = DoAllCCThings(cc_stack, xs_model, flavor, losses)
-                for event in EventCollection:
-                    iter_positions[int(event[3])] = float(event[1])
-                    iter_energies[int(event[3])] = float(event[0])
-                    iter_particleID[int(event[3])] = int(event[4])
-                    iter_ChargedPosition[int(event[3])] = float(event[5])
-                    del event
-
-        print("Simulating {} events at {} degrees took {} seconds.".format(nevents, theta, time.time() - t0))
-    
-        output = np.array(output, dtype = [('Eini', float), ('Eout',float), ('Theta', float), ('CDF_index', float), ('nCC', int), ('nNC', int), ('PDG_Encoding', int)])
-        output['Theta'] *= 180. / np.pi #Give theta in degrees to user
+    output = np.array(output, dtype = [('Eini', float), ('Eout',float), ('Theta', float), ('CDF_index', float), ('nCC', int), ('nNC', int), ('PDG_Encoding', int)])
+    output['Theta'] *= 180. / np.pi #Give theta in degrees to user
 
     return output
 
