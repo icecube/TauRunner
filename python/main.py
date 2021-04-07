@@ -3,7 +3,7 @@ import json
 os.environ['HDF5_DISABLE_VERSION_CHECK']='2'
 import argparse
 
-from python.modules import units, make_outdir, todaystr
+from python.modules import units, make_outdir, todaystr, cleanup_outdir
 from python.track import Chord
 
 info = sys.version_info
@@ -276,18 +276,8 @@ try:
             print("Outgoing Mus:  ")
             print(mus_e)
 except KeyboardInterrupt as err:
-    if os.path.exists(output_file):
-        os.remove(output_file)
-    if os.path.exists(params_file):
-        os.remove(params_file)
-    if os.path.isdir(savedir):
-        os.rmdir(savedir)
+    cleanup_outdir(savedir, output_file, params_file)
     raise err
 except Exception as err:
-    if os.path.exists(output_file):
-        os.remove(output_file)
-    if os.path.exists(params_file):
-        os.remove(params_file)
-    if os.path.isdir(savedir):
-        os.rmdir(savedir)
+    cleanup_outdir(savedir, output_file, params_file)
     raise err
