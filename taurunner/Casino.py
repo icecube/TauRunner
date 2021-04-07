@@ -6,9 +6,12 @@ import pickle
 from scipy.interpolate import interp1d
 import time
 import subprocess
-#import nuSQUIDSpy as nsq
-import nuSQuIDS as nsq
-sys.path.append('./modules')
+
+try:
+    import nuSQuIDSpy as nsq
+except:
+    import nuSQUIDS as nsq
+
 from taurunner.modules import PhysicsConstants
 from cross_sections import xs
 units = PhysicsConstants()
