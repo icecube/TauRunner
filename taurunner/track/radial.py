@@ -1,7 +1,7 @@
 import sys
 
 from .track import Track
-from python.modules import doc_inherit
+from taurunner.modules import doc_inherit
 
 class RadialTrack(Track):
 

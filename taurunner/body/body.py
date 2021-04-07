@@ -1,6 +1,6 @@
 import numpy as np
 import sys
-from python.modules import units, Callable
+from taurunner.modules import units, Callable
 
 
 class Body(object):

@@ -3,8 +3,8 @@ import json
 os.environ['HDF5_DISABLE_VERSION_CHECK']='2'
 import argparse
 
-from python.modules import units, make_outdir, todaystr, cleanup_outdir
-from python.track import Chord
+from taurunner.modules import units, make_outdir, todaystr, cleanup_outdir
+from taurunner.track import Chord
 
 info = sys.version_info
 pyv  = int(info.major)

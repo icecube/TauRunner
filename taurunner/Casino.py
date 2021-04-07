@@ -9,7 +9,7 @@ import subprocess
 #import nuSQUIDSpy as nsq
 import nuSQuIDS as nsq
 sys.path.append('./modules')
-from physicsconstants import PhysicsConstants
+from taurunner.modules import PhysicsConstants
 from cross_sections import xs
 units = PhysicsConstants()
 dis = nsq.NeutrinoDISCrossSectionsFromTables()

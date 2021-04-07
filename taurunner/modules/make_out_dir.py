@@ -13,5 +13,4 @@ def make_outdir(savedir, todaystr):
     while os.path.isdir(proposed_dir):
         i+=1
         proposed_dir = make_dirname(savedir, todaystr, i)
-        print(proposed_dir)
     return proposed_dir
