@@ -1,0 +1,1 @@
+{"seed": 2584872321, "nevents": 100.0, "flavor": 3, "energy": 1000000000.0, "theta": 45.0, "gzk": null, "spectrum": null, "range": null, "path": "./", "debug": false, "save": "output/", "onlytau": false, "water_layer": 0, "xs_model": "dipole", "losses": false, "body": "earth", "depth": 0.0}
