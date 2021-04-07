@@ -2,7 +2,7 @@ import numpy as np
 from scipy.interpolate import splev, splrep
 
 from .body import Body
-from python.modules import Callable, units
+from taurunner.modules import Callable, units
 
 def mass_density_from_model(solar_model_file):
     model   = np.genfromtxt(solar_model_file)

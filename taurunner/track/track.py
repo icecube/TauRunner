@@ -1,7 +1,7 @@
 import numpy as np
 from scipy.integrate import quad
 from scipy.interpolate import splrep, splev, interp1d
-from python.modules import units
+from taurunner.modules import units
 
 class Track(object):
 
