@@ -1,9 +1,5 @@
 import unittest
-<<<<<<< HEAD
 from taurunner import Casino
-=======
-# from taurunner import Casino
->>>>>>> 25b2e1c1f82590eb58b291a70c1e66028e5fa6c5
 
 class TestXSecMethods(unittest.TestCase):
 
