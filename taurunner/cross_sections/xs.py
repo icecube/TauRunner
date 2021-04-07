@@ -4,9 +4,11 @@ import sys
 info = sys.version_info
 pyv  = int(info.major)
 import numpy as np
-import nuSQuIDS as nsq
-#import nuSQUIDSpy as nsq
-from python.modules import units
+try:
+    import nuSQuIDS as nsq
+except:
+    import nuSQUIDSpy as nsq
+from taurunner.modules import units
 
 #cross section tables
 ######################################
