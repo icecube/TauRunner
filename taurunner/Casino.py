@@ -17,6 +17,10 @@ from cross_sections import xs
 units = PhysicsConstants()
 dis = nsq.NeutrinoDISCrossSectionsFromTables()
 
+def chunks(lst, n):
+    for i in range(0, len(lst), n):
+        yield lst[i:i+n]
+
 def DoAllCCThings(objects, xs, flavor, losses=True):
     r'''
     Calling MMC requires overhead, so handle all MMC calls per iterations
@@ -68,17 +72,9 @@ def DoAllCCThings(objects, xs, flavor, losses=True):
         eni = sorted_e[split[i]+1:split[i+1]+1]
         din = sorted_dists[split[i]+1:split[i+1]+1]
         max_arg = 500
-        nbatch = np.ceil(len(eni)/max_arg)
-        eni_str = []
-        for i in range(int(nbatch)):
-            if i != int(nbatch) - 1:
-                eni_str.append(['{} {}'.format(eni[i*max_arg + x], din[i*max_arg + x]) for x in range(max_arg)])
-            else:
-                eni_str.append(['{} {}'.format(eni[i*max_arg + x], din[i*max_arg + x]) for x in range(len(eni)%max_arg)])
+        eni_str = ['{} {}'.format(e, d) for e,d in list(zip(eni, din))]
+        eni_str = list(chunks(eni_str, max_arg))
 
-        num_args = len(eni)/max_arg
-        if len(eni) % max_arg != 0:
-            eni_str.append(["{} {}".format(eni[x], din[x]) for x in range(int(max_arg*num_args), len(eni))])
         for kk in range(len(eni_str)):
             eni_str[kk].append(str(multis[0]))
             eni_str[kk].insert(0, propagate_path)
@@ -118,7 +114,7 @@ def TauDecayToPion(Etau, Enu, P):
     g1 = 0.
     if((1. - RPion - z)  > 0.0):
         g0 = 1./(1. - RPion)
-        g1 = -(2.*z - 1. - RPion)/(1. - RPion)**2
+        g1 = -(2.*z - 1. + RPion)/(1. - RPion)**2
 
     return(g0+P*g1)
     
