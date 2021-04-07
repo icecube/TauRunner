@@ -105,32 +105,12 @@ def propagate_neutrinos(nevents, seed, flavor=3, energy=None, theta=None,
         raise RuntimeError('You must specify a number of events to simulate (-n)') 
     if (gzk == None and theta == None) or (energy ==None and spectrum ==None):
         raise RuntimeError('You must either pick an energy and theta, use a spectrum, or use the GZK flux')
- 
-    if save is not None:
-        savedir = os.path.join(save, '')
-        save    = True
-        if not os.path.isdir(savedir):
-            raise RuntimeError("Directory to save output is not a valid directory")
-        savedir = make_outdir(savedir, todaystr)
-        os.mkdir(savedir)
-        params_file = savedir+"/params.json"
-        output_file = savedir+'/output.npy'
    
     if seed is None:
         seed = int(float(savedir.split('/')[-1].replace('_', ''))) % 2**32
     else:
         seed = seed
 
-    if save:
-        d = args
-        # Check this
-        d['seed'] = seed
-        j = json.dumps(d)
-        f = open(params_file,"w")
-        f.write(j)
-        f.close()
-
-    try:
         print('Beggining simulation')
         nevents     = int(nevents)
         depth       = depth*units.km
@@ -277,44 +257,67 @@ def propagate_neutrinos(nevents, seed, flavor=3, energy=None, theta=None,
                     del event
 
         print("Simulating {} events at {} degrees took {} seconds.".format(nevents, theta, time.time() - t0))
-        
+    
         output = np.array(output, dtype = [('Eini', float), ('Eout',float), ('Theta', float), ('CDF_index', float), ('nCC', int), ('nNC', int), ('PDG_Encoding', int)])
         output['Theta'] *= 180. / np.pi #Give theta in degrees to user
 
+    return output
+
+if __name__ == "__main__":
+
+    args = initialize_parser()
+
+    if args.save is not None:
+        savedir = os.path.join(save, '')
+        save    = True
+        if not os.path.isdir(savedir):
+            raise RuntimeError("Directory to save output is not a valid directory")
+        savedir = make_outdir(savedir, todaystr)
+        os.mkdir(savedir)
+        params_file = savedir+"/params.json"
+        output_file = savedir+'/output.npy'
+    if save:
+        d = vars(args)
+        # Check this
+        d['seed'] = args.seed
+        j = json.dumps(d)
+        f = open(params_file,"w")
+        f.write(j)
+        f.close()
+
+    try:
+        result = propagate_neutrinos(args.nevents, args.seed, flavor=args.flavor, 
+            energy=args.energy, theta=args.theta, gzk=args.gzk, 
+            spectrum=args.spectrum, e_range=args.range, debug=args.debug,
+            save=args.save, water_layer=args.water_layer, xs_model=args.xs_model,
+            losses=args.losses, body=args.body, depth=args.depth, return_res=False)
+
         if save:
-            if isgzk:
+            if args.gzk is not None:
                 fluxtype = "cosmogenic"
-            elif spectrum is not None:
+            elif args.spectrum is not None:
                 fluxtype = "powerlaw"
             else:
-                fluxtype = "monochromatic_{}_{}".format(energy, theta)
-            np.save(output_file, output)
-            if debug:
+                fluxtype = "monochromatic_{}_{}".format(args.energy, args.theta)
+            np.save(output_file, result)
+            if args.debug:
                 print(message)
-        elif return_res:
-            return output
         else:
-            if debug:
+            if args.debug:
                 print(message)
             try:
                 from tabulate import tabulate
-                headers = list(output.dtype.names)
-                out_table = tabulate(output, headers, tablefmt="fancy_grid")
+                headers = list(result.dtype.names)
+                out_table = tabulate(result, headers, tablefmt="fancy_grid")
                 print(out_table)
             except ImportError:
                 print("Outgoing Particles: ")
-                print(output)
+                print(result)
+    
     except KeyboardInterrupt as err:
         cleanup_outdir(savedir, output_file, params_file)
         raise err
     except Exception as err:
         cleanup_outdir(savedir, output_file, params_file)
         raise err
-        
-if __name__ == "__main__":
-    args = initialize_parser()
-    propagate_neutrinos(args.nevents, args.seed, flavor=args.flavor, 
-        energy=args.energy, theta=args.theta, gzk=args.gzk, 
-        spectrum=args.spectrum, e_range=args.range, debug=args.debug,
-        save=args.save, water_layer=args.water_layer, xs_model=args.xs_model,
-        losses=args.losses, body=args.body, depth=args.depth, return_res=False)
+ 
