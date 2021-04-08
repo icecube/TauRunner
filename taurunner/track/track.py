@@ -1,4 +1,5 @@
 import numpy as np
+import warnings
 from scipy.integrate import quad
 from scipy.interpolate import splrep, splev, interp1d
 from taurunner.modules import units
@@ -24,11 +25,12 @@ class Track(object):
         if not (xi<=xf):
             raise RuntimeError('xi must be less than or equal to xf')
         integrand = lambda x: body.get_density(self.x_to_r(x))*self.x_to_d_prime(x)*body.radius
-        #integrand = lambda x: body.get_density(self.x_to_r(x))*self.x_to_d(x)*self.x_to_d_prime(x)*body.radius
         # find where the path intersects layer boundaries
         xx        = []
-        for r in body.layer_boundaries:
-            xx = np.append(xx, self.r_to_x(r))
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            for r in body.layer_boundaries:
+                xx = np.append(xx, self.r_to_x(r))
         # NaNs means it does not intersect the layer
         xx        = xx[np.where(~np.isnan(xx))[0]] # non-nanize
         # Remove xs before and after the integration limits
