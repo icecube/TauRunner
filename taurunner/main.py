@@ -9,9 +9,6 @@ from taurunner.modules import units, make_outdir, todaystr, cleanup_outdir
 from taurunner.track import Chord
 from taurunner.Casino import *
 
-info = sys.version_info
-pyv  = int(info.major)
-
 def initialize_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('-s',dest='seed',type=int,
@@ -97,8 +94,6 @@ def propagate_neutrinos(nevents, seed, flavor=3, energy=None, theta=None,
         np.recarray of the outgoing leptons
     
     '''
-    args = locals()
-    isgzk = False
 
     if nevents is None:
         raise RuntimeError('You must specify a number of events to simulate (-n)') 
@@ -139,7 +134,6 @@ def propagate_neutrinos(nevents, seed, flavor=3, energy=None, theta=None,
     rand = np.random.RandomState(seed=seed)
 
     if gzk is not None:
-        isgzk = True
         if not os.path.isfile(gzk):
             raise RuntimeError("GZK CDF Spline file does not exist")
         # sample initial energies and incoming angles from GZK parameterization
