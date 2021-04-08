@@ -276,7 +276,7 @@ if __name__ == "__main__":
         os.mkdir(savedir)
         params_file = savedir+"/params.json"
         output_file = savedir+'/output.npy'
-    if save:
+
         d = vars(args)
         # Check this
         d['seed'] = args.seed
@@ -292,7 +292,7 @@ if __name__ == "__main__":
             save=args.save, water_layer=args.water_layer, xs_model=args.xs_model,
             losses=args.losses, body=args.body, depth=args.depth, return_res=False)
 
-        if save:
+        if args.save:
             if args.gzk is not None:
                 fluxtype = "cosmogenic"
             elif args.spectrum is not None:
