@@ -34,7 +34,7 @@ class Chord(Track):
         val1 = (self._c - np.sqrt(r**2- self._s**2))/self._m
         val2 = (self._c + np.sqrt(r**2- self._s**2))/self._m
         if val1!=val2:
-            return [val1, val2]       
+            return (val1, val2)
         else:
             return val1
 

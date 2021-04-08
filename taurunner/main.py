@@ -5,7 +5,8 @@ import json
 os.environ['HDF5_DISABLE_VERSION_CHECK']='2'
 import argparse
 
-from taurunner.modules import units, make_outdir, todaystr, cleanup_outdir
+from taurunner.modules import units, cleanup_outdir
+#from taurunner.modules import units, make_outdir, todaystr, cleanup_outdir
 from taurunner.track import Chord
 from taurunner.Casino import *
 
@@ -37,7 +38,9 @@ def initialize_parser():
         help="Enter 'CSMS' if you would like to run the simulation with a pQCD xs model")
     parser.add_argument('-losses', dest='losses', default=True, action='store_false',
         help="Raise this flag if you want to turn off tau losses. In this case, taus will decay at rest.")
-    parser.add_argument('--body', dest='body', type=str, default='earth',
+    parser.add_argument('--body', dest='body', default='earth',
+        help="Raise this flag if you want to turn off tau losses. In this case, taus will decay at rest.")
+    parser.add_argument('--radius', dest='radius', type=float,
         help="Raise this flag if you want to turn off tau losses. In this case, taus will decay at rest.")
     parser.add_argument('--depth', dest='depth', type=float, default=0.0,
         help="Depth of the detector in km.")
@@ -46,9 +49,10 @@ def initialize_parser():
     return args
 
 def propagate_neutrinos(nevents, seed, flavor=3, energy=None, theta=None,
-    gzk=None, spectrum=None, e_range=" ", debug=False, save=None, onlytau=False,
-    water_layer=0., xs_model='dipole', losses=True, body='earth', depth=0., 
-    return_res=True):
+                        gzk=None, spectrum=None, e_range=" ", debug=False, save=None, onlytau=False,
+                        water_layer=0., xs_model='dipole', losses=True, body='earth', depth=0., 
+                        return_res=True
+                       ):
     r'''
     Main simulation code. Propagates a flux of neutrinos and returns or
     saves the outgoing particles
@@ -105,12 +109,6 @@ def propagate_neutrinos(nevents, seed, flavor=3, energy=None, theta=None,
     nevents     = int(nevents)
     depth       = depth*units.km
 
-    if(body=='earth'):
-        from taurunner.body import Earth
-        body = Earth
-    elif(body=='sun'):
-        from taurunner.body import HZ_Sun
-        body = HZ_Sun
 
     if debug:
         message = ''
@@ -253,35 +251,38 @@ def propagate_neutrinos(nevents, seed, flavor=3, energy=None, theta=None,
 if __name__ == "__main__":
 
     args = initialize_parser()
+    from taurunner.modules import setup_outdir
+    seed, savedir, params_file, output_file = setup_outdir(args)
+    #if args.save is not None:
+    #    savedir = os.path.join(args.save, '')
+    #    save    = True
+    #    if not os.path.isdir(savedir):
+    #        raise RuntimeError("Directory to save output is not a valid directory")
+    #    savedir = make_outdir(savedir, todaystr)
+    #    os.mkdir(savedir)
+    #    params_file = savedir+"/params.json"
+    #    output_file = savedir+'/output.npy'
+    #if args.seed is None:
+    #    seed = int(float(savedir.split('/')[-1].replace('_', ''))) % 2**32
+    #else:
+    #    seed = args.seed
 
-    if args.save is not None:
-        savedir = os.path.join(args.save, '')
-        save    = True
-        if not os.path.isdir(savedir):
-            raise RuntimeError("Directory to save output is not a valid directory")
-        savedir = make_outdir(savedir, todaystr)
-        os.mkdir(savedir)
-        params_file = savedir+"/params.json"
-        output_file = savedir+'/output.npy'
-    if args.seed is None:
-        seed = int(float(savedir.split('/')[-1].replace('_', ''))) % 2**32
-    else:
-        seed = args.seed
-
-        d = vars(args)
-        # Check this
-        d['seed'] = args.seed
-        j = json.dumps(d)
-        f = open(params_file,"w")
-        f.write(j)
-        f.close()
-
+    #    d = vars(args)
+    #    # Check this
+    #    d['seed'] = args.seed
+    #    j = json.dumps(d)
+    #    f = open(params_file,"w")
+    #    f.write(j)
+    #    f.close()
+    from taurunner.modules import construct_body
+    body = construct_body(args.body, args.radius)
+    print(body._name)
     try:
         result = propagate_neutrinos(args.nevents, seed, flavor=args.flavor, 
                                      energy=args.energy, theta=args.theta, gzk=args.gzk, 
                                      spectrum=args.spectrum, e_range=args.range, debug=args.debug,
                                      save=args.save, water_layer=args.water_layer, xs_model=args.xs_model,
-                                     losses=args.losses, body=args.body, depth=args.depth, return_res=False)
+                                     losses=args.losses, body=body, depth=args.depth, return_res=False)
 
         if args.save:
             if args.gzk is not None:
@@ -305,7 +306,7 @@ if __name__ == "__main__":
                 print("Outgoing Particles: ")
                 print(result)
     
-     except BaseException as err:
-         cleanup_outdir(savedir, output_file, params_file)
-         raise err
+    except BaseException as err:
+        cleanup_outdir(savedir, output_file, params_file)
+        raise err
  
