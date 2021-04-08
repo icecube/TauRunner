@@ -108,8 +108,6 @@ def propagate_neutrinos(nevents, seed, flavor=3, energy=None, theta=None,
     print('Beggining simulation')
     nevents     = int(nevents)
     depth       = depth*units.km
-    gzk         = gzk
-    theta       = theta
 
     if(body=='earth'):
         from taurunner.body import Earth
