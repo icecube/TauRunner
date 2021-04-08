@@ -97,7 +97,6 @@ def propagate_neutrinos(nevents, seed, flavor=3, energy=None, theta=None,
         np.recarray of the outgoing leptons
     
     '''
-
     args = locals()
     isgzk = False
 
@@ -268,7 +267,7 @@ if __name__ == "__main__":
     args = initialize_parser()
 
     if args.save is not None:
-        savedir = os.path.join(save, '')
+        savedir = os.path.join(args.save, '')
         save    = True
         if not os.path.isdir(savedir):
             raise RuntimeError("Directory to save output is not a valid directory")
@@ -314,10 +313,7 @@ if __name__ == "__main__":
                 print("Outgoing Particles: ")
                 print(result)
     
-    except KeyboardInterrupt as err:
-        cleanup_outdir(savedir, output_file, params_file)
-        raise err
-    except Exception as err:
-        cleanup_outdir(savedir, output_file, params_file)
-        raise err
+     except BaseException as err:
+         cleanup_outdir(savedir, output_file, params_file)
+         raise err
  
