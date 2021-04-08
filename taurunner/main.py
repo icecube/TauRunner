@@ -100,10 +100,6 @@ def propagate_neutrinos(nevents, seed, flavor=3, energy=None, theta=None,
     if (gzk == None and theta == None) or (energy ==None and spectrum ==None):
         raise RuntimeError('You must either pick an energy and theta, use a spectrum, or use the GZK flux')
    
-    if seed is None:
-        seed = int(float(savedir.split('/')[-1].replace('_', ''))) % 2**32
-    else:
-        seed = seed
 
     print('Beggining simulation')
     nevents     = int(nevents)
@@ -267,6 +263,10 @@ if __name__ == "__main__":
         os.mkdir(savedir)
         params_file = savedir+"/params.json"
         output_file = savedir+'/output.npy'
+    if args.seed is None:
+        seed = int(float(savedir.split('/')[-1].replace('_', ''))) % 2**32
+    else:
+        seed = args.seed
 
         d = vars(args)
         # Check this
@@ -277,11 +277,11 @@ if __name__ == "__main__":
         f.close()
 
     try:
-        result = propagate_neutrinos(args.nevents, args.seed, flavor=args.flavor, 
-            energy=args.energy, theta=args.theta, gzk=args.gzk, 
-            spectrum=args.spectrum, e_range=args.range, debug=args.debug,
-            save=args.save, water_layer=args.water_layer, xs_model=args.xs_model,
-            losses=args.losses, body=args.body, depth=args.depth, return_res=False)
+        result = propagate_neutrinos(args.nevents, seed, flavor=args.flavor, 
+                                     energy=args.energy, theta=args.theta, gzk=args.gzk, 
+                                     spectrum=args.spectrum, e_range=args.range, debug=args.debug,
+                                     save=args.save, water_layer=args.water_layer, xs_model=args.xs_model,
+                                     losses=args.losses, body=args.body, depth=args.depth, return_res=False)
 
         if args.save:
             if args.gzk is not None:
