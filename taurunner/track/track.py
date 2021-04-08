@@ -45,7 +45,7 @@ class Track(object):
                         raise RuntimeError('Error too large')
             II.append(I[0])
         return np.sum(II)
-    
+
     def d_to_x(self, d) :
         '''
         Convert from distance traveled to track parameter
@@ -106,6 +106,22 @@ class Track(object):
         if body._name not in self._column_depth_functions.keys():
             self._initialize_column_depth_functions(body)
         return self._column_depth_functions[body._name][0]
+
+    def x_to_cartesian_direction(x):
+        '''
+        Convert from track parameter to direction in cartesian space
+
+        params
+        ______
+        x (float): Affine parameter between 0 and 1 which parametrizes the track
+
+        returns
+        _______
+        cart_dir (tuple): x-, y-, and z-directions in a cartesian system whose origin coincides
+                          with the center of the body
+
+        '''
+        pass
 
     def x_to_d(self, x):
         '''
