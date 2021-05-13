@@ -51,7 +51,7 @@ def initialize_parser():
 
 def run_MC(nevents, seed, flavor=3, energy=None, theta=None,
     gzk=None, spectrum=None, e_range=" ", debug=False, save=None, onlytau=False,
-    water_layer=0., xs_model='dipole', losses=True, body='earth', depth=0., 
+    water_layer=0., xs_model='dipole', losses=True, body=Earth, depth=0., 
     return_res=True):
     r'''
     Main simulation code. Propagates a flux of neutrinos and returns or
@@ -268,7 +268,7 @@ if __name__ == "__main__":
             energy=args.energy, theta=args.theta, gzk=args.gzk, 
             spectrum=args.spectrum, e_range=args.range, debug=args.debug,
             save=args.save, water_layer=args.water_layer, xs_model=args.xs_model,
-            losses=args.losses, body=args.body, depth=args.depth, return_res=False)
+            losses=args.losses, body=body, depth=args.depth, return_res=False)
 
         if args.save:
             if args.gzk is not None:
