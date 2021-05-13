@@ -48,7 +48,7 @@ def initialize_parser():
     args = parser.parse_args()
     return args
 
-def propagate_neutrinos(nevents, seed, flavor=3, energy=None, theta=None,
+def run_MC(nevents, seed, flavor=3, energy=None, theta=None,
     gzk=None, spectrum=None, e_range=" ", debug=False, save=None, onlytau=False,
     water_layer=0., xs_model='dipole', losses=True, body='earth', depth=0., 
     return_res=True):
@@ -97,8 +97,6 @@ def propagate_neutrinos(nevents, seed, flavor=3, energy=None, theta=None,
         np.recarray of the outgoing leptons
     
     '''
-
-    args = locals()
     isgzk = False
 
     if nevents is None:
@@ -113,9 +111,7 @@ def propagate_neutrinos(nevents, seed, flavor=3, energy=None, theta=None,
 
     print('Beggining simulation')
     nevents     = int(nevents)
-    depth       = depth*units.km
-    gzk         = gzk
-    theta       = theta
+    depth*=units.km
 
     if(body=='earth'):
         from taurunner.body import Earth
@@ -191,10 +187,10 @@ def propagate_neutrinos(nevents, seed, flavor=3, energy=None, theta=None,
     iter_positions = list(np.zeros(nevents))
     if(flavor==2):
         iter_particleID = np.ones(nevents, dtype=int)*14
-        flavors = ['mu']*nevents
+        flavors = [flavor]*nevents
     elif(flavor==3):
         iter_particleID = np.ones(nevents, dtype=int)*16
-        flavors = ['tau']*nevents
+        flavors = [flavor]*nevents
     iter_ChargedPosition = list(np.zeros(nevents))
     iter_nCC = list(np.zeros(nevents))
     iter_nNC = list(np.zeros(nevents))
@@ -222,9 +218,10 @@ def propagate_neutrinos(nevents, seed, flavor=3, energy=None, theta=None,
 
             iter_nCC[i]+=out.nCC
             iter_nNC[i]+=out.nNC      
+
             if (out.survived==False):
-                # these were absorbed. we record them in the output with outgoing energy 0
-                output.append((eini[ind], 0., thetas[ind], cdf_indices[ind], iter_nCC[ind], iter_nNC[ind], out.ID))
+                #these were absorbed. we record them in the output with outgoing energy 0
+                output.append((eini[ind], 0., thetas[ind], inds_left[j], iter_nCC[ind], iter_nNC[ind], out.ID))
                 iter_positions[int(out.index)] = float(out.position)
                 del inds_left[j]
                 del out
@@ -241,7 +238,16 @@ def propagate_neutrinos(nevents, seed, flavor=3, energy=None, theta=None,
                 if ind != i:
                     message += "Index mismatch: {} {}".format(ind, i)
                     raise RuntimeError('Index mismatch -- particles are getting jumbled somewhere (thats a bad thing)')
-                output.append((eini[ind], float(out.energy), thetas[ind], cdf_indices[ind], iter_nCC[ind], iter_nNC[ind], out.ID))
+                output.append((eini[ind], float(out.energy), thetas[ind], inds_left[j], iter_nCC[ind], iter_nNC[ind], out.ID))               
+                basket = out.basket
+                for sec in basket:
+                    sec_particle = Particle(sec['ID'], sec['flavor'], sec['energy'], thetas[ind], sec['position'], inds_left[j], rand.randint(low=1e9),
+                                            0.0, xs_model=xs_model)
+                    sec_out      = Propagate(sec_particle, my_track, body)
+                    if(sec_out.isCC):
+                        output.append((sec_out.energy, 0.0, thetas[ind], inds_left[j], sec_out.nCC, sec_out.nNC, sec_out.ID))
+                    else:
+                        output.append((sec_out.initial_energy, sec_out.energy, thetas[ind], inds_left[j], sec_out.nCC, sec_out.nNC, sec_out.ID))
                 iter_positions[int(out.index)] = float(out.position)
                 del inds_left[j]
                 del out
@@ -286,7 +292,7 @@ if __name__ == "__main__":
         f.close()
 
     try:
-        result = propagate_neutrinos(args.nevents, args.seed, flavor=args.flavor, 
+        result = run_MC(args.nevents, args.seed, flavor=args.flavor, 
             energy=args.energy, theta=args.theta, gzk=args.gzk, 
             spectrum=args.spectrum, e_range=args.range, debug=args.debug,
             save=args.save, water_layer=args.water_layer, xs_model=args.xs_model,

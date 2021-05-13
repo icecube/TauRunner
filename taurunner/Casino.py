@@ -6,10 +6,12 @@ import pickle
 from scipy.interpolate import interp1d
 import time
 import subprocess
+from scipy.interpolate import InterpolatedUnivariateSpline as iuvs
 try:
     import nuSQUIDSpy as nsq
 except:
-    import nuSQUIDS as nsq
+    import nuSQuIDS as nsq
+
 from taurunner.modules import PhysicsConstants
 from cross_sections import xs
 units = PhysicsConstants()
@@ -40,7 +42,7 @@ def DoAllCCThings(objects, xs, flavor, losses=True):
     efinal, distance = [], []
     flavor = objects[0][-1]
     e      = [obj[0]/units.GeV for obj in objects]                    #MMC takes initial energy in GeV 
-    dists  = [1e3*(obj[6] - obj[2])/units.km for obj in objects]     #distance to propagate is total distance minus the current position in m 
+    dists  = [1e3*(obj[6] - obj[2])/units.km for obj in objects]      #distance to propagate is total distance minus the current position in m 
     mult   = [obj[-2]*(units.cm**3)/units.gr/2.7 for obj in objects]  #convert density back to normal (not natural) units
     sort         = sorted(list(zip(mult, e, dists, objects)))
     sorted_mult  = np.asarray(list(zip(*sort))[0])
@@ -171,7 +173,7 @@ class Particle(object):
     particle information stored in an object.
     '''
     def __init__(self, ID, flavor, energy, incoming_angle, position, index, 
-                  seed, chargedposition, water_layer=0, xs_model='dipole'):
+                  seed, chargedposition, water_layer=0, xs_model='dipole', basket=[]):
         r'''
         Class initializer. This function sets all initial conditions based 
         on the particle's incoming angle, energy, ID, and position.
@@ -197,12 +199,15 @@ class Particle(object):
         '''     
         #Set Initial Values
         self.ID = ID
+        self.initial_energy = energy
         self.energy = energy
         self.flavor = flavor
         self.position = position
         self.chargedposition = chargedposition
         self.SetParticleProperties()
+        self.secondaries = True
         self.survived = True
+        self.basket = basket
         self.nCC = 0
         self.nNC = 0
         self.ntdecay = 0
@@ -308,6 +313,26 @@ class Particle(object):
         if self.ID in [12, 14, 16]:
             raise ValueError("No, you did not just discover neutrino decays..")
         if self.ID == 15:
+            if self.secondaries:
+                # sample branching ratio of tau leptonic decay
+                p0 = np.random.uniform(0,1)
+                bins = list(np.logspace(-5,0,101))[:-1]
+                if p0 < .18:
+                    cdf = np.load('/data/user/isafa/ANITA/TauRunnerV2/secondaries/TauRunner/python/antinumu_cdf.npy')
+                    sec_flavor = 2
+                     # sample energy of tau secondary
+                    sample = (iuvs(bins,cdf-np.random.uniform(0,1)).roots())[0]
+                    enu = sample*self.energy
+                    # add secondary to basket, prepare propagation
+                    self.basket.append({"ID" : 14, "flavor" : sec_flavor, "position" : self.position, "energy" : enu})
+                elif p0 > .18 and p0 < .36:
+                    cdf = np.load('/data/user/isafa/ANITA/TauRunnerV2/secondaries/TauRunner/python/antinue_cdf.npy')
+                    sec_flavor = 1
+                     # sample energy of tau secondary
+                    sample = (iuvs(bins,cdf-np.random.uniform(0,1)).roots())[0]
+                    enu = sample*self.energy*units.GeV
+                    # add secondary to basket, prepare propagation
+                    self.basket.append({"ID" : 12, "flavor" : sec_flavor, "position" : self.position, "energy" : enu})
             self.energy = self.energy*self.rand.choice(TauDecayFractions, p=TauDecayWeights)
             self.ID = 16
             self.SetParticleProperties()
