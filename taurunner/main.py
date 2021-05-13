@@ -8,6 +8,7 @@ import argparse
 from taurunner.modules import units, cleanup_outdir
 #from taurunner.modules import units, make_outdir, todaystr, cleanup_outdir
 from taurunner.track import Chord
+from taurunner.body import Earth
 from taurunner.Casino import *
 
 def initialize_parser():
@@ -50,7 +51,7 @@ def initialize_parser():
 
 def propagate_neutrinos(nevents, seed, flavor=3, energy=None, theta=None,
                         gzk=None, spectrum=None, e_range=" ", debug=False, save=None, onlytau=False,
-                        water_layer=0., xs_model='dipole', losses=True, body='earth', depth=0., 
+                        water_layer=0., xs_model='dipole', losses=True, body=Earth, depth=0., 
                         return_res=True
                        ):
     r'''
