@@ -8,6 +8,7 @@ try:
     import nuSQuIDS as nsq
 except:
     import nuSQUIDSpy as nsq
+dis = nsq.NeutrinoDISCrossSectionsFromTables()
 from taurunner.modules import units
 
 #cross section tables
@@ -109,7 +110,6 @@ def DifferentialOutGoingLeptonDistribution(ein, eout, interaction, xs):
             diff = dis.SingleDifferentialCrossSection(ein*units.GeV, eout*units.GeV, 
                         nsq.NeutrinoCrossSections_NeutrinoFlavor.tau, 
                         nsq.NeutrinoCrossSections_NeutrinoType.neutrino,
-                        interaction) 
+                        getattr(nsq.NeutrinoCrossSections_Current, interaction) 
+                       )
         return diff
-
-

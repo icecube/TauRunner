@@ -30,11 +30,17 @@ class Chord(Track):
         return self._m*x
 
     @doc_inherit
+    def x_to_cartesian_direction(x):
+        direction = np.array(-self._s, 0., self._c+(1-self.depth))
+        direction /= np.norm(direction)
+        return tuple(direction)
+
+    @doc_inherit
     def r_to_x(self, r):
         val1 = (self._c - np.sqrt(r**2- self._s**2))/self._m
         val2 = (self._c + np.sqrt(r**2- self._s**2))/self._m
         if val1!=val2:
-            return [val1, val2]       
+            return (val1, val2)
         else:
             return val1
 

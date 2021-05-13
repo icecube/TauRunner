@@ -1,6 +1,7 @@
 import unittest
 from taurunner import Casino
 from taurunner.main import propagate_neutrinos
+from taurunner.body import Body
 
 import numpy as np
 
@@ -14,9 +15,12 @@ class TestConservation(unittest.TestCase):
         num_sim = 1000
         ens = [1e5, 1e6, 1e7]
         cls.sim_dict = dict()
+        body = Body(6.0, 6368.0) # Construct earthsized body of constant density
         for en in ens:
-            sim = propagate_neutrinos(num_sim, 1, theta=60., 
-                debug=False, xs_model='dipole', energy=en)
+            sim = propagate_neutrinos(num_sim, 1, theta=60.,
+                                      debug=False, xs_model='dipole', 
+                                      energy=en, body=body, losses=False,
+                                     )
             cls.sim_dict[en] = sim
         cls.num_sim = num_sim
         cls.atten_dict = {1e5: 0.63, 1e6: 0.22, 1e7: 0.012}

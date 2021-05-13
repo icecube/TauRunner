@@ -1,4 +1,5 @@
 import numpy as np
+import warnings
 from scipy.integrate import quad
 from scipy.interpolate import splrep, splev, interp1d
 from taurunner.modules import units
@@ -24,11 +25,12 @@ class Track(object):
         if not (xi<=xf):
             raise RuntimeError('xi must be less than or equal to xf')
         integrand = lambda x: body.get_density(self.x_to_r(x))*self.x_to_d_prime(x)*body.radius
-        #integrand = lambda x: body.get_density(self.x_to_r(x))*self.x_to_d(x)*self.x_to_d_prime(x)*body.radius
         # find where the path intersects layer boundaries
         xx        = []
-        for r in body.layer_boundaries:
-            xx = np.append(xx, self.r_to_x(r))
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            for r in body.layer_boundaries:
+                xx = np.append(xx, self.r_to_x(r))
         # NaNs means it does not intersect the layer
         xx        = xx[np.where(~np.isnan(xx))[0]] # non-nanize
         # Remove xs before and after the integration limits
@@ -43,7 +45,7 @@ class Track(object):
                         raise RuntimeError('Error too large')
             II.append(I[0])
         return np.sum(II)
-    
+
     def d_to_x(self, d) :
         '''
         Convert from distance traveled to track parameter
@@ -104,6 +106,22 @@ class Track(object):
         if body._name not in self._column_depth_functions.keys():
             self._initialize_column_depth_functions(body)
         return self._column_depth_functions[body._name][0]
+
+    def x_to_cartesian_direction(x):
+        '''
+        Convert from track parameter to direction in cartesian space
+
+        params
+        ______
+        x (float): Affine parameter between 0 and 1 which parametrizes the track
+
+        returns
+        _______
+        cart_dir (tuple): x-, y-, and z-directions in a cartesian system whose origin coincides
+                          with the center of the body
+
+        '''
+        pass
 
     def x_to_d(self, x):
         '''

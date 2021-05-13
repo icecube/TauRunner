@@ -13,7 +13,7 @@ except:
     import nuSQuIDS as nsq
 
 from taurunner.modules import PhysicsConstants
-from cross_sections import xs
+from taurunner.cross_sections import xs
 units = PhysicsConstants()
 dis = nsq.NeutrinoDISCrossSectionsFromTables()
 

@@ -5,12 +5,11 @@ import json
 os.environ['HDF5_DISABLE_VERSION_CHECK']='2'
 import argparse
 
-from taurunner.modules import units, make_outdir, todaystr, cleanup_outdir
+from taurunner.modules import units, cleanup_outdir
+#from taurunner.modules import units, make_outdir, todaystr, cleanup_outdir
 from taurunner.track import Chord
+from taurunner.body import Earth
 from taurunner.Casino import *
-
-info = sys.version_info
-pyv  = int(info.major)
 
 def initialize_parser():
     parser = argparse.ArgumentParser()
@@ -40,7 +39,9 @@ def initialize_parser():
         help="Enter 'CSMS' if you would like to run the simulation with a pQCD xs model")
     parser.add_argument('-losses', dest='losses', default=True, action='store_false',
         help="Raise this flag if you want to turn off tau losses. In this case, taus will decay at rest.")
-    parser.add_argument('--body', dest='body', type=str, default='earth',
+    parser.add_argument('--body', dest='body', default='earth',
+        help="Raise this flag if you want to turn off tau losses. In this case, taus will decay at rest.")
+    parser.add_argument('--radius', dest='radius', type=float,
         help="Raise this flag if you want to turn off tau losses. In this case, taus will decay at rest.")
     parser.add_argument('--depth', dest='depth', type=float, default=0.0,
         help="Depth of the detector in km.")
@@ -97,28 +98,15 @@ def run_MC(nevents, seed, flavor=3, energy=None, theta=None,
         np.recarray of the outgoing leptons
     
     '''
-    isgzk = False
-
     if nevents is None:
         raise RuntimeError('You must specify a number of events to simulate (-n)') 
     if (gzk == None and theta == None) or (energy ==None and spectrum ==None):
         raise RuntimeError('You must either pick an energy and theta, use a spectrum, or use the GZK flux')
    
-    if seed is None:
-        seed = int(float(savedir.split('/')[-1].replace('_', ''))) % 2**32
-    else:
-        seed = seed
 
     print('Beggining simulation')
     nevents     = int(nevents)
     depth*=units.km
-
-    if(body=='earth'):
-        from taurunner.body import Earth
-        body = Earth
-    elif(body=='sun'):
-        from taurunner.body import HZ_Sun
-        body = HZ_Sun
 
     if debug:
         message = ''
@@ -136,7 +124,6 @@ def run_MC(nevents, seed, flavor=3, energy=None, theta=None,
     rand = np.random.RandomState(seed=seed)
 
     if gzk is not None:
-        isgzk = True
         if not os.path.isfile(gzk):
             raise RuntimeError("GZK CDF Spline file does not exist")
         # sample initial energies and incoming angles from GZK parameterization
@@ -272,25 +259,10 @@ def run_MC(nevents, seed, flavor=3, energy=None, theta=None,
 if __name__ == "__main__":
 
     args = initialize_parser()
-
-    if args.save is not None:
-        savedir = os.path.join(save, '')
-        save    = True
-        if not os.path.isdir(savedir):
-            raise RuntimeError("Directory to save output is not a valid directory")
-        savedir = make_outdir(savedir, todaystr)
-        os.mkdir(savedir)
-        params_file = savedir+"/params.json"
-        output_file = savedir+'/output.npy'
-
-        d = vars(args)
-        # Check this
-        d['seed'] = args.seed
-        j = json.dumps(d)
-        f = open(params_file,"w")
-        f.write(j)
-        f.close()
-
+    from taurunner.modules import setup_outdir
+    seed, savedir, params_file, output_file = setup_outdir(args)
+    from taurunner.modules import construct_body
+    body = construct_body(args.body, args.radius)
     try:
         result = run_MC(args.nevents, args.seed, flavor=args.flavor, 
             energy=args.energy, theta=args.theta, gzk=args.gzk, 
@@ -320,10 +292,7 @@ if __name__ == "__main__":
                 print("Outgoing Particles: ")
                 print(result)
     
-    except KeyboardInterrupt as err:
-        cleanup_outdir(savedir, output_file, params_file)
-        raise err
-    except Exception as err:
+    except BaseException as err:
         cleanup_outdir(savedir, output_file, params_file)
         raise err
  
