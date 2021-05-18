@@ -104,7 +104,7 @@ def run_MC(nevents, seed, flavor=3, energy=None, theta=None,
         raise RuntimeError('You must either pick an energy and theta, use a spectrum, or use the GZK flux')
    
 
-    print('Beggining simulation')
+    print('Beginning simulation')
     nevents     = int(nevents)
     depth*=units.km
 
