@@ -7,15 +7,9 @@ from scipy.interpolate import interp1d
 import time
 import subprocess
 from scipy.interpolate import InterpolatedUnivariateSpline as iuvs
-try:
-    import nuSQUIDSpy as nsq
-except:
-    import nuSQuIDS as nsq
-
 from taurunner.modules import PhysicsConstants
 from taurunner.cross_sections import xs
 units = PhysicsConstants()
-dis = nsq.NeutrinoDISCrossSectionsFromTables()
 
 def chunks(lst, n):
     for i in range(0, len(lst), n):
