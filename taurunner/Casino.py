@@ -318,7 +318,8 @@ class Particle(object):
                 p0 = np.random.uniform(0,1)
                 bins = list(np.logspace(-5,0,101))[:-1]
                 if p0 < .18:
-                    cdf = np.load('/data/user/isafa/ANITA/TauRunnerV2/secondaries/TauRunner/python/antinumu_cdf.npy')
+                    xs_path = os.path.dirname(os.path.realpath(__file__)) + '/cross_sections/secondaries_splines/'
+                    cdf = np.load(xs_path + 'antinumu_cdf.npy')
                     sec_flavor = 2
                      # sample energy of tau secondary
                     sample = (iuvs(bins,cdf-np.random.uniform(0,1)).roots())[0]
@@ -326,7 +327,8 @@ class Particle(object):
                     # add secondary to basket, prepare propagation
                     self.basket.append({"ID" : 14, "flavor" : sec_flavor, "position" : self.position, "energy" : enu})
                 elif p0 > .18 and p0 < .36:
-                    cdf = np.load('/data/user/isafa/ANITA/TauRunnerV2/secondaries/TauRunner/python/antinue_cdf.npy')
+                    xs_path = os.path.dirname(os.path.realpath(__file__)) + '/cross_sections/secondaries_splines/'
+                    cdf = np.load(xs_path + 'antinue_cdf.npy')
                     sec_flavor = 1
                      # sample energy of tau secondary
                     sample = (iuvs(bins,cdf-np.random.uniform(0,1)).roots())[0]
