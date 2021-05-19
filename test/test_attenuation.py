@@ -14,7 +14,7 @@ class TestConservation(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """ once before all tests """
-        num_sim = 1000
+        num_sim = 50
         ens = [1e5, 1e6, 1e7]
         test_path = os.path.dirname(os.path.realpath(__file__))
         cls.tabled_comparisons = np.load(f'{test_path}/.comparisons_for_tests/attenuation.npy')
@@ -23,9 +23,9 @@ class TestConservation(unittest.TestCase):
         table_inds = [find_nearest_ind(cls.tabled_ens, en*1e9) for en in ens]
         cls.atten_dict = {cls.tabled_ens[ind]/1e9: cls.tabled_attens[ind] for ind in table_inds}
         cls.sim_dict = dict()
-        body = Body(6.0, 6368.0) # Construct earthsized body of constant density
+        body = Body(6.0, 500.0) # Construct earthsized body of constant density
         for en in cls.atten_dict.keys():
-            sim = run_MC(num_sim, 1, theta=60.,
+            sim = run_MC(num_sim, 1, theta=0.,
                                       debug=False, xs_model='dipole', 
                                       energy=en, body=body, 
                                       losses=False,
