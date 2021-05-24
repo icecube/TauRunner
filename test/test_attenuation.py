@@ -25,7 +25,7 @@ class TestConservation(unittest.TestCase):
         cls.sim_dict = dict()
         body = Body(6.0, 500.0) # Construct earthsized body of constant density
         for en in cls.atten_dict.keys():
-            sim = run_MC(num_sim, 1, theta=0.,
+            sim = run_MC(num_sim, 2, theta=0.,
                                       debug=False, xs_model='dipole', 
                                       energy=en, body=body, 
                                       losses=False,
@@ -73,7 +73,7 @@ class TestConservation(unittest.TestCase):
             relative_diffs[en] = diff
         self.assertTrue(relative_diffs[self.sim_dict_ens[0]] < 0.1)
         self.assertTrue(relative_diffs[self.sim_dict_ens[1]] < 0.1)
-        self.assertTrue(relative_diffs[self.sim_dict_ens[2]] < 0.1)
+        self.assertTrue(relative_diffs[self.sim_dict_ens[2]] < 0.2)
 
 
 if __name__ == '__main__':
