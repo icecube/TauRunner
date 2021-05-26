@@ -4,8 +4,22 @@ import sys
 info = sys.version_info
 pyv  = int(info.major)
 import numpy as np
+import pickle
 from taurunner.modules import units
 
+def hima_tot_xs(E, spl):
+    pass
+
+def jeff_tot_xs(E, spl)
+
+def hima_diff_xs(E_in, E_out, spl):
+    return(10**spl(np.log10(E_in), np.log10(E_out))[0][0]/E_in)
+
+def jeff_diff_xs(E_in, E_out, spl):
+    E_min = np.power(10, spl.extents[0][0])
+    z     = (E_out-E_min)/(E_in-E_min)
+    res   = photospline.SplineTable.grideval(spl, [np.log10(E_in), z])
+    return np.power(10, res)*1e-36
 
 class CrossSections(object):
 
@@ -33,10 +47,18 @@ class CrossSections(object):
                 dsdy_spline_NC = np.load(cross_section_path + 'dsigma_dy_NC.npy', allow_pickle=True).item()
                 dsdy_spline_NC_lowe = np.load(cross_section_path + 'dsigma_dy_NC_lowE.npy', allow_pickle=True).item()
         elif(self.model=='CSMS'):
+                with open(cross_section_path+'nu_n_dsde_CC.pkl', 'rb') as pkl_f:
+                    diff_nu_n_CC = pickle.load(pkl_f)
+                with open(cross_section_path+'nu_p_dsde_CC.pkl', 'rb') as pkl_f:
+                    diff_nu_p_CC = pickle.load(pkl_f)
+                with open(cross_section_path+'nu_n_dsde_CC.pkl', 'rb') as pkl_f:
+                    diff_nu_n_NC = pickle.load(pkl_f)
+                with open(cross_section_path+'nu_n_dsde_CC.pkl', 'rb') as pkl_f:
+                    diff_nu_p_NC = pickle.load(pkl_f)
                 f_NC = 
                 f_CC = 
-
-                dsdy_spline_CC = 
+                
+                dsdy_spline_CC = lambda diff_xs()
                 dsdy_spline_CC_lowe = dsdy_spline_CC
                 dsdy_spline_NC =
                 dsdy_spline_NC_lowe = dsdy_spline_NC
