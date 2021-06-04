@@ -8,14 +8,14 @@ import time
 import subprocess
 from scipy.interpolate import InterpolatedUnivariateSpline as iuvs
 from taurunner.modules import PhysicsConstants
-from taurunner.cross_sections import xs
+from taurunner.cross_sections import CrossSections
 units = PhysicsConstants()
 
 def chunks(lst, n):
     for i in range(0, len(lst), n):
         yield lst[i:i+n]
 
-def DoAllCCThings(objects, xs, flavor, losses=True):
+def DoAllCCThings(objects, xs, losses=True):
     r'''
     Calling MMC requires overhead, so handle all MMC calls per iterations
     over the injected events at once
@@ -34,7 +34,11 @@ def DoAllCCThings(objects, xs, flavor, losses=True):
     '''
     final_values= []
     efinal, distance = [], []
-    flavor = objects[0][-1]
+    pid = int(objects[0][-1])
+    if pid==14:
+      flavor='mu'
+    elif pid==16:
+      flavor='tau'
     e      = [obj[0]/units.GeV for obj in objects]                    #MMC takes initial energy in GeV 
     dists  = [1e3*(obj[6] - obj[2])/units.km for obj in objects]      #distance to propagate is total distance minus the current position in m 
     mult   = [obj[-2]*(units.cm**3)/units.gr/2.7 for obj in objects]  #convert density back to normal (not natural) units
@@ -53,7 +57,7 @@ def DoAllCCThings(objects, xs, flavor, losses=True):
         return(sorted_obj)
 
     split = np.append(np.append([-1], np.where(sorted_mult[:-1] != sorted_mult[1:])[0]), len(sorted_mult))
-    
+     
     propagate_path = os.path.dirname(os.path.realpath(__file__))
     if(xs=='dipole'):
         propagate_path+='/propagate_{}s.sh'.format(flavor)
@@ -68,7 +72,6 @@ def DoAllCCThings(objects, xs, flavor, losses=True):
         max_arg = 500
         eni_str = ['{} {}'.format(e, d) for e,d in list(zip(eni, din))]
         eni_str = list(chunks(eni_str, max_arg))
-
         for kk in range(len(eni_str)):
             eni_str[kk].append(str(multis[0]))
             eni_str[kk].insert(0, propagate_path)
@@ -192,23 +195,24 @@ class Particle(object):
             If particle is charged, this is the distance it propagated.
         '''     
         #Set Initial Values
-        self.ID = ID
-        self.initial_energy = energy
-        self.energy = energy
-        self.flavor = flavor
-        self.position = position
+        self.ID              = ID
+        self.initial_energy  = energy
+        self.energy          = energy
+        self.flavor          = flavor
+        self.position        = position
         self.chargedposition = chargedposition
         self.SetParticleProperties()
-        self.secondaries = True
-        self.survived = True
-        self.basket = basket
-        self.nCC = 0
-        self.nNC = 0
-        self.ntdecay = 0
-        self.isCC = False
-        self.index = index
-        self.rand = np.random.RandomState(seed=seed)
-        self.xs_model = xs_model
+        self.secondaries     = True
+        self.survived        = True
+        self.basket          = basket
+        self.nCC             = 0
+        self.nNC             = 0
+        self.ntdecay         = 0
+        self.isCC            = False
+        self.index           = index
+        self.rand            = np.random.RandomState(seed=seed)
+        self.xs_model        = xs_model
+        self.xs              = CrossSections(xs_model)
           
     def SetParticleProperties(self):
         r'''
@@ -296,7 +300,7 @@ class Particle(object):
             mean column depth to interaction in natural units
         '''
         if self.ID in [12, 14, 16]:
-            return proton_mass/(xs.TotalNeutrinoCrossSection(self.energy, interaction = interaction, xs_model=self.xs_model))
+            return proton_mass/(self.xs.TotalNeutrinoCrossSection(self.energy, interaction = interaction))
         if self.ID == 15:
             raise ValueError("Tau interaction length should never be sampled.")
 
@@ -341,19 +345,24 @@ class Particle(object):
         if self.ID in [12, 14, 16]:
 
             #Sample energy lost from differential distributions
-            dNdEle = lambda y: xs.DifferentialOutGoingLeptonDistribution(self.energy/units.GeV,
-                                                           self.energy*y/units.GeV, interaction, self.xs_model)
+            dNdEle = lambda y: self.xs.DifferentialOutGoingLeptonDistribution(
+                                                                              self.energy/units.GeV,
+                                                                              self.energy*y/units.GeV, 
+                                                                              interaction,
+                                                                             )
             NeutrinoInteractionWeights = list(map(dNdEle,NeutrinoDifferentialEnergyFractions))
             NeutrinoInteractionWeights = np.divide(NeutrinoInteractionWeights, np.sum(NeutrinoInteractionWeights))
-            self.energy = self.energy*self.rand.choice(NeutrinoDifferentialEnergyFractions,
-                                                        p=NeutrinoInteractionWeights)
+            self.energy = self.energy*self.rand.choice(
+                                                       NeutrinoDifferentialEnergyFractions,
+                                                       p=NeutrinoInteractionWeights
+                                                      )
 
             if interaction == 'CC':
                 #make a charged particle
                 self.isCC = True
-                if(self.flavor == 3):
+                if(self.flavor==16):
                     self.ID = 15
-                elif(self.flavor== 2):
+                elif(self.flavor==14):
                     self.ID = 13
                 self.SetParticleProperties()
                 self.nCC += 1

@@ -31,6 +31,7 @@ class CrossSections(object):
         #cross section tables
         ######################################
         self.cross_section_path = os.path.dirname(os.path.realpath(__file__))+'/cross_section_tables/'
+        cross_section_path      = self.cross_section_path
         if(self.model=='dipole'):
             if(pyv==3):
                 self.f_NC = np.load(cross_section_path+'NC_table_py3.npy', allow_pickle=True).item()
@@ -58,16 +59,12 @@ class CrossSections(object):
                 with open(self.cross_section_path+'nu_n_dsde_NC.pkl', 'rb') as pkl_f:
                     diff_nu_p_NC = pickle.load(pkl_f)
                 with open(self.cross_section_path+'nu_n_sigma_CC.pkl', 'rb') as pkl_f:
-                    print(self.cross_section_path+'nu_n_sigma_CC.pkl')
                     nu_n_CC = pickle.load(pkl_f)
                 with open(self.cross_section_path+'nu_p_sigma_CC.pkl', 'rb') as pkl_f:
-                    print(self.cross_section_path+'nu_p_sigma_CC.pkl')
                     nu_p_CC = pickle.load(pkl_f)
                 with open(self.cross_section_path+'nu_n_sigma_NC.pkl', 'rb') as pkl_f:
-                    print(self.cross_section_path+'nu_n_sigma_NC.pkl')
                     nu_n_NC = pickle.load(pkl_f)
                 with open(self.cross_section_path+'nu_p_sigma_NC.pkl', 'rb') as pkl_f:
-                    print(self.cross_section_path+'nu_p_sigma_NC.pkl')
                     nu_p_NC = pickle.load(pkl_f)
                 self._nu_p_NC = lambda E:jeff_tot_xs(E,nu_p_NC)
                 self._nu_n_NC = lambda E:jeff_tot_xs(E,nu_n_NC)
@@ -105,7 +102,7 @@ class CrossSections(object):
                 return self.f_NC(enu)
             elif interaction=='CC':
                 return self.f_CC(enu)
-        elif self.modeil=='dipole':
+        elif self.model=='dipole':
             if(interaction == 'NC'):
                 return((10**self.f_NC(np.log10(enu/1e9)))*(units.cm)**2)
             else:

@@ -11,13 +11,14 @@ from taurunner.track import Chord
 from taurunner.body import Earth
 from taurunner.Casino import *
 
+
 def initialize_parser():
     parser = argparse.ArgumentParser()
     parser.add_argument('-s',dest='seed',type=int,
         help='just an integer seed to help with output file names')
     parser.add_argument('-n', dest='nevents', type=float, 
         help='how many events do you want?')
-    parser.add_argument('-flavor', dest='flavor', type=int, default=3,
+    parser.add_argument('-flavor', dest='flavor', type=int, default=16,
         help='neutrino flavor (default is nutau): 1 for nue 2 for numu 3 for nutau')
     parser.add_argument('-e', dest='energy', type=float, 
         help='if you want to simulate a specific energy, pass it here in GeV')
@@ -172,10 +173,10 @@ def run_MC(nevents, seed, flavor=3, energy=None, theta=None,
     counter = 0
     iter_energies = list(eini)[:]
     iter_positions = list(np.zeros(nevents))
-    if(flavor==2):
+    if(flavor==14):
         iter_particleID = np.ones(nevents, dtype=int)*14
         flavors = [flavor]*nevents
-    elif(flavor==3):
+    elif(flavor==16):
         iter_particleID = np.ones(nevents, dtype=int)*16
         flavors = [flavor]*nevents
     iter_ChargedPosition = list(np.zeros(nevents))
@@ -241,7 +242,7 @@ def run_MC(nevents, seed, flavor=3, energy=None, theta=None,
         if (len(cc_stack) > 0):
             if debug:
                 message += "{} events passed to MMC in loop iteration {}\n".format(len(cc_stack), counter)
-            EventCollection = DoAllCCThings(cc_stack, xs_model, flavor, losses)
+            EventCollection = DoAllCCThings(cc_stack, xs_model, losses)
             for event in EventCollection:
                 iter_positions[int(event[3])] = float(event[1])
                 iter_energies[int(event[3])] = float(event[0])
