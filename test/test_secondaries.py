@@ -59,6 +59,5 @@ class TestConservation(unittest.TestCase):
         self.assertTrue(len(self.sim[nutaus]) > 0.9*self.num_sim)
         # self.assertTrue(len(self.sim[~nutaus][self.sim[~nutaus]['Eout'] != 0.]) < 0.20 * self.num_sim)
 
-
 if __name__ == '__main__':
     unittest.main()
