@@ -107,7 +107,8 @@ def run_MC(nevents, seed, flavor=16, energy=None, theta=None,
         raise RuntimeError('You must either pick an energy and theta, use a spectrum, or use the GZK flux')
    
 
-    print('Beginning simulation')
+    if debug:
+        print('Beginning simulation')
     nevents     = int(nevents)
     depth*=units.km
 
@@ -252,8 +253,8 @@ def run_MC(nevents, seed, flavor=16, energy=None, theta=None,
                 iter_particleID[int(event[3])] = int(event[4])
                 iter_ChargedPosition[int(event[3])] = float(event[5])
                 del event
-
-    print("Simulating {} events at {} degrees took {} seconds.".format(nevents, theta, time.time() - t0))
+    if debug:
+        print("Simulating {} events at {} degrees took {} seconds.".format(nevents, theta, time.time() - t0))
 
     output = np.array(output, dtype = [('Eini', float), ('Eout',float), ('Theta', float), ('CDF_index', float), ('nCC', int), ('nNC', int), ('PDG_Encoding', int)])
     output['Theta'] *= 180. / np.pi #Give theta in degrees to user
@@ -268,7 +269,6 @@ if __name__ == "__main__":
     from taurunner.modules import construct_body
     body = construct_body(args.body, args.radius)
     try:
-        print(~args.no_secondaries)
         result = run_MC(args.nevents, args.seed, flavor=args.flavor, 
             energy=args.energy, theta=args.theta, gzk=args.gzk, 
             spectrum=args.spectrum, e_range=args.range, debug=args.debug,
