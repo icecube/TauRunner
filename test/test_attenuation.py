@@ -29,6 +29,7 @@ class TestConservation(unittest.TestCase):
                                       debug=False, xs_model='dipole', 
                                       energy=en, body=body, 
                                       losses=False,
+                                      with_secondaries=False
                                      )
             cls.sim_dict[en] = sim
         cls.num_sim = num_sim
