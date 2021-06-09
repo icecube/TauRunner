@@ -46,14 +46,16 @@ def initialize_parser():
         help="Raise this flag if you want to turn off tau losses. In this case, taus will decay at rest.")
     parser.add_argument('--depth', dest='depth', type=float, default=0.0,
         help="Depth of the detector in km.")
+    parser.add_argument('--no_secondaries', type=bool, default=False, action='store_true',
+        help="Raise this flag to turn off secondaries")
     
     args = parser.parse_args()
     return args
 
-def run_MC(nevents, seed, flavor=3, energy=None, theta=None,
+def run_MC(nevents, seed, flavor=16, energy=None, theta=None,
     gzk=None, spectrum=None, e_range=" ", debug=False, save=None, onlytau=False,
     water_layer=0., xs_model='dipole', losses=True, body=Earth, depth=0., 
-    return_res=True):
+    return_res=True, with_secondaries=True):
     r'''
     Main simulation code. Propagates a flux of neutrinos and returns or
     saves the outgoing particles
@@ -226,16 +228,17 @@ def run_MC(nevents, seed, flavor=3, energy=None, theta=None,
                 if ind != i:
                     message += "Index mismatch: {} {}".format(ind, i)
                     raise RuntimeError('Index mismatch -- particles are getting jumbled somewhere (thats a bad thing)')
-                output.append((eini[ind], float(out.energy), thetas[ind], inds_left[j], iter_nCC[ind], iter_nNC[ind], out.ID))               
-                basket = out.basket
-                for sec in basket:
-                    sec_particle = Particle(sec['ID'], sec['flavor'], sec['energy'], thetas[ind], sec['position'], inds_left[j], rand.randint(low=1e9),
-                                            0.0, xs_model=xs_model)
-                    sec_out      = Propagate(sec_particle, my_track, body)
-                    if(sec_out.isCC):
-                        output.append((sec_out.energy, 0.0, thetas[ind], inds_left[j], sec_out.nCC, sec_out.nNC, sec_out.ID))
-                    else:
-                        output.append((sec_out.initial_energy, sec_out.energy, thetas[ind], inds_left[j], sec_out.nCC, sec_out.nNC, sec_out.ID))
+                output.append((eini[ind], float(out.energy), thetas[ind], inds_left[j], iter_nCC[ind], iter_nNC[ind], out.ID))
+                if with_secondaries:
+                    basket = out.basket
+                    for sec in basket:
+                        sec_particle = Particle(sec['ID'], sec['flavor'], sec['energy'], thetas[ind], sec['position'], inds_left[j], rand.randint(low=1e9),
+                                                0.0, xs_model=xs_model)
+                        sec_out      = Propagate(sec_particle, my_track, body)
+                        if(sec_out.isCC):
+                            output.append((sec_out.energy, 0.0, thetas[ind], inds_left[j], sec_out.nCC, sec_out.nNC, sec_out.ID))
+                        else:
+                            output.append((sec_out.initial_energy, sec_out.energy, thetas[ind], inds_left[j], sec_out.nCC, sec_out.nNC, sec_out.ID))
                 iter_positions[int(out.index)] = float(out.position)
                 del inds_left[j]
                 del out
@@ -265,11 +268,13 @@ if __name__ == "__main__":
     from taurunner.modules import construct_body
     body = construct_body(args.body, args.radius)
     try:
+        print(~args.no_secondaries)
         result = run_MC(args.nevents, args.seed, flavor=args.flavor, 
             energy=args.energy, theta=args.theta, gzk=args.gzk, 
             spectrum=args.spectrum, e_range=args.range, debug=args.debug,
             save=args.save, water_layer=args.water_layer, xs_model=args.xs_model,
-            losses=args.losses, body=body, depth=args.depth, return_res=False)
+            losses=args.losses, body=body, depth=args.depth, return_res=False,
+            with_secondaries=~args.no_secondaries)
 
         if args.save:
             if args.gzk is not None:
