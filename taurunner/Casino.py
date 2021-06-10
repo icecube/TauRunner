@@ -113,7 +113,7 @@ def TauDecayToPion(Etau, Enu, P):
         g1 = -(2.*z - 1. + RPion)/(1. - RPion)**2
 
     return(g0+P*g1)
-    
+
 def TauDecayToRho(Etau, Enu, P):
     z = Enu/Etau
     g0 = 0.
@@ -147,7 +147,7 @@ def TauDecayToAll(Etau, Enu, P):
     decay_spectra+=BrRho*TauDecayToRho(Etau, Enu, P)
     decay_spectra+=BrA1*TauDecayToA1(Etau, Enu, P)
     decay_spectra+=BrHad*TauDecayToHadrons(Etau, Enu, P)
-    
+
     return decay_spectra
 
 Etau = 100.
@@ -214,7 +214,7 @@ class Particle(object):
         else:
             self.xs_model = xs_model
             self.xs = CrossSections(xs_model)
-          
+
     def SetParticleProperties(self):
         r'''
         Sets particle properties, either when initializing or after an interaction.
@@ -228,7 +228,7 @@ class Particle(object):
         if self.ID == 13:
             self.mass = 0.105*units.GeV
             self.livetime = 2.2e-6*units.sec
- 
+
     def GetParticleId(self):
         r'''
         Returns the current particle ID        
@@ -290,7 +290,7 @@ class Particle(object):
     def GetInteractionDepth(self, interaction):
         r'''
         Calculates the mean column depth to interaction.
-        
+
         Parameters
         -----------
         interaction: str
@@ -312,6 +312,9 @@ class Particle(object):
         if self.ID in [12, 14, 16]:
             raise ValueError("No, you did not just discover neutrino decays..")
         if self.ID == 15:
+            self.energy = self.energy*self.rand.choice(TauDecayFractions, p=TauDecayWeights)
+            self.ID = 16
+            self.SetParticleProperties()
             if self.secondaries:
                 # sample branching ratio of tau leptonic decay
                 p0 = np.random.uniform(0,1)
@@ -319,7 +322,7 @@ class Particle(object):
                 if p0 < .18:
                     xs_path = os.path.dirname(os.path.realpath(__file__)) + '/cross_sections/secondaries_splines/'
                     cdf = np.load(xs_path + 'antinumu_cdf.npy')
-                     # sample energy of tau secondary
+                    # sample energy of tau secondary
                     sample = (iuvs(bins,cdf-np.random.uniform(0,1)).roots())[0]
                     enu = sample*self.energy
                     # add secondary to basket, prepare propagation
@@ -327,14 +330,11 @@ class Particle(object):
                 elif p0 > .18 and p0 < .36:
                     xs_path = os.path.dirname(os.path.realpath(__file__)) + '/cross_sections/secondaries_splines/'
                     cdf = np.load(xs_path + 'antinue_cdf.npy')
-                     # sample energy of tau secondary
+                    # sample energy of tau secondary
                     sample = (iuvs(bins,cdf-np.random.uniform(0,1)).roots())[0]
-                    enu = sample*self.energy # *units.GeV
+                    enu = sample*self.energy
                     # add secondary to basket, prepare propagation
                     self.basket.append({"ID" : 12,  "position" : self.position, "energy" : enu})
-            self.energy = self.energy*self.rand.choice(TauDecayFractions, p=TauDecayWeights)
-            self.ID = 16
-            self.SetParticleProperties()
             return
         if self.ID == 13:
             self.survived=False

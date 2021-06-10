@@ -209,7 +209,7 @@ def run_MC(nevents, seed, flavor=16, energy=None, theta=None,
             out = Propagate(particle, my_track, body)
 
             iter_nCC[i]+=out.nCC
-            iter_nNC[i]+=out.nNC      
+            iter_nNC[i]+=out.nNC
 
             if (out.survived==False):
                 #these were absorbed. we record them in the output with outgoing energy 0
