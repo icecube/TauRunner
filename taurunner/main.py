@@ -47,9 +47,9 @@ def initialize_parser():
         help="Raise this flag if you want to turn off tau losses. In this case, taus will decay at rest.")
     parser.add_argument('--depth', dest='depth', type=float, default=0.0,
         help="Depth of the detector in km.")
-    parser.add_argument('--no_secondaries', type=bool, default=False, action='store_true',
+    parser.add_argument('--no_secondaries', default=False, action='store_true',
         help="Raise this flag to turn off secondaries")
-    
+
     args = parser.parse_args()
     return args
 
@@ -179,10 +179,8 @@ def run_MC(nevents, seed, flavor=16, energy=None, theta=None,
     iter_positions = list(np.zeros(nevents))
     if(flavor==14):
         iter_particleID = np.ones(nevents, dtype=int)*14
-        flavors = [flavor]*nevents
     elif(flavor==16):
         iter_particleID = np.ones(nevents, dtype=int)*16
-        flavors = [flavor]*nevents
     iter_ChargedPosition = list(np.zeros(nevents))
     iter_nCC = list(np.zeros(nevents))
     iter_nNC = list(np.zeros(nevents))
@@ -204,7 +202,7 @@ def run_MC(nevents, seed, flavor=16, energy=None, theta=None,
         for j in range(len(inds_left) - 1, -1, -1):
             i = inds_left[j] #Unique event index
 
-            particle = Particle(iter_particleID[i], flavors[i], iter_energies[i], 
+            particle = Particle(iter_particleID[i], iter_energies[i], 
                                 thetas[i], iter_positions[i], i, rand.randint(low=1e9),
                                 iter_ChargedPosition[i], xs_model=sim_xs)
             my_track = tracks[thetas[i]]
@@ -225,7 +223,7 @@ def run_MC(nevents, seed, flavor=16, energy=None, theta=None,
                 total_distance=my_track.x_to_d(1.)*body.radius
                 current_density=body.get_density(my_track.x_to_r(out.position))
                 cc_stack.append((float(out.energy), current_x, float(current_distance), int(out.index),
-                 int(out.ID), 0, float(total_distance), float(current_density), str(out.flavor)))
+                 int(out.ID), 0, float(total_distance), float(current_density), int(out.ID)))
                 del out
             else:
                 ind = int(out.index)
@@ -236,7 +234,7 @@ def run_MC(nevents, seed, flavor=16, energy=None, theta=None,
                 if with_secondaries:
                     basket = out.basket
                     for sec in basket:
-                        sec_particle = Particle(sec['ID'], sec['flavor'], sec['energy'], thetas[ind], sec['position'], inds_left[j], rand.randint(low=1e9),
+                        sec_particle = Particle(sec['ID'], sec['energy'], thetas[ind], sec['position'], inds_left[j], rand.randint(low=1e9),
                                                 0.0, xs_model=sim_xs)
                         sec_out      = Propagate(sec_particle, my_track, body)
                         if(sec_out.isCC):

@@ -57,7 +57,6 @@ def DoAllCCThings(objects, xs, losses=True):
         return(sorted_obj)
 
     split = np.append(np.append([-1], np.where(sorted_mult[:-1] != sorted_mult[1:])[0]), len(sorted_mult))
-     
     propagate_path = os.path.dirname(os.path.realpath(__file__))
     if(xs=='dipole'):
         propagate_path+='/propagate_{}s.sh'.format(flavor)
@@ -169,7 +168,7 @@ class Particle(object):
     This is the class that contains all relevant 
     particle information stored in an object.
     '''
-    def __init__(self, ID, flavor, energy, incoming_angle, position, index, 
+    def __init__(self, ID, energy, incoming_angle, position, index, 
                   seed, chargedposition, water_layer=0, xs_model='dipole', 
                   basket=[]):
         r'''
@@ -178,10 +177,8 @@ class Particle(object):
 
         Parameters
         ----------
-        ID:    string
-            The particle can either be "tau" or "tau_neutrino". That is defined here.
-        flavor:         int
-            lepton flavor (1:e/2:mu/3:tau)
+        ID:    int
+            The particle ID as defined in the PDG MC encoding.
         energy:         float
             Initial energy in eV.
         incoming_angle: float
@@ -194,12 +191,11 @@ class Particle(object):
             Seed corresponding to the random number generator.
         chargedposition:    float
             If particle is charged, this is the distance it propagated.
-        '''     
+        '''
         #Set Initial Values
         self.ID              = ID
         self.initial_energy  = energy
         self.energy          = energy
-        self.flavor          = flavor
         self.position        = position
         self.chargedposition = chargedposition
         self.SetParticleProperties()
@@ -323,21 +319,19 @@ class Particle(object):
                 if p0 < .18:
                     xs_path = os.path.dirname(os.path.realpath(__file__)) + '/cross_sections/secondaries_splines/'
                     cdf = np.load(xs_path + 'antinumu_cdf.npy')
-                    sec_flavor = 2
                      # sample energy of tau secondary
                     sample = (iuvs(bins,cdf-np.random.uniform(0,1)).roots())[0]
                     enu = sample*self.energy
                     # add secondary to basket, prepare propagation
-                    self.basket.append({"ID" : 14, "flavor" : sec_flavor, "position" : self.position, "energy" : enu})
+                    self.basket.append({"ID" : 14, "position" : self.position, "energy" : enu})
                 elif p0 > .18 and p0 < .36:
                     xs_path = os.path.dirname(os.path.realpath(__file__)) + '/cross_sections/secondaries_splines/'
                     cdf = np.load(xs_path + 'antinue_cdf.npy')
-                    sec_flavor = 1
                      # sample energy of tau secondary
                     sample = (iuvs(bins,cdf-np.random.uniform(0,1)).roots())[0]
                     enu = sample*self.energy # *units.GeV
                     # add secondary to basket, prepare propagation
-                    self.basket.append({"ID" : 12, "flavor" : sec_flavor, "position" : self.position, "energy" : enu})
+                    self.basket.append({"ID" : 12,  "position" : self.position, "energy" : enu})
             self.energy = self.energy*self.rand.choice(TauDecayFractions, p=TauDecayWeights)
             self.ID = 16
             self.SetParticleProperties()
@@ -365,9 +359,9 @@ class Particle(object):
             if interaction == 'CC':
                 #make a charged particle
                 self.isCC = True
-                if(self.flavor==16):
+                if(self.ID==16):
                     self.ID = 15
-                elif(self.flavor==14):
+                elif(self.ID==14):
                     self.ID = 13
                 self.SetParticleProperties()
                 self.nCC += 1
@@ -393,7 +387,7 @@ def Propagate(particle, track, body):
            #Determine how far you're going
             p1 = particle.rand.random_sample()
             DepthStep = particle.GetProposedDepthStep(p1)
-    
+
             #now pick an interaction
             p2 = particle.rand.random_sample()
             CC_lint = particle.GetInteractionDepth(interaction='CC')
