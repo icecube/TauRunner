@@ -9,6 +9,7 @@ from taurunner.modules import units, cleanup_outdir
 #from taurunner.modules import units, make_outdir, todaystr, cleanup_outdir
 from taurunner.track import Chord
 from taurunner.body import Earth
+from taurunner.cross_sections import CrossSections
 from taurunner.Casino import *
 
 
@@ -192,6 +193,8 @@ def run_MC(nevents, seed, flavor=16, energy=None, theta=None,
     # This repeats until all leptons have reached the total distance
     t0 = time.time()
     tracks  = {theta:Chord(theta=theta, depth=depth/body.radius) for theta in set(thetas)}
+    sim_xs = CrossSections(xs_model)
+
     while inds_left:
         counter += 1
         if debug:
@@ -203,7 +206,7 @@ def run_MC(nevents, seed, flavor=16, energy=None, theta=None,
 
             particle = Particle(iter_particleID[i], flavors[i], iter_energies[i], 
                                 thetas[i], iter_positions[i], i, rand.randint(low=1e9),
-                                iter_ChargedPosition[i], xs_model=xs_model)
+                                iter_ChargedPosition[i], xs_model=sim_xs)
             my_track = tracks[thetas[i]]
             out = Propagate(particle, my_track, body)
 
@@ -234,7 +237,7 @@ def run_MC(nevents, seed, flavor=16, energy=None, theta=None,
                     basket = out.basket
                     for sec in basket:
                         sec_particle = Particle(sec['ID'], sec['flavor'], sec['energy'], thetas[ind], sec['position'], inds_left[j], rand.randint(low=1e9),
-                                                0.0, xs_model=xs_model)
+                                                0.0, xs_model=sim_xs)
                         sec_out      = Propagate(sec_particle, my_track, body)
                         if(sec_out.isCC):
                             output.append((sec_out.energy, 0.0, thetas[ind], inds_left[j], sec_out.nCC, sec_out.nNC, sec_out.ID))

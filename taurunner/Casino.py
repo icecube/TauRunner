@@ -170,7 +170,8 @@ class Particle(object):
     particle information stored in an object.
     '''
     def __init__(self, ID, flavor, energy, incoming_angle, position, index, 
-                  seed, chargedposition, water_layer=0, xs_model='dipole', basket=[]):
+                  seed, chargedposition, water_layer=0, xs_model='dipole', 
+                  basket=[]):
         r'''
         Class initializer. This function sets all initial conditions based 
         on the particle's incoming angle, energy, ID, and position.
@@ -211,8 +212,12 @@ class Particle(object):
         self.isCC            = False
         self.index           = index
         self.rand            = np.random.RandomState(seed=seed)
-        self.xs_model        = xs_model
-        self.xs              = CrossSections(xs_model)
+        if isinstance(xs_model, CrossSections):
+            self.xs = xs_model
+            self.xs_model = xs_model.model
+        else:
+            self.xs_model = xs_model
+            self.xs = CrossSections(xs_model)
           
     def SetParticleProperties(self):
         r'''
@@ -330,7 +335,7 @@ class Particle(object):
                     sec_flavor = 1
                      # sample energy of tau secondary
                     sample = (iuvs(bins,cdf-np.random.uniform(0,1)).roots())[0]
-                    enu = sample*self.energy*units.GeV
+                    enu = sample*self.energy # *units.GeV
                     # add secondary to basket, prepare propagation
                     self.basket.append({"ID" : 12, "flavor" : sec_flavor, "position" : self.position, "energy" : enu})
             self.energy = self.energy*self.rand.choice(TauDecayFractions, p=TauDecayWeights)
