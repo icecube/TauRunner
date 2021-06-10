@@ -18,5 +18,14 @@ jobs:
           pip install -r requirements.txt
       - name: Test with unittest
         run: |
-          coverage run --source=. -m unittest discover test/
+          coverage run --source=taurunner/ -m unittest discover test/
           coverage report
+          coverage html -d coverage_report
+      - name: Upload
+        uses: actions/upload-artifact@v1
+        with:
+          name: coverage-artifact
+          # This is the output path where Pandoc will write the compiled
+          # PDF. Note, this should be the same directory as the input
+          # paper.md
+          path: coverage_report
