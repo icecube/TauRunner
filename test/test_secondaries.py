@@ -10,7 +10,7 @@ def find_nearest_ind(array, value):
     idx = (np.abs(array - value)).argmin()
     return idx
 
-class TestConservation(unittest.TestCase):
+class TestSecondaries(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """ once before all tests """
