@@ -5,6 +5,7 @@ on:
 jobs:
   unittest_and_coverage:
     runs-on: ubuntu-latest
+    continue-on-error: true
     name: Coverage tests
     steps:
       - uses: actions/checkout@v2
