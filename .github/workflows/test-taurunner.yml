@@ -19,9 +19,11 @@ jobs:
       - name: Test with unittest
         run: |
           coverage run --source=taurunner/ -m unittest discover test/
+        continue-on-error: true
+      - name: coverage-report
+        run: |
           coverage report
           coverage html -d coverage_report
-        continue-on-error: true
       - name: Upload
         uses: actions/upload-artifact@v1
         with:
