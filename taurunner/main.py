@@ -13,7 +13,7 @@ from taurunner.cross_sections import CrossSections
 from taurunner.Casino import *
 
 
-def initialize_parser():
+def initialize_parser(): # pragma: no cover
     parser = argparse.ArgumentParser()
     parser.add_argument('-s',dest='seed',type=int,
         help='just an integer seed to help with output file names')
@@ -108,7 +108,7 @@ def run_MC(nevents, seed, flavor=16, energy=None, theta=None,
         raise RuntimeError('You must either pick an energy and theta, use a spectrum, or use the GZK flux')
    
 
-    if debug:
+    if debug: #pragma: no cover
         print('Beginning simulation')
     nevents     = int(nevents)
     depth*=units.km
@@ -262,7 +262,7 @@ def run_MC(nevents, seed, flavor=16, energy=None, theta=None,
 
     return output
 
-if __name__ == "__main__":
+if __name__ == "__main__": # pragma: no cover
 
     args = initialize_parser()
     from taurunner.modules import setup_outdir
