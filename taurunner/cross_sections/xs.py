@@ -41,7 +41,7 @@ class CrossSections(object):
                 self.dsdy_spline_CC_lowe = np.load(cross_section_path + 'dsigma_dy_CC_lowE_py3.npy', allow_pickle=True).item()
                 self.dsdy_spline_NC = np.load(cross_section_path + 'dsigma_dy_NC_py3.npy', allow_pickle=True).item()
                 self.dsdy_spline_NC_lowe = np.load(cross_section_path + 'dsigma_dy_NC_lowE_py3.npy', allow_pickle=True).item()
-            else:
+            else: # pragma: no cover
                 self.f_NC = np.load(cross_section_path+'NC_table.npy', allow_pickle=True).item()
                 self.f_CC = np.load(cross_section_path+'CC_table.npy', allow_pickle=True).item()
 

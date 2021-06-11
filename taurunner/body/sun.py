@@ -24,7 +24,7 @@ class Sun(Body):
     def __init__(self, density, radius, edensity, layer_boundaries=None, name='Sun'):
 
         Body.__init__(self, density, radius, layer_boundaries=layer_boundaries, name=name)
-        if self._is_layered:
+        if self._is_layered: # pragma: no cover
             self._edensity = [1./units.cm**3*Callable(obj) for obj in density]
         else:
             self._edensity = [1./units.cm**3*Callable(density)]
