@@ -62,12 +62,27 @@ class TestBodyMethods(unittest.TestCase):
             np.around(np.asarray([0., 1221., 3480., 5701., 5771., 5971., 6151., 6346.6, 6356., 6368.]), 3)).all())
 
     def test_HZ_sun(self):
-        self.assertEqual(self.sun.get_density(0.5), 5.78148105641597e+18,
+        self.assertAlmostEqual(self.sun.get_density(0.5), 5.78148105641597e+18,
             4)
-        self.assertEqual(self.sun.get_edensity(0.5), 1.0287332840597812e-14,
+        self.assertAlmostEqual(self.sun.get_edensity(0.5), 1.0287332840597812e-14,
             4)
-        self.assertEqual(self.sun.radius / units.km, 696300.0,
+        self.assertAlmostEqual(self.sun.radius / units.km, 696300.0,
             3)
+        self.assertAlmostEqual(self.sun.get_edensity(1), 1.5130182132307767e-21,
+            5)
+
+    def test_bad_body(self):
+        with self.assertRaises(RuntimeError):
+            tmp = body.Body([1., 2., 3.], 3.)
+        with self.assertRaises(RuntimeError):
+            tmp = body.Body([1., 2., 3.], 3., 
+                layer_boundaries=[0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6])
+    
+    def test_total_mass(self):
+        import logging
+        logging.getLogger('scipy').setLevel(logging.ERROR)
+        mass = body.check_total_mass(body.Earth)[0]
+        self.assertAlmostEqual(mass / units.kg, 5.970273732299387e+24, 5)
 
 if __name__ == '__main__':
     unittest.main()
