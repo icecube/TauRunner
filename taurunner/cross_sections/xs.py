@@ -125,26 +125,37 @@ class CrossSections(object):
         diff: float
             d$\sigma$/d(1-y) at the given energies in natural units where y is the bjorken-y.
         '''
-        if(np.log10(ein) < 0):
-            diff = 0
+        eout = np.atleast_1d(eout)
+        diff = np.zeros_like(eout)
+        if np.log10(ein) < 0:
             return diff
         if self.model=='dipole':
             if(interaction=='CC'):
-                if (np.log10(eout) >= np.log10(ein)):
-                    diff = 0.
-                    return diff
-                elif(np.log10(eout) < 3.):
-                    diff = 10**self.dsdy_spline_CC_lowe(np.log10(ein), np.log10(eout))[0][0]/ein 
-                else:
-                    diff = 10**self.dsdy_spline_CC(np.log10(ein), np.log10(eout))[0][0]/ein
+                greater_out_msk = (np.log10(eout) >= np.log10(ein))
+                diff[greater_out_msk] = 0.
+                lowe_msk = (np.log10(eout) < 3.) & ~greater_out_msk
+                if np.count_nonzero(lowe_msk) > 0:
+                    diff[lowe_msk] = 10**self.dsdy_spline_CC_lowe(np.log10(ein), 
+                        np.log10(eout[lowe_msk])
+                        )[0][:]/ein
+                other_msk = ~(greater_out_msk | lowe_msk)
+                if np.count_nonzero(other_msk) > 0:
+                    diff[other_msk] = 10**self.dsdy_spline_CC(np.log10(ein), 
+                        np.log10(eout[other_msk])
+                        )[0][:]/ein
             elif(interaction=='NC'):
-                if (np.log10(eout) >= np.log10(ein)):
-                    diff = 0.
-                    return diff
-                elif( np.log10(eout) <= 3.):
-                    diff = 10**self.dsdy_spline_NC_lowe(np.log10(ein), np.log10(eout))[0][0]/ein
-                else:
-                    diff = 10**self.dsdy_spline_NC(np.log10(ein), np.log10(eout))[0][0]/ein
+                greater_out_msk = np.log10(eout) >= np.log10(ein)
+                diff[greater_out_msk] = 0.
+                lowe_msk = (np.log10(eout) <= 3.) & ~greater_out_msk
+                if np.count_nonzero(lowe_msk) > 0:
+                    diff[lowe_msk] = 10**self.dsdy_spline_NC_lowe(np.log10(ein), 
+                        np.log10(eout[lowe_msk])
+                        )[0][:]/ein
+                other_msk = ~(greater_out_msk | lowe_msk)
+                if np.count_nonzero(other_msk) > 0:
+                    diff[other_msk] = 10**self.dsdy_spline_NC(np.log10(ein), 
+                        np.log10(eout[other_msk])
+                        )[0][:]/ein
         elif(self.model=='CSMS'):
             if interaction=='NC':
                 diff = self.dsdy_spline_NC(ein, eout)
@@ -158,3 +169,54 @@ class CrossSections(object):
 #                        getattr(nsq.NeutrinoCrossSections_Current, interaction) 
 #                       )
         return diff
+
+#     def DifferentialOutGoingLeptonDistribution(self, ein, eout, interaction):
+#         r'''
+#         Calculates Differential neutrino cross section. returns the value of d$\sigma$/dy
+#         in natural units.
+#         Parameters
+#         ----------
+#         ein:         float
+#             incoming lepton energy in GeV
+#         eout:         float
+#             outgoing lepton energy in GeV
+#         interaction: nusquids obj
+#             string defining the interaction type (CC or NC).
+#         Returns
+#         -------
+#         diff: float
+#             d$\sigma$/d(1-y) at the given energies in natural units where y is the bjorken-y.
+#         '''
+#         if(np.log10(ein) < 0):
+#             diff = 0
+#             return diff
+#         if self.model=='dipole':
+#             if(interaction=='CC'):
+#                 if (np.log10(eout) >= np.log10(ein)):
+#                     diff = 0.
+#                     return diff
+#                 elif(np.log10(eout) < 3.):
+#                     diff = 10**self.dsdy_spline_CC_lowe(np.log10(ein), np.log10(eout))[0][0]/ein 
+#                 else:
+#                     diff = 10**self.dsdy_spline_CC(np.log10(ein), np.log10(eout))[0][0]/ein
+#             elif(interaction=='NC'):
+#                 if (np.log10(eout) >= np.log10(ein)):
+#                     diff = 0.
+#                     return diff
+#                 elif( np.log10(eout) <= 3.):
+#                     diff = 10**self.dsdy_spline_NC_lowe(np.log10(ein), np.log10(eout))[0][0]/ein
+#                 else:
+#                     diff = 10**self.dsdy_spline_NC(np.log10(ein), np.log10(eout))[0][0]/ein
+#         elif(self.model=='CSMS'):
+#             if interaction=='NC':
+#                 diff = self.dsdy_spline_NC(ein, eout)
+#             elif interaction=='CC':
+#                 diff = self.dsdy_spline_CC(ein, eout)
+#             else:
+#                 raise ValueError('Interaction %s not allowed. Must be "CC" or "NC"')
+# #            diff = dis.SingleDifferentialCrossSection(ein*units.GeV, eout*units.GeV, 
+# #                        nsq.NeutrinoCrossSections_NeutrinoFlavor.tau, 
+# #                        nsq.NeutrinoCrossSections_NeutrinoType.neutrino,
+# #                        getattr(nsq.NeutrinoCrossSections_Current, interaction) 
+# #                       )
+#         return diff

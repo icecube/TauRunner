@@ -342,14 +342,11 @@ class Particle(object):
     def Interact(self, interaction):
 
         if self.ID in [12, 14, 16]:
-
             #Sample energy lost from differential distributions
-            dNdEle = lambda y: self.xs.DifferentialOutGoingLeptonDistribution(
-                                                                              self.energy/units.GeV,
-                                                                              self.energy*y/units.GeV, 
-                                                                              interaction,
-                                                                             )
-            NeutrinoInteractionWeights = list(map(dNdEle,NeutrinoDifferentialEnergyFractions))
+            NeutrinoInteractionWeights = self.xs.DifferentialOutGoingLeptonDistribution(
+                self.energy/units.GeV,
+                self.energy*NeutrinoDifferentialEnergyFractions/units.GeV,
+                interaction)
             NeutrinoInteractionWeights = np.divide(NeutrinoInteractionWeights, np.sum(NeutrinoInteractionWeights))
             self.energy = self.energy*self.rand.choice(
                                                        NeutrinoDifferentialEnergyFractions,
