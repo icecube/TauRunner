@@ -310,7 +310,7 @@ class Particle(object):
             self.SetParticleProperties()
             if self.secondaries:
                 # sample branching ratio of tau leptonic decay
-                p0 = np.random.uniform(0,1)
+                p0 = self.rand.uniform(0,1)
                 bins = list(np.logspace(-5,0,101))[:-1]
                 if p0 < .18:
                     xs_path = os.path.dirname(os.path.realpath(__file__)) + '/cross_sections/secondaries_splines/'

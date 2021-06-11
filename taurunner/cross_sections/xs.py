@@ -11,7 +11,7 @@ def hima_tot_xs(E, spl):
     pass
 
 def jeff_tot_xs(E, spl):
-    return np.exp(spl(np.log(E)))
+    return np.exp(spl(np.log(E/1e9)))
 
 def hima_diff_xs(E_in, E_out, spl):
     return(10**spl(np.log10(E_in), np.log10(E_out))[0][0]/E_in)
