@@ -5,7 +5,6 @@ on:
 jobs:
   unittest_and_coverage:
     runs-on: ubuntu-latest
-    continue-on-error: true
     name: Coverage tests
     steps:
       - uses: actions/checkout@v2
@@ -20,6 +19,9 @@ jobs:
       - name: Test with unittest
         run: |
           coverage run --source=taurunner/ -m unittest discover test/
+        continue-on-error: true
+      - name: coverage-report
+        run: |
           coverage report
           coverage html -d coverage_report
       - name: Upload
