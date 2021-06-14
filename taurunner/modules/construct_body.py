@@ -2,7 +2,7 @@ def construct_body(body_arg, radius_arg, **kwargs):
     if body_arg in ['earth', 'sun']:
         if(body_arg=='earth'):
             from taurunner.body import create_earth
-            body = create_earth(layer, density)
+            body = create_earth(kwargs['layer'], kwargs['density'])
         elif(body_arg=='sun'):
             from taurunner.body import HZ_Sun
             body = HZ_Sun

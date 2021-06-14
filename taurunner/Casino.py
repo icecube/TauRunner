@@ -35,9 +35,9 @@ def DoAllCCThings(objects, xs, losses=True):
     final_values= []
     efinal, distance = [], []
     pid = int(objects[0][-1])
-    if pid==14: # pragma: no cover
+    if pid in [13,14]:
       flavor='mu'
-    elif pid==16: # pragma: no cover
+    elif pid in [15,16]: # pragma: no cover
       flavor='tau'
     e      = [obj[0]/units.GeV for obj in objects]                    #MMC takes initial energy in GeV 
     dists  = [1e3*(obj[6] - obj[2])/units.km for obj in objects]      #distance to propagate is total distance minus the current position in m 

@@ -8,7 +8,7 @@ import argparse
 from taurunner.modules import units, cleanup_outdir
 #from taurunner.modules import units, make_outdir, todaystr, cleanup_outdir
 from taurunner.track import Chord
-from taurunner.body import Earth
+from taurunner.body import *
 from taurunner.cross_sections import CrossSections
 from taurunner.Casino import *
 
@@ -35,7 +35,7 @@ def initialize_parser(): # pragma: no cover
         help='Do you want to print out debug statments? If so, raise this flag') 
     parser.add_argument('-save', dest='save', type=str, default=None, 
         help="If saving output, provide a path here")
-    parser.add_argument('-water', dest='water_layer', type=float, default=0,
+    parser.add_argument('-water', dest='water_layer', type=float, default=None,
         help="If you you would like to add a water layer to the Earth model, enter it here in km.")
     parser.add_argument('-xs', dest='xs_model', type=str, default='dipole',
         help="Enter 'CSMS' if you would like to run the simulation with a pQCD xs model")
@@ -54,8 +54,9 @@ def initialize_parser(): # pragma: no cover
     return args
 
 def run_MC(nevents, seed, flavor=16, energy=None, theta=None,
-    gzk=None, spectrum=None, e_range=" ", debug=False, save=None, water_layer=0.,
-    xs_model='dipole', losses=True, body=None, depth=0., return_res=True):
+    gzk=None, spectrum=None, e_range=" ", debug=False, save=None,
+    water_layer=0., xs_model='dipole', losses=True, body=None,
+    depth=0., return_res=True,with_secondaries=True):
     r'''
     Main simulation code. Propagates a flux of neutrinos and returns or
     saves the outgoing particles
@@ -82,8 +83,6 @@ def run_MC(nevents, seed, flavor=16, energy=None, theta=None,
         If true, print various messages as the simulation runs
     save: str, default=None
         If not None, a path for saving output
-    water_layer: float, default=0.
-        Add a layer of water on top of the body
     xs_model: str, default='dipole'
         Cross section model to use
     losses: bool, default=True
@@ -94,16 +93,14 @@ def run_MC(nevents, seed, flavor=16, energy=None, theta=None,
         Buffer in km between the end of propagation and the detector
     return_res: bool, default=True
         If true, return the results
-    
+
     Returns:
         np.recarray of the outgoing leptons
-    
     '''
     if nevents is None:
         raise RuntimeError('You must specify a number of events to simulate (-n)') 
     if (gzk == None and theta == None) or (energy ==None and spectrum ==None):
         raise RuntimeError('You must either pick an energy and theta, use a spectrum, or use the GZK flux')
-   
 
     if debug: #pragma: no cover
         print('Beginning simulation')
@@ -271,7 +268,7 @@ if __name__ == "__main__": # pragma: no cover
         result = run_MC(args.nevents, args.seed, flavor=args.flavor, 
             energy=args.energy, theta=args.theta, gzk=args.gzk, 
             spectrum=args.spectrum, e_range=args.range, debug=args.debug,
-            save=args.save, water_layer=args.water_layer, xs_model=args.xs_model,
+            save=args.save, xs_model=args.xs_model,
             losses=args.losses, body=body, depth=args.depth, return_res=False,
             with_secondaries=~args.no_secondaries)
 
