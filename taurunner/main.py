@@ -265,12 +265,13 @@ if __name__ == "__main__": # pragma: no cover
     kwargs = {'layer': args.water_layer, 'density': 1.0}
     body = construct_body(args.body, args.radius, **kwargs)
     try:
+
         result = run_MC(args.nevents, args.seed, flavor=args.flavor, 
             energy=args.energy, theta=args.theta, gzk=args.gzk, 
             spectrum=args.spectrum, e_range=args.range, debug=args.debug,
             save=args.save, xs_model=args.xs_model,
             losses=args.losses, body=body, depth=args.depth, return_res=False,
-            with_secondaries=~args.no_secondaries)
+            with_secondaries=not args.no_secondaries)
 
         if args.save:
             if args.gzk is not None:
