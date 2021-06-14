@@ -8,7 +8,6 @@ import argparse
 from taurunner.modules import units, cleanup_outdir
 #from taurunner.modules import units, make_outdir, todaystr, cleanup_outdir
 from taurunner.track import Chord
-from taurunner.body import Earth
 from taurunner.Casino import *
 
 def initialize_parser():
@@ -50,9 +49,8 @@ def initialize_parser():
     return args
 
 def run_MC(nevents, seed, flavor=3, energy=None, theta=None,
-    gzk=None, spectrum=None, e_range=" ", debug=False, save=None, onlytau=False,
-    water_layer=0., xs_model='dipole', losses=True, body=Earth, depth=0., 
-    return_res=True):
+    gzk=None, spectrum=None, e_range=" ", debug=False, save=None, water_layer=0.,
+    xs_model='dipole', losses=True, body=None, depth=0., return_res=True):
     r'''
     Main simulation code. Propagates a flux of neutrinos and returns or
     saves the outgoing particles
@@ -79,8 +77,6 @@ def run_MC(nevents, seed, flavor=3, energy=None, theta=None,
         If true, print various messages as the simulation runs
     save: str, default=None
         If not None, a path for saving output
-    onlytau: bool, default=False
-        If true, only save the outgoing taus, not the neutrinos
     water_layer: float, default=0.
         Add a layer of water on top of the body
     xs_model: str, default='dipole'
@@ -262,13 +258,14 @@ if __name__ == "__main__":
     from taurunner.modules import setup_outdir
     seed, savedir, params_file, output_file = setup_outdir(args)
     from taurunner.modules import construct_body
-    body = construct_body(args.body, args.radius)
+    kwargs = {'layer': args.water_layer, 'density': 1.0}
+    body = construct_body(args.body, args.radius, **kwargs)
     try:
         result = run_MC(args.nevents, args.seed, flavor=args.flavor, 
             energy=args.energy, theta=args.theta, gzk=args.gzk, 
             spectrum=args.spectrum, e_range=args.range, debug=args.debug,
-            save=args.save, water_layer=args.water_layer, xs_model=args.xs_model,
-            losses=args.losses, body=body, depth=args.depth, return_res=False)
+            save=args.save, xs_model=args.xs_model, losses=args.losses, 
+            body=body, return_res=False)
 
         if args.save:
             if args.gzk is not None:

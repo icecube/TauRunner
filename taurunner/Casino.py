@@ -326,7 +326,7 @@ class Particle(object):
                     sec_flavor = 1
                      # sample energy of tau secondary
                     sample = (iuvs(bins,cdf-np.random.uniform(0,1)).roots())[0]
-                    enu = sample*self.energy*units.GeV
+                    enu = sample*self.energy
                     # add secondary to basket, prepare propagation
                     self.basket.append({"ID" : 12, "flavor" : sec_flavor, "position" : self.position, "energy" : enu})
             self.energy = self.energy*self.rand.choice(TauDecayFractions, p=TauDecayWeights)

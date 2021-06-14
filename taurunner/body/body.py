@@ -1,7 +1,6 @@
 import numpy as np
 from taurunner.modules import units, Callable
 
-
 class Body(object):
 
     def __init__(self, density, radius, layer_boundaries=None, name=None):

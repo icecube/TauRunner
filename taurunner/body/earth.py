@@ -18,10 +18,18 @@ def helper(param):
     func = lambda x: prem_density(x, param)
     return func
 
-r_earth          = 6368.
-earth_densities  = [helper(param) for param in prem_params]
-#earth_densities  = [lambda x: prem_density(x, param) for param in prem_params]
-layer_boundaries = np.array([0, 1221, 3480, 5701, 5771, 5971, 6151, 6346.6, 6356, 6368], 
-                            dtype=float) / r_earth
+def create_earth(layer=None, density=None):
+    if(layer==None):
+        r_earth          = 6368.
+        earth_densities  = [helper(param) for param in prem_params]
+        #earth_densities  = [lambda x: prem_density(x, param) for param in prem_params]
+        layer_boundaries = np.array([0, 1221, 3480, 5701, 5771, 5971, 6151, 6346.6, 6356, 6368], 
+                                    dtype=float) / r_earth
+    else:
+        r_earth = 6368.+layer
+        earth_densities = [helper(param) for param in prem_params.append((density, 0.0, 0.0, 0.0))]
+        layer_boundaries = np.array([0, 1221, 3480, 5701, 5771, 5971, 6151, 6346.6, 6356, 6368, r_earth],
+                                    dtype=float) / r_earth
 
-Earth = Body(earth_densities, r_earth, layer_boundaries=layer_boundaries, name='PREM_earth')
+    earth = Body(earth_densities, r_earth, layer_boundaries=layer_boundaries, name='PREM_earth')
+    return earth
