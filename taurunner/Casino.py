@@ -8,14 +8,14 @@ import time
 import subprocess
 from scipy.interpolate import InterpolatedUnivariateSpline as iuvs
 from taurunner.modules import PhysicsConstants
-from taurunner.cross_sections import xs
+from taurunner.cross_sections import CrossSections
 units = PhysicsConstants()
 
-def chunks(lst, n):
+def chunks(lst, n): # pragma: no cover
     for i in range(0, len(lst), n):
         yield lst[i:i+n]
 
-def DoAllCCThings(objects, xs, flavor, losses=True):
+def DoAllCCThings(objects, xs, losses=True):
     r'''
     Calling MMC requires overhead, so handle all MMC calls per iterations
     over the injected events at once
@@ -34,7 +34,11 @@ def DoAllCCThings(objects, xs, flavor, losses=True):
     '''
     final_values= []
     efinal, distance = [], []
-    flavor = objects[0][-1]
+    pid = int(objects[0][-1])
+    if pid==14: # pragma: no cover
+      flavor='mu'
+    elif pid==16: # pragma: no cover
+      flavor='tau'
     e      = [obj[0]/units.GeV for obj in objects]                    #MMC takes initial energy in GeV 
     dists  = [1e3*(obj[6] - obj[2])/units.km for obj in objects]      #distance to propagate is total distance minus the current position in m 
     mult   = [obj[-2]*(units.cm**3)/units.gr/2.7 for obj in objects]  #convert density back to normal (not natural) units
@@ -51,37 +55,35 @@ def DoAllCCThings(objects, xs, flavor, losses=True):
             obj[0] = final_energies[i]*units.GeV
             obj[5] = final_distances[i]
         return(sorted_obj)
+    else: # pragma: no cover
+        split = np.append(np.append([-1], np.where(sorted_mult[:-1] != sorted_mult[1:])[0]), len(sorted_mult))
+        propagate_path = os.path.dirname(os.path.realpath(__file__))
+        if(xs=='dipole'):
+            propagate_path+='/propagate_{}s.sh'.format(flavor)
+        elif(xs=='CSMS'):
+            propagate_path+='/propagate_{}s_ALLM.sh'.format(flavor)
+        else:
+            raise ValueError("Cross section model error.")
+        for i in range(len(split)-1):
+            multis = sorted_mult[split[i]+1:split[i+1]+1]
+            eni = sorted_e[split[i]+1:split[i+1]+1]
+            din = sorted_dists[split[i]+1:split[i+1]+1]
+            max_arg = 500
+            eni_str = ['{} {}'.format(e, d) for e,d in list(zip(eni, din))]
+            eni_str = list(chunks(eni_str, max_arg))
+            for kk in range(len(eni_str)):
+                eni_str[kk].append(str(multis[0]))
+                eni_str[kk].insert(0, propagate_path)
+                process = subprocess.check_output(eni_str[kk])
+                for line in process.split(b'\n')[:-1]:
+                    final_values.append(float(line.replace(b'\n',b'')))
 
-    split = np.append(np.append([-1], np.where(sorted_mult[:-1] != sorted_mult[1:])[0]), len(sorted_mult))
-    
-    propagate_path = os.path.dirname(os.path.realpath(__file__))
-    if(xs=='dipole'):
-        propagate_path+='/propagate_{}s.sh'.format(flavor)
-    elif(xs=='CSMS'):
-        propagate_path+='/propagate_{}s_ALLM.sh'.format(flavor)
-    else:
-        raise ValueError("Cross section model error.")
-    for i in range(len(split)-1):
-        multis = sorted_mult[split[i]+1:split[i+1]+1]
-        eni = sorted_e[split[i]+1:split[i+1]+1]
-        din = sorted_dists[split[i]+1:split[i+1]+1]
-        max_arg = 500
-        eni_str = ['{} {}'.format(e, d) for e,d in list(zip(eni, din))]
-        eni_str = list(chunks(eni_str, max_arg))
-
-        for kk in range(len(eni_str)):
-            eni_str[kk].append(str(multis[0]))
-            eni_str[kk].insert(0, propagate_path)
-            process = subprocess.check_output(eni_str[kk])
-            for line in process.split(b'\n')[:-1]:
-                final_values.append(float(line.replace(b'\n',b'')))
-
-    final_energies = np.asarray(final_values)[::2]
-    final_distances = np.abs(np.asarray(final_values)[1::2])/1e3
-    for i, obj in enumerate(sorted_obj):
-        obj[0] = final_energies[i]*units.GeV/1e3
-        obj[5] = final_distances[i]
-    return(sorted_obj)
+        final_energies = np.asarray(final_values)[::2]
+        final_distances = np.abs(np.asarray(final_values)[1::2])/1e3
+        for i, obj in enumerate(sorted_obj):
+            obj[0] = final_energies[i]*units.GeV/1e3
+            obj[5] = final_distances[i]
+        return(sorted_obj)
 
 ##########################################################
 ############## Tau Decay Parameterization ################
@@ -111,7 +113,7 @@ def TauDecayToPion(Etau, Enu, P):
         g1 = -(2.*z - 1. + RPion)/(1. - RPion)**2
 
     return(g0+P*g1)
-    
+
 def TauDecayToRho(Etau, Enu, P):
     z = Enu/Etau
     g0 = 0.
@@ -145,7 +147,7 @@ def TauDecayToAll(Etau, Enu, P):
     decay_spectra+=BrRho*TauDecayToRho(Etau, Enu, P)
     decay_spectra+=BrA1*TauDecayToA1(Etau, Enu, P)
     decay_spectra+=BrHad*TauDecayToHadrons(Etau, Enu, P)
-    
+
     return decay_spectra
 
 Etau = 100.
@@ -166,18 +168,17 @@ class Particle(object):
     This is the class that contains all relevant 
     particle information stored in an object.
     '''
-    def __init__(self, ID, flavor, energy, incoming_angle, position, index, 
-                  seed, chargedposition, water_layer=0, xs_model='dipole', basket=[]):
+    def __init__(self, ID, energy, incoming_angle, position, index, 
+                  seed, chargedposition, water_layer=0, xs_model='dipole', 
+                  basket=[]):
         r'''
         Class initializer. This function sets all initial conditions based 
         on the particle's incoming angle, energy, ID, and position.
 
         Parameters
         ----------
-        ID:    string
-            The particle can either be "tau" or "tau_neutrino". That is defined here.
-        flavor:         int
-            lepton flavor (1:e/2:mu/3:tau)
+        ID:    int
+            The particle ID as defined in the PDG MC encoding.
         energy:         float
             Initial energy in eV.
         incoming_angle: float
@@ -190,26 +191,30 @@ class Particle(object):
             Seed corresponding to the random number generator.
         chargedposition:    float
             If particle is charged, this is the distance it propagated.
-        '''     
+        '''
         #Set Initial Values
-        self.ID = ID
-        self.initial_energy = energy
-        self.energy = energy
-        self.flavor = flavor
-        self.position = position
+        self.ID              = ID
+        self.initial_energy  = energy
+        self.energy          = energy
+        self.position        = position
         self.chargedposition = chargedposition
         self.SetParticleProperties()
-        self.secondaries = True
-        self.survived = True
-        self.basket = basket
-        self.nCC = 0
-        self.nNC = 0
-        self.ntdecay = 0
-        self.isCC = False
-        self.index = index
-        self.rand = np.random.RandomState(seed=seed)
-        self.xs_model = xs_model
-          
+        self.secondaries     = True
+        self.survived        = True
+        self.basket          = basket
+        self.nCC             = 0
+        self.nNC             = 0
+        self.ntdecay         = 0
+        self.isCC            = False
+        self.index           = index
+        self.rand            = np.random.RandomState(seed=seed)
+        if isinstance(xs_model, CrossSections):
+            self.xs = xs_model
+            self.xs_model = xs_model.model
+        else:
+            self.xs_model = xs_model
+            self.xs = CrossSections(xs_model)
+
     def SetParticleProperties(self):
         r'''
         Sets particle properties, either when initializing or after an interaction.
@@ -223,14 +228,14 @@ class Particle(object):
         if self.ID == 13:
             self.mass = 0.105*units.GeV
             self.livetime = 2.2e-6*units.sec
- 
+
     def GetParticleId(self):
         r'''
         Returns the current particle ID        
         '''
         return self.ID
 
-    def PrintParticleProperties(self):
+    def PrintParticleProperties(self): # pragma: no cover
         print("id", self.ID, \
               "energy ", self.energy/units.GeV, " GeV", \
               "position ", self.position/units.km, " km")
@@ -246,13 +251,6 @@ class Particle(object):
         Returns the current particle's mass
         '''
         return self.mass
-
-    def GetDecayProbability(self,dL):
-        r'''
-        Returns the particle's decay probability for a 
-        '''
-        boost_factor = self.GetBoostFactor()
-        return dL/(boost_factor*self.lifetime)
 
     def GetProposedDepthStep(self, p):
         r'''
@@ -285,7 +283,7 @@ class Particle(object):
     def GetInteractionDepth(self, interaction):
         r'''
         Calculates the mean column depth to interaction.
-        
+
         Parameters
         -----------
         interaction: str
@@ -296,7 +294,7 @@ class Particle(object):
             mean column depth to interaction in natural units
         '''
         if self.ID in [12, 14, 16]:
-            return proton_mass/(xs.TotalNeutrinoCrossSection(self.energy, interaction = interaction, xs_model=self.xs_model))
+            return proton_mass/(self.xs.TotalNeutrinoCrossSection(self.energy, interaction = interaction))
         if self.ID == 15:
             raise ValueError("Tau interaction length should never be sampled.")
 
@@ -307,31 +305,29 @@ class Particle(object):
         if self.ID in [12, 14, 16]:
             raise ValueError("No, you did not just discover neutrino decays..")
         if self.ID == 15:
+            self.energy = self.energy*self.rand.choice(TauDecayFractions, p=TauDecayWeights)
+            self.ID = 16
+            self.SetParticleProperties()
             if self.secondaries:
                 # sample branching ratio of tau leptonic decay
-                p0 = np.random.uniform(0,1)
+                p0 = self.rand.uniform(0,1)
                 bins = list(np.logspace(-5,0,101))[:-1]
                 if p0 < .18:
                     xs_path = os.path.dirname(os.path.realpath(__file__)) + '/cross_sections/secondaries_splines/'
                     cdf = np.load(xs_path + 'antinumu_cdf.npy')
-                    sec_flavor = 2
-                     # sample energy of tau secondary
+                    # sample energy of tau secondary
                     sample = (iuvs(bins,cdf-np.random.uniform(0,1)).roots())[0]
                     enu = sample*self.energy
                     # add secondary to basket, prepare propagation
-                    self.basket.append({"ID" : 14, "flavor" : sec_flavor, "position" : self.position, "energy" : enu})
+                    self.basket.append({"ID" : 14, "position" : self.position, "energy" : enu})
                 elif p0 > .18 and p0 < .36:
                     xs_path = os.path.dirname(os.path.realpath(__file__)) + '/cross_sections/secondaries_splines/'
                     cdf = np.load(xs_path + 'antinue_cdf.npy')
-                    sec_flavor = 1
-                     # sample energy of tau secondary
+                    # sample energy of tau secondary
                     sample = (iuvs(bins,cdf-np.random.uniform(0,1)).roots())[0]
                     enu = sample*self.energy
                     # add secondary to basket, prepare propagation
-                    self.basket.append({"ID" : 12, "flavor" : sec_flavor, "position" : self.position, "energy" : enu})
-            self.energy = self.energy*self.rand.choice(TauDecayFractions, p=TauDecayWeights)
-            self.ID = 16
-            self.SetParticleProperties()
+                    self.basket.append({"ID" : 12,  "position" : self.position, "energy" : enu})
             return
         if self.ID == 13:
             self.survived=False
@@ -339,21 +335,23 @@ class Particle(object):
     def Interact(self, interaction):
 
         if self.ID in [12, 14, 16]:
-
             #Sample energy lost from differential distributions
-            dNdEle = lambda y: xs.DifferentialOutGoingLeptonDistribution(self.energy/units.GeV,
-                                                           self.energy*y/units.GeV, interaction, self.xs_model)
-            NeutrinoInteractionWeights = list(map(dNdEle,NeutrinoDifferentialEnergyFractions))
+            NeutrinoInteractionWeights = self.xs.DifferentialOutGoingLeptonDistribution(
+                self.energy/units.GeV,
+                self.energy*NeutrinoDifferentialEnergyFractions/units.GeV,
+                interaction)
             NeutrinoInteractionWeights = np.divide(NeutrinoInteractionWeights, np.sum(NeutrinoInteractionWeights))
-            self.energy = self.energy*self.rand.choice(NeutrinoDifferentialEnergyFractions,
-                                                        p=NeutrinoInteractionWeights)
+            self.energy = self.energy*self.rand.choice(
+                                                       NeutrinoDifferentialEnergyFractions,
+                                                       p=NeutrinoInteractionWeights
+                                                      )
 
             if interaction == 'CC':
                 #make a charged particle
                 self.isCC = True
-                if(self.flavor == 3):
+                if(self.ID==16):
                     self.ID = 15
-                elif(self.flavor== 2):
+                elif(self.ID==14):
                     self.ID = 13
                 self.SetParticleProperties()
                 self.nCC += 1
@@ -367,8 +365,7 @@ class Particle(object):
             return
 
         elif np.logical_or(self.ID == 15, self.ID == 13):
-            print("Im not supposed to be here")
-            raise ValueError("tau/mu interactions don't happen here")
+            raise ValueError("Im not supposed to be here\ntau/mu interactions don't happen here")
 
 #This is the propagation algorithm. The MCmeat, if you will.
 def Propagate(particle, track, body):
@@ -379,7 +376,7 @@ def Propagate(particle, track, body):
            #Determine how far you're going
             p1 = particle.rand.random_sample()
             DepthStep = particle.GetProposedDepthStep(p1)
-    
+
             #now pick an interaction
             p2 = particle.rand.random_sample()
             CC_lint = particle.GetInteractionDepth(interaction='CC')
@@ -405,12 +402,12 @@ def Propagate(particle, track, body):
         elif(np.logical_or(particle.ID == 15, particle.ID == 13)):
             current_distance=track.x_to_d(particle.position)
             charged_distance = particle.chargedposition*units.km/body.radius
-            if(track.d_to_x(current_distance+charged_distance) >=1.):
+            if(track.d_to_x(current_distance+charged_distance) >=1.): # pragma: no cover
                 particle.position=1.
             else:
                 current_distance+=charged_distance
                 particle.position=track.d_to_x(current_distance)
-            if(particle.position >= 1.):
+            if(particle.position >= 1.): # pragma: no cover
                 return particle
                 continue
             else:
