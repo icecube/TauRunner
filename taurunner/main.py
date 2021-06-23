@@ -232,9 +232,9 @@ def run_MC(nevents, seed, flavor=16, energy=None, theta=None,
                                                 0.0, xs_model=sim_xs)
                         sec_out      = Propagate(sec_particle, my_track, body)
                         if(sec_out.isCC):
-                            output.append((sec_out.energy, 0.0, thetas[ind], inds_left[j], sec_out.nCC, sec_out.nNC, sec_out.ID))
+                            output.append((sec_out.energy, 0.0, thetas[ind], inds_left[j], sec_out.nCC, sec_out.nNC, -sec_out.ID))
                         else:
-                            output.append((sec_out.initial_energy, sec_out.energy, thetas[ind], inds_left[j], sec_out.nCC, sec_out.nNC, sec_out.ID))
+                            output.append((sec_out.initial_energy, sec_out.energy, thetas[ind], inds_left[j], sec_out.nCC, sec_out.nNC, -sec_out.ID))
                 iter_positions[int(out.index)] = float(out.position)
                 del inds_left[j]
                 del out
