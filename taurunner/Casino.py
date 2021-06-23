@@ -11,6 +11,11 @@ from taurunner.modules import PhysicsConstants
 from taurunner.cross_sections import CrossSections
 units = PhysicsConstants()
 
+# load secondary cdfs
+xs_path = os.path.dirname(os.path.realpath(__file__)) + '/cross_sections/secondaries_splines/'
+antinue_cdf = np.load(xs_path + 'antinue_cdf.npy')
+antinumu_cdf = np.load(xs_path + 'antinumu_cdf.npy')
+
 def chunks(lst, n): # pragma: no cover
     for i in range(0, len(lst), n):
         yield lst[i:i+n]
@@ -305,29 +310,25 @@ class Particle(object):
         if self.ID in [12, 14, 16]:
             raise ValueError("No, you did not just discover neutrino decays..")
         if self.ID == 15:
-            self.energy = self.energy*self.rand.choice(TauDecayFractions, p=TauDecayWeights)
-            self.ID = 16
-            self.SetParticleProperties()
             if self.secondaries:
                 # sample branching ratio of tau leptonic decay
                 p0 = self.rand.uniform(0,1)
                 bins = list(np.logspace(-5,0,101))[:-1]
                 if p0 < .18:
-                    xs_path = os.path.dirname(os.path.realpath(__file__)) + '/cross_sections/secondaries_splines/'
-                    cdf = np.load(xs_path + 'antinumu_cdf.npy')
-                    # sample energy of tau secondary
-                    sample = (iuvs(bins,cdf-np.random.uniform(0,1)).roots())[0]
+                    # sample energy of secondary antinumu
+                    sample = (iuvs(bins,antinumu_cdf-self.rand.uniform(0,1)).roots())[0]
                     enu = sample*self.energy
                     # add secondary to basket, prepare propagation
                     self.basket.append({"ID" : 14, "position" : self.position, "energy" : enu})
                 elif p0 > .18 and p0 < .36:
-                    xs_path = os.path.dirname(os.path.realpath(__file__)) + '/cross_sections/secondaries_splines/'
-                    cdf = np.load(xs_path + 'antinue_cdf.npy')
-                    # sample energy of tau secondary
-                    sample = (iuvs(bins,cdf-np.random.uniform(0,1)).roots())[0]
+                    # sample energy of secondary antinue
+                    sample = (iuvs(bins,antinue_cdf-self.rand.uniform(0,1)).roots())[0]
                     enu = sample*self.energy
                     # add secondary to basket, prepare propagation
                     self.basket.append({"ID" : 12,  "position" : self.position, "energy" : enu})
+            self.energy = self.energy*self.rand.choice(TauDecayFractions, p=TauDecayWeights)
+            self.ID = 16
+            self.SetParticleProperties()
             return
         if self.ID == 13:
             self.survived=False
@@ -345,7 +346,7 @@ class Particle(object):
                                                        NeutrinoDifferentialEnergyFractions,
                                                        p=NeutrinoInteractionWeights
                                                       )
-
+            
             if interaction == 'CC':
                 #make a charged particle
                 self.isCC = True
