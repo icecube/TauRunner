@@ -15,7 +15,7 @@ from taurunner.Casino import *
 
 def initialize_parser(): # pragma: no cover
     parser = argparse.ArgumentParser()
-    parser.add_argument('-s',dest='seed',type=int,
+    parser.add_argument('-s',dest='seed',type=int, default=None,
         help='just an integer seed to help with output file names')
     parser.add_argument('-n', dest='nevents', type=float, 
         help='how many events do you want?')
@@ -25,7 +25,9 @@ def initialize_parser(): # pragma: no cover
         help='if you want to simulate a specific energy, pass it here in GeV')
     parser.add_argument('-t', dest='theta', type=float, 
         help='nadir angle in degrees (0 is through the core)')
-    parser.add_argument('-gzk', dest='gzk', default=None, 
+    parser.add_argument('--prefix', dest='prefix', default='', type=str,
+        help='(Optional) argument to give specify name of outdir')
+    parser.add_argument('-gzk', dest='gzk', default='', type=str,
         help='Pass the file containing the CDF spline to propagate a flux model')
     parser.add_argument('-spectrum', dest='spectrum', default=None, type=float, 
         help='If you want a power law, provide spectral index here')
@@ -33,9 +35,9 @@ def initialize_parser(): # pragma: no cover
         help='Range for injected spectrum in format "low high"')
     parser.add_argument('-d', dest='debug', default=False, action='store_true', 
         help='Do you want to print out debug statments? If so, raise this flag') 
-    parser.add_argument('-save', dest='save', type=str, default=None, 
+    parser.add_argument('--savedir', dest='savedir', type=str, default='', 
         help="If saving output, provide a path here")
-    parser.add_argument('-water', dest='water_layer', type=float, default=None,
+    parser.add_argument('--water', dest='water', type=float, default=0,
         help="If you you would like to add a water layer to the Earth model, enter it here in km.")
     parser.add_argument('-xs', dest='xs_model', type=str, default='dipole',
         help="Enter 'CSMS' if you would like to run the simulation with a pQCD xs model")
@@ -43,9 +45,9 @@ def initialize_parser(): # pragma: no cover
         help="Raise this flag if you want to turn off tau losses. In this case, taus will decay at rest.")
     parser.add_argument('--body', dest='body', default='earth',
         help="Raise this flag if you want to turn off tau losses. In this case, taus will decay at rest.")
-    parser.add_argument('--radius', dest='radius', type=float,
+    parser.add_argument('--radius', dest='radius', type=float, default=0,
         help="Raise this flag if you want to turn off tau losses. In this case, taus will decay at rest.")
-    parser.add_argument('--depth', dest='depth', type=float, default=0.0,
+    parser.add_argument('--depth', dest='depth', type=float, default=0,
         help="Depth of the detector in km.")
     parser.add_argument('--no_secondaries', default=False, action='store_true',
         help="Raise this flag to turn off secondaries")
@@ -122,7 +124,7 @@ def run_MC(nevents, seed, flavor=16, energy=None, theta=None,
 
     rand = np.random.RandomState(seed=seed)
 
-    if gzk is not None:
+    if gzk:
         if not os.path.isfile(gzk):
             raise RuntimeError("GZK CDF Spline file does not exist")
         # sample initial energies and incoming angles from GZK parameterization
@@ -259,28 +261,52 @@ def run_MC(nevents, seed, flavor=16, energy=None, theta=None,
 if __name__ == "__main__": # pragma: no cover
 
     args = initialize_parser()
-    from taurunner.modules import setup_outdir
-    seed, savedir, params_file, output_file = setup_outdir(args)
-    from taurunner.modules import construct_body
-    kwargs = {'layer': args.water_layer, 'density': 1.0}
-    body = construct_body(args.body, args.radius, **kwargs)
+
+    TR_specs = {}
+    TR_specs['seed']           = args.seed
+    TR_specs['nevents']        = args.nevents
+    TR_specs['flavor']         = args.flavor
+    TR_specs['theta']          = args.theta
+    TR_specs['spectrum']       = args.spectrum
+    TR_specs['gzk_spline']     = args.gzk
+    TR_specs['base_savedir']   = args.savedir
+    TR_specs['water']          = args.water
+    TR_specs['xs_model']       = args.xs_model
+    TR_specs['include_losses'] = args.losses
+    TR_specs['body']           = args.body
+    TR_specs['radius']         = args.radius
+    TR_specs['depth']          = args.depth
+    TR_specs['prefix']         = args.prefix
+    
+    if args.savedir:
+        if not os.path.isdir(TR_specs['base_savedir']):
+            raise ValueError('Savedir %s does not exist' % TR_specs['base_savedir'])
+        from taurunner.modules import setup_outdir
+        TR_specs = setup_outdir(TR_specs)
+
     try:
+        from taurunner.modules import construct_body
+        body = construct_body(TR_specs)
 
         result = run_MC(args.nevents, args.seed, flavor=args.flavor, 
             energy=args.energy, theta=args.theta, gzk=args.gzk, 
             spectrum=args.spectrum, e_range=args.range, debug=args.debug,
-            save=args.save, xs_model=args.xs_model,
+            save=bool(args.savedir), xs_model=args.xs_model,
             losses=args.losses, body=body, depth=args.depth, return_res=False,
             with_secondaries=not args.no_secondaries)
 
-        if args.save:
+        if args.savedir:
             if args.gzk is not None:
                 fluxtype = "cosmogenic"
             elif args.spectrum is not None:
                 fluxtype = "powerlaw"
             else:
                 fluxtype = "monochromatic_{}_{}".format(args.energy, args.theta)
-            np.save(output_file, result)
+            TR_specs['fluxtype'] = fluxtype
+            base_fname = '%s/%s/%s' % (TR_specs['base_savedir'], TR_specs['prefix'], TR_specs['prefix'])
+            np.save(base_fname+'.npy', result)
+            with open(base_fname + '.json', 'w') as f:
+                json.dump(TR_specs, f)
             if args.debug:
                 print(message)
         else:
@@ -295,7 +321,6 @@ if __name__ == "__main__": # pragma: no cover
                 print("Outgoing Particles: ")
                 print(result)
     
-    except BaseException as err:
-        cleanup_outdir(savedir, output_file, params_file)
-        raise err
- 
+    except:
+        print(TR_specs)
+        os.rmdir('%s/%s' % (TR_specs['base_savedir'], TR_specs['prefix']))
