@@ -11,6 +11,8 @@ from taurunner.modules import PhysicsConstants
 from taurunner.cross_sections import CrossSections
 units = PhysicsConstants()
 
+TOL = 0.001
+
 def chunks(lst, n): # pragma: no cover
     for i in range(0, len(lst), n):
         yield lst[i:i+n]
@@ -407,7 +409,7 @@ def Propagate(particle, track, body):
             else:
                 current_distance+=charged_distance
                 particle.position=track.d_to_x(current_distance)
-            if(particle.position >= 1.): # pragma: no cover
+            if(particle.position >= 1-TOL): # pragma: no cover
                 return particle
                 continue
             else:
