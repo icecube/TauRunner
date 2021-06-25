@@ -1,5 +1,5 @@
 import os
-def cleanup_outdir(savedir, output_file, params_file):
+def cleanup_outdir(TR_specs):
     if os.path.exists(output_file):
         os.remove(output_file)
     if os.path.exists(params_file):
