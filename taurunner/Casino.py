@@ -11,6 +11,7 @@ from taurunner.modules import PhysicsConstants
 from taurunner.cross_sections import CrossSections
 units = PhysicsConstants()
 
+TOL = 0.001
 # load secondary cdfs
 xs_path = os.path.dirname(os.path.realpath(__file__)) + '/cross_sections/secondaries_splines/'
 antinue_cdf = np.load(xs_path + 'antinue_cdf.npy')
@@ -63,12 +64,12 @@ def DoAllCCThings(objects, xs, losses=True):
     else: # pragma: no cover
         split = np.append(np.append([-1], np.where(sorted_mult[:-1] != sorted_mult[1:])[0]), len(sorted_mult))
         propagate_path = os.path.dirname(os.path.realpath(__file__))
-        if(xs=='dipole'):
+        if(xs.model=='dipole'):
             propagate_path+='/propagate_{}s.sh'.format(flavor)
-        elif(xs=='CSMS'):
+        elif(xs.model=='CSMS'):
             propagate_path+='/propagate_{}s_ALLM.sh'.format(flavor)
         else:
-            raise ValueError("Cross section model error.")
+            raise ValueError("Cross section model error. Cross section model is %s" % xs.model)
         for i in range(len(split)-1):
             multis = sorted_mult[split[i]+1:split[i+1]+1]
             eni = sorted_e[split[i]+1:split[i+1]+1]
@@ -174,7 +175,7 @@ class Particle(object):
     particle information stored in an object.
     '''
     def __init__(self, ID, energy, incoming_angle, position, index, 
-                  seed, chargedposition, water_layer=0, xs_model='dipole', 
+                  seed, chargedposition, xs, water_layer=0,
                   basket=[]):
         r'''
         Class initializer. This function sets all initial conditions based 
@@ -213,12 +214,8 @@ class Particle(object):
         self.isCC            = False
         self.index           = index
         self.rand            = np.random.RandomState(seed=seed)
-        if isinstance(xs_model, CrossSections):
-            self.xs = xs_model
-            self.xs_model = xs_model.model
-        else:
-            self.xs_model = xs_model
-            self.xs = CrossSections(xs_model)
+        self.xs = xs
+        self.xs_model = xs.model
 
     def SetParticleProperties(self):
         r'''
@@ -408,7 +405,7 @@ def Propagate(particle, track, body):
             else:
                 current_distance+=charged_distance
                 particle.position=track.d_to_x(current_distance)
-            if(particle.position >= 1.): # pragma: no cover
+            if(particle.position >= 1-TOL): # pragma: no cover
                 return particle
                 continue
             else:

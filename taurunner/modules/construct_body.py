@@ -1,18 +1,20 @@
-def construct_body(body_arg, radius_arg, **kwargs):
-    if body_arg in ['earth', 'sun']:
-        if(body_arg=='earth'):
-            from taurunner.body import create_earth
-            body = create_earth(kwargs['layer'], kwargs['density'])
-        elif(body_arg=='sun'):
-            from taurunner.body import HZ_Sun
-            body = HZ_Sun
+def construct_body(TR_specs):
+    if TR_specs['body']=='earth':
+        from taurunner.body import lumen_sit
+        if TR_specs['water']>0:
+            body = lumen_sit([(TR_specs['water'], 1)])
+        else:
+            body = lumen_sit()
+    elif TR_specs['body']=='sun':
+        from taurunner.body import HZ_Sun
+        body = HZ_Sun
     else:
         try:
-            density = float(body_arg)
+            density = float(TR_specs['body'])
             if density<=0:
                 raise ValueError('Density must be strictly positive.')
-            if radius_arg is None:
-                raise ValueError('Must specify a radius if you give a numerical value for body')
+            if TR_specs['radius']<=0:
+                raise ValueError('Radius must be strictly positive')
             from taurunner.body import Body
             body = Body(density, radius_arg)
         except ValueError as e:
