@@ -5,7 +5,7 @@ import json
 os.environ['HDF5_DISABLE_VERSION_CHECK']='2'
 import argparse
 
-from taurunner.modules import units, cleanup_outdir
+from taurunner.modules import units, cleanup_outdir, sample_powerlaw
 #from taurunner.modules import units, make_outdir, todaystr, cleanup_outdir
 from taurunner.track import Chord
 from taurunner.body import *
@@ -112,15 +112,6 @@ def run_MC(nevents, seed, flavor=16, energy=None, theta=None,
     if debug:
         message = ''
 
-    def rndm(a, b, g, size=1):
-        #Random spectrum function. g is gamma+1 (use -1 for E^-2)
-        r = np.random.random(size=size)
-        if g == 0.:
-            # E^-1 is uniform sampling in log space
-            log_es = (np.log10(b) - np.log10(a)) * r + np.log10(a)
-            return 10.**log_es
-        ag, bg = a**g, b**g
-        return (ag + (bg - ag)*r)**(1./g)
 
     rand = np.random.RandomState(seed=seed)
 
@@ -148,7 +139,7 @@ def run_MC(nevents, seed, flavor=16, energy=None, theta=None,
             else:
                 cos_thetas = rand.uniform(low=0., high=1., size=nevents)
                 thetas = np.arccos(cos_thetas)
-        eini = rndm(float(e_range[0]), float(e_range[1]), spectrum + 1, size=nevents)*units.GeV
+        eini = sample_powerlaw(float(e_range[0]), float(e_range[1]), spectrum + 1, size=nevents)*units.GeV
         if debug:
             message+="Sampled {} events from power law\n".format(nevents)
     else:
@@ -288,12 +279,13 @@ if __name__ == "__main__": # pragma: no cover
         from taurunner.modules import construct_body
         body = construct_body(TR_specs)
 
-        result = run_MC(args.nevents, args.seed, flavor=args.flavor, 
-            energy=args.energy, theta=args.theta, gzk=args.gzk, 
-            spectrum=args.spectrum, e_range=args.range, debug=args.debug,
-            save=bool(args.savedir), xs_model=args.xs_model,
-            losses=args.losses, body=body, depth=args.depth, return_res=False,
-            with_secondaries=not args.no_secondaries)
+        result = run_MC(body, )
+        #result = run_MC(args.nevents, args.seed, flavor=args.flavor, 
+        #    energy=args.energy, theta=args.theta, gzk=args.gzk, 
+        #    spectrum=args.spectrum, e_range=args.range, debug=args.debug,
+        #    save=bool(args.savedir), xs_model=args.xs_model,
+        #    losses=args.losses, body=body, depth=args.depth, return_res=False,
+        #    with_secondaries=not args.no_secondaries)
 
         if args.savedir:
             if args.gzk is not None:
