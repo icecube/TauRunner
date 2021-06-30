@@ -10,6 +10,7 @@ from scipy.interpolate import InterpolatedUnivariateSpline as iuvs
 from taurunner.modules import PhysicsConstants
 from taurunner.cross_sections import CrossSections
 units = PhysicsConstants()
+import proposal as pp
 
 TOL = 0.001
 # load secondary cdfs
@@ -21,7 +22,7 @@ def chunks(lst, n): # pragma: no cover
     for i in range(0, len(lst), n):
         yield lst[i:i+n]
 
-def DoAllCCThings(objects, xs, losses=True):
+def DoAllCCThings(objects, xs, propagator, losses=True):
     r'''
     Calling MMC requires overhead, so handle all MMC calls per iterations
     over the injected events at once
@@ -62,30 +63,33 @@ def DoAllCCThings(objects, xs, losses=True):
             obj[5] = final_distances[i]
         return(sorted_obj)
     else: # pragma: no cover
-        split = np.append(np.append([-1], np.where(sorted_mult[:-1] != sorted_mult[1:])[0]), len(sorted_mult))
-        propagate_path = os.path.dirname(os.path.realpath(__file__))
-        if(xs.model=='dipole'):
-            propagate_path+='/propagate_{}s.sh'.format(flavor)
-        elif(xs.model=='CSMS'):
-            propagate_path+='/propagate_{}s_ALLM.sh'.format(flavor)
-        else:
-            raise ValueError("Cross section model error. Cross section model is %s" % xs.model)
-        for i in range(len(split)-1):
-            multis = sorted_mult[split[i]+1:split[i+1]+1]
-            eni = sorted_e[split[i]+1:split[i+1]+1]
-            din = sorted_dists[split[i]+1:split[i+1]+1]
-            max_arg = 500
-            eni_str = ['{} {}'.format(e, d) for e,d in list(zip(eni, din))]
-            eni_str = list(chunks(eni_str, max_arg))
-            for kk in range(len(eni_str)):
-                eni_str[kk].append(str(multis[0]))
-                eni_str[kk].insert(0, propagate_path)
-                process = subprocess.check_output(eni_str[kk])
-                for line in process.split(b'\n')[:-1]:
-                    final_values.append(float(line.replace(b'\n',b'')))
+        multis = sorted_mult
+        eni = sorted_e
+        din = sorted_dists
 
-        final_energies = np.asarray(final_values)[::2]
-        final_distances = np.abs(np.asarray(final_values)[1::2])/1e3
+        tau = pp.particle.DynamicData(pp.particle.TauMinusDef().particle_type)
+        tau.position = pp.Vector3D(0, 0, 0)
+        tau.direction = pp.Vector3D(0, 0, -1)
+        tau_length = []
+        #tau_secondaries = []
+        en_at_decay = []
+        print(eni)
+        for e, d in enumerate(zip(eni, din)):
+            #set up your particle
+            tau.energy = e*1e3 #MeV
+            tau.propagated_distance = 0
+                        
+            #propagate the damn thing
+            sec = propagator.propagate(tau)
+            particles = sec.particles
+            tau_length.append(sec.position[-1].magnitude() / 100)
+            decay_products = [p for i,p in zip(range(max(len(particles)-3,0),len(particles)), particles[-3:]) if int(p.type) <= 1000000001]
+            en_at_decay.append(np.sum([p.energy for p in decay_products]))
+            #tau_secondaries.append(sec.number_of_particles)
+
+        final_energies = np.asarray(en_at_decay)
+        final_distances = np.asarray(tau_length)/1e3
+        print(final_energies)
         for i, obj in enumerate(sorted_obj):
             obj[0] = final_energies[i]*units.GeV/1e3
             obj[5] = final_distances[i]

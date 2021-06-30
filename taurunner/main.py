@@ -11,7 +11,7 @@ from taurunner.track import Chord
 from taurunner.body import *
 from taurunner.cross_sections import CrossSections
 from taurunner.Casino import *
-
+import proposal as pp
 
 def initialize_parser(): # pragma: no cover
     parser = argparse.ArgumentParser()
@@ -139,7 +139,7 @@ def initialize_parser(): # pragma: no cover
     args = parser.parse_args()
     return args
 
-def run_MC(eini, thetas, body, xs, tracks, TR_specs):
+def run_MC(eini, thetas, body, xs, tracks, TR_specs, propagator):
     r'''
     Main simulation code. Propagates a flux of neutrinos and returns or
     saves the outgoing particles
@@ -216,17 +216,13 @@ def run_MC(eini, thetas, body, xs, tracks, TR_specs):
                 del inds_left[j]
                 del out
         if (len(cc_stack) > 0):
-            #if debug:
-            #    message += "{} events passed to MMC in loop iteration {}\n".format(len(cc_stack), counter)
-            EventCollection = DoAllCCThings(cc_stack, xs, TR_specs['no_losses'])
+            EventCollection = DoAllCCThings(cc_stack, xs, propagator, TR_specs['no_losses'])
             for event in EventCollection:
                 iter_positions[int(event[3])] = float(event[1])
                 iter_energies[int(event[3])] = float(event[0])
                 iter_particleID[int(event[3])] = int(event[4])
                 iter_ChargedPosition[int(event[3])] = float(event[5])
                 del event
-    #if debug:
-    #    print("Simulating {} events at {} degrees took {} seconds.".format(nevents, theta, time.time() - t0))
 
     output = np.array(output, dtype = [('Eini', float), ('Eout',float), ('Theta', float), ('CDF_index', float), ('nCC', int), ('nNC', int), ('PDG_Encoding', int)])
     output['Theta'] *= 180. / np.pi #Give theta in degrees to user
@@ -318,7 +314,36 @@ if __name__ == "__main__": # pragma: no cover
         # Make cross section obect
         xs = CrossSections(TR_specs['xs_model'])
 
-        result = run_MC(eini, thetas, body, xs, tracks, TR_specs)
+        #Make proposal object
+
+        #define geometry
+        sec_def = pp.SectorDefinition()
+        sec_def.medium = pp.medium.Ice(1.0)
+        sec_def.geometry = pp.geometry.Sphere(pp.Vector3D(), 1e20, 0)
+        sec_def.particle_location = pp.ParticleLocation.inside_detector
+        
+        sec_def.scattering_model = pp.scattering.ScatteringModel.Moliere
+        sec_def.crosssection_defs.brems_def.lpm_effect = False
+        sec_def.crosssection_defs.epair_def.lpm_effect = False
+        
+        sec_def.cut_settings.ecut = 500
+        sec_def.cut_settings.vcut = 0.1
+        
+        sec_def.crosssection_defs.photo_def.parametrization = pp.parametrization.photonuclear.PhotoParametrization.BlockDurandHa
+        
+        interpolation_def = pp.InterpolationDef()
+        interpolation_def.path_to_tables = "~/.local/share/PROPOSAL/tables"
+        interpolation_def.path_to_tables_readonly = "~/.local/share/PROPOSAL/tables"
+        
+        #define propagator
+        prop = pp.Propagator(
+                particle_def=pp.particle.TauMinusDef(),
+                sector_defs=[sec_def],
+                detector=pp.geometry.Sphere(pp.Vector3D(), 1e20, 0),
+                interpolation_def=interpolation_def
+        )
+
+        result = run_MC(eini, thetas, body, xs, tracks, TR_specs, prop)
 
         if TR_specs['base_savedir']:
             base_fname = '%s/%s/%s' % (TR_specs['base_savedir'], TR_specs['prefix'], TR_specs['prefix'])
