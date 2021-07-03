@@ -22,12 +22,13 @@ bins = list(np.logspace(-5,0,101))[:-1] # bins for the secondary splines
 def get_sample(u, cdf):
     spl_cdf = iuvs(bins, cdf)
     # check if random sample u is in the range where the spline is defined
-    if u <= np.min(spl_cdf(bins)): 
-        return 1e-3
-    elif u == np.max(spl_cdf(bins)):
-        return 1
-    else:
+    try:
         return (iuvs(bins,cdf-u).roots())[0]
+    except:
+        if u <= np.min(spl_cdf(bins)): 
+            return 1e-3
+        elif u == np.max(spl_cdf(bins)):
+            return 1
 
 def chunks(lst, n): # pragma: no cover
     for i in range(0, len(lst), n):
