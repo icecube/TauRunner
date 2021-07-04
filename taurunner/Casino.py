@@ -16,6 +16,19 @@ TOL = 0.001
 xs_path = os.path.dirname(os.path.realpath(__file__)) + '/cross_sections/secondaries_splines/'
 antinue_cdf = np.load(xs_path + 'antinue_cdf.npy')
 antinumu_cdf = np.load(xs_path + 'antinumu_cdf.npy')
+bins = list(np.logspace(-5,0,101))[:-1] # bins for the secondary splines
+
+# Auxiliary function for secondary antinu sampling
+def get_sample(u, cdf):
+    spl_cdf = iuvs(bins, cdf)
+    # check if random sample u is in the range where the spline is defined
+    try:
+        return (iuvs(bins,cdf-u).roots())[0]
+    except:
+        if u <= np.min(spl_cdf(bins)): 
+            return 1e-3
+        elif u == np.max(spl_cdf(bins)):
+            return 1
 
 def chunks(lst, n): # pragma: no cover
     for i in range(0, len(lst), n):
@@ -310,16 +323,15 @@ class Particle(object):
             if self.secondaries:
                 # sample branching ratio of tau leptonic decay
                 p0 = self.rand.uniform(0,1)
-                bins = list(np.logspace(-5,0,101))[:-1]
                 if p0 < .18:
                     # sample energy of secondary antinumu
-                    sample = (iuvs(bins,antinumu_cdf-self.rand.uniform(0,1)).roots())[0]
+                    sample = get_sample(self.rand.uniform(0,1), antinumu_cdf)
                     enu = sample*self.energy
                     # add secondary to basket, prepare propagation
                     self.basket.append({"ID" : 14, "position" : self.position, "energy" : enu})
                 elif p0 > .18 and p0 < .36:
                     # sample energy of secondary antinue
-                    sample = (iuvs(bins,antinue_cdf-self.rand.uniform(0,1)).roots())[0]
+                    sample = get_sample(self.rand.uniform(0,1), antinue_cdf)
                     enu = sample*self.energy
                     # add secondary to basket, prepare propagation
                     self.basket.append({"ID" : 12,  "position" : self.position, "energy" : enu})
@@ -329,6 +341,7 @@ class Particle(object):
             return
         if self.ID == 13:
             self.survived=False
+
 
     def Interact(self, interaction):
 
