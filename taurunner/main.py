@@ -175,7 +175,7 @@ def run_MC(eini, thetas, body, xs, tracks, TR_specs):
 
             particle = Particle(iter_particleID[i], iter_energies[i], 
                                 thetas[i], iter_positions[i], i, rand.randint(low=1e9),
-                                iter_ChargedPosition[i], xs)
+                                iter_ChargedPosition[i], xs, not TR_specs['no_secondaries'])
             my_track = tracks[thetas[i]]
             out = Propagate(particle, my_track, body)
 
@@ -192,7 +192,8 @@ def run_MC(eini, thetas, body, xs, tracks, TR_specs):
                 current_distance=my_track.x_to_d(out.position)*body.radius
                 current_x = out.position
                 total_distance=my_track.x_to_d(1.)*body.radius
-                current_density=body.get_density(my_track.x_to_r(out.position))
+                #current_density=body.get_density(my_track.x_to_r(out.position))
+                current_density=body.get_average_density(my_track.x_to_r(out.position))
                 cc_stack.append((float(out.energy), current_x, float(current_distance), int(out.index),
                  int(out.ID), 0, float(total_distance), float(current_density), int(out.ID)))
                 del out
@@ -206,7 +207,7 @@ def run_MC(eini, thetas, body, xs, tracks, TR_specs):
                     basket = out.basket
                     for sec in basket:
                         sec_particle = Particle(sec['ID'], sec['energy'], thetas[ind], sec['position'], inds_left[j], rand.randint(low=1e9),
-                                                0.0, xs=xs)
+                                                0.0, xs=xs,secondaries= not TR_specs['no_secondaries'])
                         sec_out      = Propagate(sec_particle, my_track, body)
                         if(sec_out.isCC):
                             output.append((sec_out.energy, 0.0, thetas[ind], inds_left[j], sec_out.nCC, sec_out.nNC, -sec_out.ID))
@@ -314,7 +315,8 @@ if __name__ == "__main__": # pragma: no cover
         # Premake all necessary tracks in case of redundancies
         # Make it so that you can pass radial tracks too
         tracks  = {theta:Chord(theta=theta, depth=TR_specs['depth']/body.radius) for theta in set(thetas)}
-
+        rr = np.linspace(0, 1, 50)
+        #print(np.asarray([body.get_average_density(r) for r in rr])/units.gr*units.cm**3)
         # Make cross section obect
         xs = CrossSections(TR_specs['xs_model'])
 

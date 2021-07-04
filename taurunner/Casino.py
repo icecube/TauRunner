@@ -175,7 +175,7 @@ class Particle(object):
     particle information stored in an object.
     '''
     def __init__(self, ID, energy, incoming_angle, position, index, 
-                  seed, chargedposition, xs, water_layer=0,
+                  seed, chargedposition, xs, secondaries, water_layer=0, 
                   basket=[]):
         r'''
         Class initializer. This function sets all initial conditions based 
@@ -205,7 +205,7 @@ class Particle(object):
         self.position        = position
         self.chargedposition = chargedposition
         self.SetParticleProperties()
-        self.secondaries     = True
+        self.secondaries     = secondaries
         self.survived        = True
         self.basket          = basket
         self.nCC             = 0
