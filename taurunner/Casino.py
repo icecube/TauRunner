@@ -11,7 +11,8 @@ from taurunner.modules import PhysicsConstants
 from taurunner.cross_sections import CrossSections
 units = PhysicsConstants()
 
-TOL = 0.001
+#TOL = 0.001
+TOL  = 0.0
 # load secondary cdfs
 xs_path = os.path.dirname(os.path.realpath(__file__)) + '/cross_sections/secondaries_splines/'
 antinue_cdf = np.load(xs_path + 'antinue_cdf.npy')
@@ -99,6 +100,7 @@ def DoAllCCThings(objects, xs, losses=True):
 
         final_energies = np.asarray(final_values)[::2]
         final_distances = np.abs(np.asarray(final_values)[1::2])/1e3
+        final_distances += final_distances*0.05
         for i, obj in enumerate(sorted_obj):
             obj[0] = final_energies[i]*units.GeV/1e3
             obj[5] = final_distances[i]
@@ -188,8 +190,7 @@ class Particle(object):
     particle information stored in an object.
     '''
     def __init__(self, ID, energy, incoming_angle, position, index, 
-                  seed, chargedposition, xs, secondaries, water_layer=0, 
-                  basket=[]):
+                  seed, chargedposition, xs, secondaries, water_layer=0):
         r'''
         Class initializer. This function sets all initial conditions based 
         on the particle's incoming angle, energy, ID, and position.
@@ -220,7 +221,7 @@ class Particle(object):
         self.SetParticleProperties()
         self.secondaries     = secondaries
         self.survived        = True
-        self.basket          = basket
+        self.basket          = []
         self.nCC             = 0
         self.nNC             = 0
         self.ntdecay         = 0
@@ -235,7 +236,7 @@ class Particle(object):
         Sets particle properties, either when initializing or after an interaction.
         '''
         if self.ID in [12, 14, 16]:
-            self.mass = 0.0          #this is not true
+            self.mass = 0.0          #this is not true.. and it seems to have caused quite the stir.
             self.lifetime = np.inf   #this is unknown
         if self.ID == 15:
             self.mass = 1.776*units.GeV
@@ -318,7 +319,7 @@ class Particle(object):
 
     def Decay(self):
         if self.ID in [12, 14, 16]:
-            raise ValueError("No, you did not just discover neutrino decays..")
+            raise ValueError("no neutrino decays.. yet")
         if self.ID == 15:
             if self.secondaries:
                 # sample branching ratio of tau leptonic decay
@@ -344,35 +345,31 @@ class Particle(object):
 
 
     def Interact(self, interaction):
-
         if self.ID in [12, 14, 16]:
             #Sample energy lost from differential distributions
             NeutrinoInteractionWeights = self.xs.DifferentialOutGoingLeptonDistribution(
                 self.energy/units.GeV,
                 self.energy*NeutrinoDifferentialEnergyFractions/units.GeV,
                 interaction)
-            NeutrinoInteractionWeights = np.divide(NeutrinoInteractionWeights, np.sum(NeutrinoInteractionWeights))
-            self.energy = self.energy*self.rand.choice(
-                                                       NeutrinoDifferentialEnergyFractions,
-                                                       p=NeutrinoInteractionWeights
-                                                      )
-            
+            NeutrinoInteractionWeights = np.divide(NeutrinoInteractionWeights, 
+                                                   np.sum(NeutrinoInteractionWeights))
+            self.energy = self.energy*self.rand.choice(NeutrinoDifferentialEnergyFractions,
+                                                       p=NeutrinoInteractionWeights)
+
             if interaction == 'CC':
                 #make a charged particle
                 self.isCC = True
+                self.nCC += 1
                 if(self.ID==16):
                     self.ID = 15
                 elif(self.ID==14):
                     self.ID = 13
-                self.SetParticleProperties()
-                self.nCC += 1
-
+                self.SetParticleProperties()         
             elif interaction == 'NC':
                 #continue being a neutrino
                 self.ID = self.ID
                 self.SetParticleProperties()
                 self.nNC += 1
-
             return
 
         elif np.logical_or(self.ID == 15, self.ID == 13):
@@ -384,30 +381,23 @@ def Propagate(particle, track, body):
     #keep iterating until final column depth is reached or a charged lepton is made
     while(not np.any((particle.position >= 1.) or (particle.isCC))):
         if(particle.ID in [12, 14, 16]):
-           #Determine how far you're going
+            #Determine how far you're going
             p1 = particle.rand.random_sample()
             DepthStep = particle.GetProposedDepthStep(p1)
-
+            CurrentDepth=track.x_to_X(body, particle.position)
+            if(CurrentDepth+DepthStep >= total_column_depth):
+                particle.position=1.
+                return particle
+            else:
+                particle.position=track.X_to_x(body, CurrentDepth+DepthStep)
             #now pick an interaction
             p2 = particle.rand.random_sample()
             CC_lint = particle.GetInteractionDepth(interaction='CC')
             p_int_CC = particle.GetTotalInteractionDepth() / CC_lint
-
-            CurrentDepth=track.x_to_X(body, particle.position)
             if(p2 <= p_int_CC):
-                if(CurrentDepth+DepthStep >= total_column_depth):
-                    particle.position=1.
-                    return particle
-                else:
-                    particle.position=track.X_to_x(body, CurrentDepth+DepthStep)
-                    particle.Interact('CC')
+                particle.Interact('CC')
             else:
-                if(CurrentDepth+DepthStep >= total_column_depth):
-                    particle.position=1.
-                    return particle
-                else:
-                    particle.position=track.X_to_x(body, CurrentDepth+DepthStep)
-                    particle.Interact('NC')
+                particle.Interact('NC')
             if(particle.isCC):
                 continue
         elif(np.logical_or(particle.ID == 15, particle.ID == 13)):
