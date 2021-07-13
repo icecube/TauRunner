@@ -5,7 +5,7 @@ import subprocess
 from scipy.interpolate import InterpolatedUnivariateSpline as iuvs
 from taurunner.modules import units
 
-TOL = 0.001
+TOL  = 0.0
 
 # Auxiliary function for secondary antinu sampling
 
@@ -78,6 +78,7 @@ def DoAllCCThings(objects, xs, losses=True):
 
         final_energies = np.asarray(final_values)[::2]
         final_distances = np.abs(np.asarray(final_values)[1::2])/1e3
+        final_distances += final_distances*0.05
         for i, obj in enumerate(sorted_obj):
             obj[0] = final_energies[i]*units.GeV/1e3
             obj[5] = final_distances[i]
@@ -95,30 +96,23 @@ def Propagate(particle, track, body):
     #keep iterating until final column depth is reached or a charged lepton is made
     while(not np.any((particle.position >= 1.) or (particle.isCC))):
         if(particle.ID in [12, 14, 16]):
-           #Determine how far you're going
+            #Determine how far you're going
             p1 = particle.rand.random_sample()
             DepthStep = particle.GetProposedDepthStep(p1)
-
+            CurrentDepth=track.x_to_X(body, particle.position)
+            if(CurrentDepth+DepthStep >= total_column_depth):
+                particle.position=1.
+                return particle
+            else:
+                particle.position=track.X_to_x(body, CurrentDepth+DepthStep)
             #now pick an interaction
             p2 = particle.rand.random_sample()
             CC_lint = particle.GetInteractionDepth(interaction='CC')
             p_int_CC = particle.GetTotalInteractionDepth() / CC_lint
-
-            CurrentDepth=track.x_to_X(body, particle.position)
             if(p2 <= p_int_CC):
-                if(CurrentDepth+DepthStep >= total_column_depth):
-                    particle.position=1.
-                    return particle
-                else:
-                    particle.position=track.X_to_x(body, CurrentDepth+DepthStep)
-                    particle.Interact('CC')
+                particle.Interact('CC')
             else:
-                if(CurrentDepth+DepthStep >= total_column_depth):
-                    particle.position=1.
-                    return particle
-                else:
-                    particle.position=track.X_to_x(body, CurrentDepth+DepthStep)
-                    particle.Interact('NC')
+                particle.Interact('NC')
             if(particle.isCC):
                 continue
         elif(np.logical_or(particle.ID == 15, particle.ID == 13)):

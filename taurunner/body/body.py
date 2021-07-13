@@ -50,7 +50,7 @@ class Body(object):
     def _average_densities(self):
         average_density = []
         for xi,xf in zip(self.layer_boundaries[1:], self.layer_boundaries[:-1]):
-            I = quad(self.get_density, xi, xf)
+            I = quad(self.get_density, xi, xf, full_output=1)
             average_density.append(I[0]/(xf-xi))
 
         self._average_density = average_density

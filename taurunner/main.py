@@ -182,7 +182,7 @@ def run_MC(eini, thetas, body, xs, tracks, TR_specs):
             iter_nNC[i]+=out.nNC
 
             if (out.survived==False):
-                #these were absorbed. we record them in the output with outgoing energy 0
+                #these muons were absorbed. we record them in the output with outgoing energy 0
                 output.append((eini[ind], 0., thetas[ind], inds_left[j], iter_nCC[ind], iter_nNC[ind], out.ID))
                 iter_positions[int(out.index)] = float(out.position)
                 del inds_left[j]
@@ -202,19 +202,24 @@ def run_MC(eini, thetas, body, xs, tracks, TR_specs):
                     message += "Index mismatch: {} {}".format(ind, i)
                     raise RuntimeError('Index mismatch -- particles are getting jumbled somewhere (thats a bad thing)')
                 output.append((eini[ind], float(out.energy), thetas[ind], inds_left[j], iter_nCC[ind], iter_nNC[ind], out.ID))
+                iter_positions[int(out.index)] = float(out.position)
                 if not TR_specs['no_secondaries']:
                     basket = out.basket
                     for sec in basket:
                         sec_particle = Particle(sec['ID'], sec['energy'], thetas[ind], sec['position'], inds_left[j], rand.randint(low=1e9),
-                                                0.0, xs=xs,secondaries= not TR_specs['no_secondaries'])
+                                                            0.0, xs=xs,secondaries=False)
                         sec_out      = Propagate(sec_particle, my_track, body)
                         if(sec_out.isCC):
                             output.append((sec_out.energy, 0.0, thetas[ind], inds_left[j], sec_out.nCC, sec_out.nNC, -sec_out.ID))
                         else:
-                            output.append((sec_out.initial_energy, sec_out.energy, thetas[ind], inds_left[j], sec_out.nCC, sec_out.nNC, -sec_out.ID))
-                iter_positions[int(out.index)] = float(out.position)
+                            output.append((sec_out.initial_energy, sec_out.energy, thetas[ind], 
+                                               inds_left[j], sec_out.nCC, sec_out.nNC, -sec_out.ID))
+                        del sec_particle
+                    del out.basket
+                    del basket
                 del inds_left[j]
-                del out
+                del out           
+
         if (len(cc_stack) > 0):
             #if debug:
             #    message += "{} events passed to MMC in loop iteration {}\n".format(len(cc_stack), counter)
