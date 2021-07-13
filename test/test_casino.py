@@ -1,5 +1,7 @@
 import unittest, os
 from taurunner import Casino
+from taurunner.particle import Particle
+from taurunner.cross_sections import CrossSections
 import taurunner
 
 import numpy as np
@@ -8,10 +10,12 @@ class TestCasinoHelpers(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """ once before all tests """
-        dipole_particle = Casino.Particle(15, 1e12, 0., 0., 111, 1, 0, xs_model='dipole')
-        csms_particle = Casino.Particle(15, 1e12, 0., 0., 111, 1, 0, xs_model='CSMS')
-        nutau = Casino.Particle(16, 1e12, 0., 0., 111, 1, 0, xs_model='dipole')
-        mu = Casino.Particle(13, 1e12, 0., 0., 111, 1, 0, xs_model='dipole') 
+        dip_xs = CrossSections('dipole')
+        csms_xs = CrossSections('CSMS')
+        dipole_particle = Particle(15, 1e12, 0., 0., 111, 1, 0, dip_xs, True)
+        csms_particle = Particle(15, 1e12, 0., 0., 111, 1, 0, csms_xs, False)
+        nutau = Particle(16, 1e12, 0., 0., 111, 1, 0, dip_xs, True)
+        mu = Particle(13, 1e12, 0., 0., 111, 1, 0, dip_xs, False) 
         cls.dipole = dipole_particle
         cls.csms = csms_particle
         cls.nutau = nutau
