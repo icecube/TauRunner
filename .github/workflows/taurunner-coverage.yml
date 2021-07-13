@@ -1,4 +1,4 @@
-name: Check tests and coverage
+name: Prepare coverage report
 on:
   push:
 

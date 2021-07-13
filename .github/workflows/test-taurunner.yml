@@ -1,4 +1,4 @@
-name: Check tests and coverage
+name: Run unittests with email warnings
 on:
   push:
 
