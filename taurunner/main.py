@@ -303,7 +303,7 @@ if __name__ == "__main__": # pragma: no cover
         np.save(base_fname+'.npy', result)
         with open(base_fname + '.json', 'w') as f:
             TR_specs.pop('rand')
-            json.dump(TR_specs[mm], f)
+            json.dump(TR_specs, f)
         if TR_specs['debug']:
             print(message)
     else:
