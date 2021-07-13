@@ -224,7 +224,7 @@ def run_MC(eini, thetas, body, xs, tracks, TR_specs):
         if (len(cc_stack) > 0):
             #if debug:
             #    message += "{} events passed to MMC in loop iteration {}\n".format(len(cc_stack), counter)
-            EventCollection = DoAllCCThings(cc_stack, xs, TR_specs['no_losses'])
+            EventCollection = DoAllCCThings(cc_stack, xs, not TR_specs['no_losses'])
             for event in EventCollection:
                 iter_positions[int(event[3])] = float(event[1])
                 iter_energies[int(event[3])] = float(event[0])
