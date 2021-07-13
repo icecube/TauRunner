@@ -302,7 +302,8 @@ if __name__ == "__main__": # pragma: no cover
         base_fname = '%s/%s/%s' % (TR_specs['base_savedir'], TR_specs['prefix'], TR_specs['prefix'])
         np.save(base_fname+'.npy', result)
         with open(base_fname + '.json', 'w') as f:
-            json.dump(TR_specs, f)
+            TR_specs.pop('rand')
+            json.dump(TR_specs[mm], f)
         if TR_specs['debug']:
             print(message)
     else:
