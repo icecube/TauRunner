@@ -1,3 +1,4 @@
+import os
 import numpy as np
 from taurunner.modules import units, sample_powerlaw, is_floatable
 def make_initial_e(TR_specs, rand=None):
@@ -17,8 +18,6 @@ def make_initial_e(TR_specs, rand=None):
             raise RuntimeError("GZK CDF Spline file does not exist")
         # sample initial energies and incoming angles from GZK parameterization
         cdf_indices = rand.uniform(low=0., high=1.,size=TR_specs['nevents'])
-        cdf         = np.load(TR_specs['energy'], allow_pickle=True).item()
+        cdf         = np.load(TR_specs['energy'], allow_pickle=True, encoding='latin1').item()
         eini        = cdf(cdf_indices)*units.GeV
-        if TR_specs['debug']:
-            message+="Sampled {} events from the GZK flux\n".format(nevents)
     return eini

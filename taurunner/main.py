@@ -158,6 +158,7 @@ def run_MC(eini, thetas, body, xs, tracks, TR_specs):
     iter_ChargedPosition = list(np.zeros(TR_specs['nevents']))
     iter_nCC             = list(np.zeros(TR_specs['nevents']))
     iter_nNC             = list(np.zeros(TR_specs['nevents']))
+    rand                 = TR_specs['rand']
 
     # Run the algorithm
     # All neutrinos are propagated until either exiting or undergoing a CC interaction.
@@ -223,7 +224,7 @@ def run_MC(eini, thetas, body, xs, tracks, TR_specs):
         if (len(cc_stack) > 0):
             #if debug:
             #    message += "{} events passed to MMC in loop iteration {}\n".format(len(cc_stack), counter)
-            EventCollection = DoAllCCThings(cc_stack, xs, TR_specs['no_losses'])
+            EventCollection = DoAllCCThings(cc_stack, xs, not TR_specs['no_losses'])
             for event in EventCollection:
                 iter_positions[int(event[3])] = float(event[1])
                 iter_energies[int(event[3])] = float(event[0])
@@ -241,7 +242,6 @@ def run_MC(eini, thetas, body, xs, tracks, TR_specs):
 if __name__ == "__main__": # pragma: no cover
 
     args = initialize_parser()
-
     TR_specs = {}
     TR_specs['seed']           = args.seed
     TR_specs['nevents']        = args.nevents
@@ -272,10 +272,10 @@ if __name__ == "__main__": # pragma: no cover
             raise ValueError('Savedir %s does not exist' % TR_specs['base_savedir'])
         from taurunner.modules import setup_outdir
         TR_specs = setup_outdir(TR_specs)
-
-
+    
     # Set up a random state
     rand = np.random.RandomState(TR_specs['seed'])
+    TR_specs['rand'] = rand
 
     # Make an array of injected energies
     from taurunner.modules import make_initial_e

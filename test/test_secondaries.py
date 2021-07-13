@@ -1,7 +1,9 @@
 import unittest, os
 from taurunner import Casino
-from taurunner.main import run_MC
-from taurunner.body import Body
+from taurunner.main import *
+from taurunner.modules import construct_body
+from taurunner.modules import make_initial_e
+from taurunner.modules import make_initial_thetas
 
 import numpy as np
 
@@ -16,13 +18,30 @@ class TestSecondaries(unittest.TestCase):
         """ once before all tests """
         num_sim = 200
         en = 1e6
-        body = Body(6.0, 500.0) 
-        sim = run_MC(num_sim, 2, theta=0.,
-            debug=False, xs_model='dipole', 
-            energy=en, body=body, 
-            losses=False,
-            with_secondaries=True
-            )
+        TR_specs = {
+            'flavor': 16,
+            'no_secondaries': False,
+            'nevents': num_sim,
+            'seed': 2,
+            'energy': en,
+            'theta': 0.,
+            'xs_model': 'dipole',
+            'no_losses': True
+            }
+        rand = np.random.RandomState(TR_specs['seed'])
+        TR_specs['rand'] = rand
+        body = construct_body({'body': 6.0, 'radius': 500.})
+        xs = CrossSections('dipole')
+        eini = make_initial_e(TR_specs, rand=rand)
+        thetas = make_initial_thetas(TR_specs)
+        tracks  = {theta:Chord(theta=theta, depth=0.) for theta in set(thetas)}
+        sim = run_MC(
+            eini, 
+            thetas, 
+            body, 
+            xs, 
+            tracks, 
+            TR_specs)
         cls.sim = sim
         cls.num_sim = num_sim
         cls.en = en
@@ -57,7 +76,7 @@ class TestSecondaries(unittest.TestCase):
         secondaries = ~nutaus
         self.assertTrue(len(self.sim[nutaus]) <= self.num_sim)
         self.assertTrue(len(self.sim[nutaus]) > 0.9*self.num_sim)
-        # self.assertTrue(len(self.sim[~nutaus][self.sim[~nutaus]['Eout'] != 0.]) < 0.20 * self.num_sim)
+        self.assertTrue(len(self.sim[~nutaus][self.sim[~nutaus]['Eout'] != 0.]) < 0.20 * self.num_sim)
 
 if __name__ == '__main__':
     unittest.main()
