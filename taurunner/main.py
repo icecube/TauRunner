@@ -1,16 +1,15 @@
 #!/usr/bin/env python
 
-import os, sys
+import os, sys, time
 import json
 os.environ['HDF5_DISABLE_VERSION_CHECK']='2'
 import argparse
 
-from taurunner.modules import units, cleanup_outdir, sample_powerlaw, is_floatable
-#from taurunner.modules import units, make_outdir, todaystr, cleanup_outdir
 from taurunner.track import Chord
 from taurunner.body import *
 from taurunner.cross_sections import CrossSections
 from taurunner.Casino import *
+from taurunner.particle import Particle
 
 
 def initialize_parser(): # pragma: no cover
@@ -270,78 +269,45 @@ if __name__ == "__main__": # pragma: no cover
         TR_specs = setup_outdir(TR_specs)
 
 
-    try:
-        # Set up a random state
-        rand = np.random.RandomState(TR_specs['seed'])
-        
-        # Make injected energies
-        if is_floatable(TR_specs['energy']):
-            e = float(TR_specs['energy'])
-            if e<=0:
-                eini = sample_powerlaw(rand, TR_specs['e_min'], TR_specs['e_max'], e + 1, size=TR_specs['nevents'])*units.GeV
-            else:
-                eini = np.full(TR_specs['nevents'], e)*units.GeV
-        else:
-            if not os.path.isfile(TR_specs['energy']):
-                raise RuntimeError("GZK CDF Spline file does not exist")
-            # sample initial energies and incoming angles from GZK parameterization
-            cdf_indices = rand.uniform(low=0., high=1.,size=TR_specs['nevents'])
-            cdf         = np.load(TR_specs['energy'], allow_pickle=True).item()
-            eini        = cdf(cdf_indices)*units.GeV
-            if TR_specs['debug']:
-                message+="Sampled {} events from the GZK flux\n".format(nevents)
+    # Set up a random state
+    rand = np.random.RandomState(TR_specs['seed'])
 
-        # Make injected thetas
-        if is_floatable(TR_specs['theta']):
-            t = float(TR_specs['theta'])
-            if t<0 or t>90:
-                raise ValueError('Angles must be between 0 and 90')
-            thetas = np.radians(np.ones(TR_specs['nevents'])*t)
-        else:
-            if TR_specs['theta']=='range':
-                if TR_specs['th_min']<0 or TR_specs['th_max']>90:
-                    raise ValueError('Angles must be between 0 and 90')
-                costh_min = np.cos(np.radians(TR_specs['th_max']))
-                costh_max = np.cos(np.radians(TR_specs['th_min']))
-                thetas = np.arccos(rand.uniform(costh_min, costh_max, TR_specs['nevents']))
-            else:
-                raise ValueError('theta sampling %s not suppoorted' % TR_specs['theta'])
+    # Make an array of injected energies
+    from taurunner.modules import make_initial_e
+    eini = make_initial_e(TR_specs, rand=rand)
 
-        # Make body
-        # TODO Make this not suck. i.e. make construct body more comprehensive
-        from taurunner.modules import construct_body
-        body = construct_body(TR_specs)
+    # Make an array of injected incident angles
+    from taurunner.modules import make_initial_thetas
+    thetas = make_initial_thetas(TR_specs, rand=rand)
 
-        # Premake all necessary tracks in case of redundancies
-        # Make it so that you can pass radial tracks too
-        tracks  = {theta:Chord(theta=theta, depth=TR_specs['depth']/body.radius) for theta in set(thetas)}
-        rr = np.linspace(0, 1, 50)
-        #print(np.asarray([body.get_average_density(r) for r in rr])/units.gr*units.cm**3)
-        # Make cross section obect
-        xs = CrossSections(TR_specs['xs_model'])
+    # Make body
+    # TODO Make this not suck. i.e. make construct body more comprehensive
+    from taurunner.modules import construct_body
+    body = construct_body(TR_specs)
 
-        result = run_MC(eini, thetas, body, xs, tracks, TR_specs)
+    # Premake all necessary tracks in case of redundancies
+    # TODO Make it so that you can pass radial tracks too
+    tracks  = {theta:Chord(theta=theta, depth=TR_specs['depth']/body.radius) for theta in set(thetas)}
+    # TODO Make cross section obect
+    xs = CrossSections(TR_specs['xs_model'])
 
-        if TR_specs['base_savedir']:
-            base_fname = '%s/%s/%s' % (TR_specs['base_savedir'], TR_specs['prefix'], TR_specs['prefix'])
-            np.save(base_fname+'.npy', result)
-            with open(base_fname + '.json', 'w') as f:
-                json.dump(TR_specs, f)
-            if TR_specs['debug']:
-                print(message)
-        else:
-            if TR_specs['debug']:
-                print(message)
-            try:
-                from tabulate import tabulate
-                headers = list(result.dtype.names)
-                out_table = tabulate(result, headers, tablefmt="fancy_grid")
-                print(out_table)
-            except ImportError:
-                print("Outgoing Particles: ")
-                print(result)
-    
-    except Exception as e:
-        if TR_specs['base_savedir']:
-            os.rmdir('%s/%s' % (TR_specs['base_savedir'], TR_specs['prefix']))
-        raise e
+    result = run_MC(eini, thetas, body, xs, tracks, TR_specs)
+
+    if TR_specs['base_savedir']:
+        base_fname = '%s/%s/%s' % (TR_specs['base_savedir'], TR_specs['prefix'], TR_specs['prefix'])
+        np.save(base_fname+'.npy', result)
+        with open(base_fname + '.json', 'w') as f:
+            json.dump(TR_specs, f)
+        if TR_specs['debug']:
+            print(message)
+    else:
+        if TR_specs['debug']:
+            print(message)
+        try:
+            from tabulate import tabulate
+            headers = list(result.dtype.names)
+            out_table = tabulate(result, headers, tablefmt="fancy_grid")
+            print(out_table)
+        except ImportError:
+            print("Outgoing Particles: ")
+            print(result)
