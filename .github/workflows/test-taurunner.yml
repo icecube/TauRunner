@@ -5,7 +5,7 @@ on:
 jobs:
   unittest_and_coverage:
     runs-on: ubuntu-latest
-    name: Coverage tests
+    name: Run unittests
     steps:
       - uses: actions/checkout@v2
       - name: Set up Python
