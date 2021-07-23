@@ -5,7 +5,7 @@ import json
 os.environ['HDF5_DISABLE_VERSION_CHECK']='2'
 import argparse
 
-from taurunner.modules import units, cleanup_outdir, sample_powerlaw, is_floatable
+from taurunner.modules import units, cleanup_outdir, sample_powerlaw, is_floatable, make_propagator
 #from taurunner.modules import units, make_outdir, todaystr, cleanup_outdir
 from taurunner.track import Chord
 from taurunner.body import *
@@ -277,33 +277,7 @@ if __name__ == "__main__": # pragma: no cover
         # Make cross section obect
         xs = CrossSections(TR_specs['xs_model'])
 
-        #Make proposal object
-        #define geometry
-        sec_def = pp.SectorDefinition()
-        sec_def.medium = pp.medium.Ice(1.0)
-        sec_def.geometry = pp.geometry.Sphere(pp.Vector3D(), 1e20, 0)
-        sec_def.particle_location = pp.ParticleLocation.inside_detector        
-        sec_def.scattering_model = pp.scattering.ScatteringModel.Moliere
-        sec_def.crosssection_defs.brems_def.lpm_effect = True
-        sec_def.crosssection_defs.epair_def.lpm_effect = True
-        
-        sec_def.cut_settings.ecut = 500
-        sec_def.cut_settings.vcut = 0.1
-        
-        sec_def.crosssection_defs.photo_def.parametrization = pp.parametrization.photonuclear.PhotoParametrization.BlockDurandHa
-        
-        interpolation_def = pp.InterpolationDef()
-        interpolation_def.path_to_tables = "/home/isafa/.local/share/PROPOSAL/tables"
-        interpolation_def.path_to_tables_readonly = "/home/isafa/.local/share/PROPOSAL/tables"
-        interpolation_def.nodes_cross_section = 200
-        
-        #define propagator
-        prop = pp.Propagator(
-                particle_def=pp.particle.TauMinusDef(),
-                sector_defs=[sec_def],
-                detector=pp.geometry.Sphere(pp.Vector3D(), 1e20, 0),
-                interpolation_def=interpolation_def
-        )
+        prop = make_propagator()
 
         result = run_MC(eini, thetas, body, xs, tracks, TR_specs, prop)
 
