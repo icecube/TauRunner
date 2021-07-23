@@ -1,9 +1,39 @@
 import os
 import numpy as np
 import proposal as pp
+from scipy.optimize import ridder
 
+def segment_body(body, granularity=0.5):
+    descs = []
+    for xi, xf in zip(body.layer_boundaries[1:], body.layer_boundaries[:-1):]
+        if body.get_density(xf)/body.get_density(xi)>=granularity:
+            descs.append(xi, xf, body.get_average_density(0.5*(xi+xf)))
+        else:
+            end   = 0
+            start = xi
+            while end<xf:
+                s_density = body.get_density(start)
+                func      = lambda x: body.get_density(x)-granularity*s_density
+                end       = ridder(func, xi, xf)
+                if end<xf:
+                    I = quad(body.get_density, start, end, full_output=1)
+                    avg_density  = I[0]/(end-start)
+                    descs.append((start, end, avg_density))
+                else:
+                    I = quad(body.get_density, start, xf, full_output=1)
+                    avg_density  = I[0]/(xf-start)
+                    descs.append((start, xf, avg_density))
+                start = end
+    return descs
 
-def make_propagator():
+# Make sectors idea
+for s,e,d in descs:
+    pp_s = s*body.r/units.cm
+    pp_e = e*body.r/units.cm
+    pp_d = d/units.gr*units.cm**3
+            
+
+def make_propagator(body, granularity=0.5):
     #Make proposal object
     #define geometry
     density = 1.0
