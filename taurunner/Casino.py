@@ -10,8 +10,8 @@ from scipy.interpolate import InterpolatedUnivariateSpline as iuvs
 from taurunner.modules import PhysicsConstants
 from taurunner.cross_sections import CrossSections
 units = PhysicsConstants()
+import proposal as pp
 
-#TOL = 0.001
 TOL  = 0.0
 # load secondary cdfs
 xs_path = os.path.dirname(os.path.realpath(__file__)) + '/cross_sections/secondaries_splines/'
@@ -30,81 +30,6 @@ def get_sample(u, cdf):
             return 1e-3
         elif u == np.max(spl_cdf(bins)):
             return 1
-
-def chunks(lst, n): # pragma: no cover
-    for i in range(0, len(lst), n):
-        yield lst[i:i+n]
-
-def DoAllCCThings(objects, xs, losses=True):
-    r'''
-    Calling MMC requires overhead, so handle all MMC calls per iterations
-    over the injected events at once
-    Parameters
-    ----------
-    objects: list
-        List of CasinoEvents that need to have tau losses sampled stochastically.
-    xs: str 
-        Cross section model to use for the photohadronic losses
-    losses: bool
-        This can be set to False to turn off energy losses. In this case, the particle decays at rest.
-    Returns
-    -------
-    objects: list
-        List of CasinoEvents after losses are calculated
-    '''
-    final_values= []
-    efinal, distance = [], []
-    pid = int(objects[0][-1])
-    if pid in [13,14]:
-      flavor='mu'
-    elif pid in [15,16]: # pragma: no cover
-      flavor='tau'
-    e      = [obj[0]/units.GeV for obj in objects]                    #MMC takes initial energy in GeV 
-    dists  = [1e3*(obj[6] - obj[2])/units.km for obj in objects]      #distance to propagate is total distance minus the current position in m 
-    mult   = [obj[-2]*(units.cm**3)/units.gr/2.7 for obj in objects]  #convert density back to normal (not natural) units
-    sort         = sorted(list(zip(mult, e, dists, objects)))
-    sorted_mult  = np.asarray(list(zip(*sort))[0])
-    sorted_e     = np.asarray(list(zip(*sort))[1])
-    sorted_dists = np.asarray(list(zip(*sort))[2])
-    sorted_obj   = np.asarray(list(zip(*sort))[3])
-
-    if(not losses):
-        final_energies = sorted_e
-        final_distances = np.zeros(len(sorted_e))
-        for i, obj in enumerate(sorted_obj):
-            obj[0] = final_energies[i]*units.GeV
-            obj[5] = final_distances[i]
-        return(sorted_obj)
-    else: # pragma: no cover
-        split = np.append(np.append([-1], np.where(sorted_mult[:-1] != sorted_mult[1:])[0]), len(sorted_mult))
-        propagate_path = os.path.dirname(os.path.realpath(__file__))
-        if(xs.model=='dipole'):
-            propagate_path+='/propagate_{}s.sh'.format(flavor)
-        elif(xs.model=='CSMS'):
-            propagate_path+='/propagate_{}s_ALLM.sh'.format(flavor)
-        else:
-            raise ValueError("Cross section model error. Cross section model is %s" % xs.model)
-        for i in range(len(split)-1):
-            multis = sorted_mult[split[i]+1:split[i+1]+1]
-            eni = sorted_e[split[i]+1:split[i+1]+1]
-            din = sorted_dists[split[i]+1:split[i+1]+1]
-            max_arg = 500
-            eni_str = ['{} {}'.format(e, d) for e,d in list(zip(eni, din))]
-            eni_str = list(chunks(eni_str, max_arg))
-            for kk in range(len(eni_str)):
-                eni_str[kk].append(str(multis[0]))
-                eni_str[kk].insert(0, propagate_path)
-                process = subprocess.check_output(eni_str[kk])
-                for line in process.split(b'\n')[:-1]:
-                    final_values.append(float(line.replace(b'\n',b'')))
-
-        final_energies = np.asarray(final_values)[::2]
-        final_distances = np.abs(np.asarray(final_values)[1::2])/1e3
-        final_distances += final_distances*0.05
-        for i, obj in enumerate(sorted_obj):
-            obj[0] = final_energies[i]*units.GeV/1e3
-            obj[5] = final_distances[i]
-        return(sorted_obj)
 
 ##########################################################
 ############## Tau Decay Parameterization ################
@@ -189,8 +114,8 @@ class Particle(object):
     This is the class that contains all relevant 
     particle information stored in an object.
     '''
-    def __init__(self, ID, energy, incoming_angle, position, index, 
-                  seed, chargedposition, xs, secondaries, water_layer=0):
+    def __init__(self, ID, energy, incoming_angle, position, seed,
+                   xs, proposal_propagator, proposal_lep, secondaries, no_losses):
         r'''
         Class initializer. This function sets all initial conditions based 
         on the particle's incoming angle, energy, ID, and position.
@@ -203,21 +128,15 @@ class Particle(object):
             Initial energy in eV.
         incoming_angle: float
             The incident angle with respect to nadir in radians.
-        position:       float
-            Position of the particle along the trajectory in natural units (initial should be 0)
-        index:          int
-            Unique event ID within each run.
         seed:           int
             Seed corresponding to the random number generator.
-        chargedposition:    float
-            If particle is charged, this is the distance it propagated.
         '''
         #Set Initial Values
         self.ID              = ID
         self.initial_energy  = energy
         self.energy          = energy
         self.position        = position
-        self.chargedposition = chargedposition
+        self.chargedposition = 0.0
         self.SetParticleProperties()
         self.secondaries     = secondaries
         self.survived        = True
@@ -225,12 +144,12 @@ class Particle(object):
         self.nCC             = 0
         self.nNC             = 0
         self.ntdecay         = 0
-        self.isCC            = False
-        self.index           = index
         self.rand            = np.random.RandomState(seed=seed)
-        self.xs = xs
-        self.xs_model = xs.model
-
+        self.xs              = xs
+        self.xs_model        = xs.model
+        self.propagator      = proposal_propagator
+        self.losses          = not no_losses
+        self.lep             = proposal_lep
     def SetParticleProperties(self):
         r'''
         Sets particle properties, either when initializing or after an interaction.
@@ -343,8 +262,50 @@ class Particle(object):
         if self.ID == 13:
             self.survived=False
 
+    def PropagateChargedLepton(self): #description is wrong that should be fixed
+        r'''
+        propagate taus/mus through medium
+        Parameters
+        ----------
+        objects: list
+            List of CasinoEvents that need to have tau losses sampled stochastically.
+        xs: str 
+            Cross section model to use for the photohadronic losses
+        losses: bool
+            This can be set to False to turn off energy losses. In this case, the particle decays at rest.
+        Returns
+        -------
+        objects: list
+            List of CasinoEvents after losses are calculated
+        '''
+        #if self.ID==13:
+        #  flavor='mu'
+        #  lep = pp.particle.DynamicData(pp.particle.MuMinusDef().particle_type)
+        #elif self.ID==15: # pragma: no cover
+        #  flavor='tau'
+        #  lep = pp.particle.DynamicData(pp.particle.TauMinusDef().particle_type)
+        lep = self.lep
+        
+        if(not self.losses): #easy
+            return
+        elif(self.energy/units.GeV <= 1e6):
+            self.chargedposition = ((self.energy/units.GeV/1e6)*50.)/1e3
+        else: # pragma: no cover
+            lep_length  = []
+            en_at_decay = []
+            #need to add support to propagate without decay here (fixed distance propagation)
+            lep.energy     = 1e3*self.energy/units.GeV
+            #print(lep.energy)
+            sec            = self.propagator.propagate(lep) #, distance_to_prop)
+            particles      = sec.particles
+            lep_length     = sec.position[-1].magnitude() / 1e5     #convert to km
+            decay_products = [p for i,p in zip(range(max(len(particles)-3,0),len(particles)), particles[-3:]) if int(p.type) <= 1000000001]
+            en_at_decay    = np.sum([p.energy for p in decay_products])
+            self.energy    = en_at_decay*units.GeV/1e3
+            self.chargedposition  = lep_length
+        return
 
-    def Interact(self, interaction):
+    def Interact(self, interaction,  dist_to_prop=None, current_density=None):
         if self.ID in [12, 14, 16]:
             #Sample energy lost from differential distributions
             NeutrinoInteractionWeights = self.xs.DifferentialOutGoingLeptonDistribution(
@@ -358,13 +319,17 @@ class Particle(object):
 
             if interaction == 'CC':
                 #make a charged particle
-                self.isCC = True
                 self.nCC += 1
                 if(self.ID==16):
                     self.ID = 15
-                elif(self.ID==14):
-                    self.ID = 13
-                self.SetParticleProperties()         
+                #elif(self.ID==14):
+                #    self.ID = 13
+                elif(self.ID in [12, 14]):
+                    self.survived=False
+                    return
+                self.SetParticleProperties()
+                #propagate it
+                self.PropagateChargedLepton()
             elif interaction == 'NC':
                 #continue being a neutrino
                 self.ID = self.ID
@@ -378,8 +343,9 @@ class Particle(object):
 #This is the propagation algorithm. The MCmeat, if you will.
 def Propagate(particle, track, body):
     total_column_depth = track.total_column_depth(body)
+    total_distance     = track.x_to_d(1.-particle.position)*body.radius/units.km
     #keep iterating until final column depth is reached or a charged lepton is made
-    while(not np.any((particle.position >= 1.) or (particle.isCC))):
+    while(not particle.position >= 1.):
         if(particle.ID in [12, 14, 16]):
             #Determine how far you're going
             p1 = particle.rand.random_sample()
@@ -395,11 +361,13 @@ def Propagate(particle, track, body):
             CC_lint = particle.GetInteractionDepth(interaction='CC')
             p_int_CC = particle.GetTotalInteractionDepth() / CC_lint
             if(p2 <= p_int_CC):
-                particle.Interact('CC')
+                current_km_dist = track.x_to_d(particle.position)*body.radius/units.km
+                #current_density=body.get_density(my_track.x_to_r(out.position))
+                current_density  = body.get_average_density(track.x_to_r(particle.position))
+                dist_to_prop     = 1e3*(total_distance - current_km_dist)
+                particle.Interact('CC', dist_to_prop=dist_to_prop, current_density=current_density)
             else:
                 particle.Interact('NC')
-            if(particle.isCC):
-                continue
         elif(np.logical_or(particle.ID == 15, particle.ID == 13)):
             current_distance=track.x_to_d(particle.position)
             charged_distance = particle.chargedposition*units.km/body.radius
@@ -410,7 +378,6 @@ def Propagate(particle, track, body):
                 particle.position=track.d_to_x(current_distance)
             if(particle.position >= 1-TOL): # pragma: no cover
                 return particle
-                continue
             else:
                 particle.Decay()
     return particle

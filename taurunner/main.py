@@ -11,7 +11,7 @@ from taurunner.track import Chord
 from taurunner.body import *
 from taurunner.cross_sections import CrossSections
 from taurunner.Casino import *
-
+import proposal as pp
 
 def initialize_parser(): # pragma: no cover
     parser = argparse.ArgumentParser()
@@ -120,7 +120,7 @@ def initialize_parser(): # pragma: no cover
     # Options
     parser.add_argument('--no_losses',
                         dest='no_losses', 
-                        default=True,
+                        default=False,
                         action='store_false',
                         help="Raise this flag if you want to turn off tau losses. In this case, taus will decay at rest."
                        )
@@ -139,7 +139,7 @@ def initialize_parser(): # pragma: no cover
     args = parser.parse_args()
     return args
 
-def run_MC(eini, thetas, body, xs, tracks, TR_specs):
+def run_MC(eini, thetas, body, xs, tracks, TR_specs, propagator):
     r'''
     Main simulation code. Propagates a flux of neutrinos and returns or
     saves the outgoing particles
@@ -148,93 +148,48 @@ def run_MC(eini, thetas, body, xs, tracks, TR_specs):
     Returns:
         np.recarray of the outgoing leptons
     '''
-
-    propagated_stack     = []
-    inds_left            = list(range(TR_specs['nevents']))
-    output               = []
-    counter              = 0
-    iter_energies        = list(eini)
-    iter_positions       = list(np.zeros(TR_specs['nevents']))
-    iter_particleID      = np.ones(TR_specs['nevents'], dtype=int)*TR_specs['flavor']
-    iter_ChargedPosition = list(np.zeros(TR_specs['nevents']))
-    iter_nCC             = list(np.zeros(TR_specs['nevents']))
-    iter_nNC             = list(np.zeros(TR_specs['nevents']))
+    output                 = []
+    energies               = list(eini)
+    particleIDs            = np.ones(TR_specs['nevents'], dtype=int)*TR_specs['flavor']
+    rand                   = TR_specs['rand']
+    proposal_lep           = pp.particle.DynamicData(pp.particle.TauMinusDef().particle_type)
+    proposal_lep.position  = pp.Vector3D(0, 0, 0)
+    proposal_lep.direction = pp.Vector3D(0, 0, 1)
 
     # Run the algorithm
-    # All neutrinos are propagated until either exiting or undergoing a CC interaction.
-    # All CC interactions are handled together, and then the next iteration occurs
-    # This repeats until all leptons have reached the total distance
+    # All neutrinos are propagated until exiting as tau neutrino or taus.
+    # If secondaries are on, then each event has a corresponding secondaries basket
+    # which are propagated all at once in the end.
     t0 = time.time()
-
-    while inds_left:
-        counter += 1
-        cc_stack = []
-
-        for j in range(len(inds_left) - 1, -1, -1):
-            i = inds_left[j] #Unique event index
-
-            particle = Particle(iter_particleID[i], iter_energies[i], 
-                                thetas[i], iter_positions[i], i, rand.randint(low=1e9),
-                                iter_ChargedPosition[i], xs, not TR_specs['no_secondaries'])
-            my_track = tracks[thetas[i]]
-            out = Propagate(particle, my_track, body)
-
-            iter_nCC[i]+=out.nCC
-            iter_nNC[i]+=out.nNC
-
-            if (out.survived==False):
-                #these muons were absorbed. we record them in the output with outgoing energy 0
-                output.append((eini[ind], 0., thetas[ind], inds_left[j], iter_nCC[ind], iter_nNC[ind], out.ID))
-                iter_positions[int(out.index)] = float(out.position)
-                del inds_left[j]
-                del out
-            elif (out.isCC):
-                current_distance=my_track.x_to_d(out.position)*body.radius
-                current_x = out.position
-                total_distance=my_track.x_to_d(1.)*body.radius
-                #current_density=body.get_density(my_track.x_to_r(out.position))
-                current_density=body.get_average_density(my_track.x_to_r(out.position))
-                cc_stack.append((float(out.energy), current_x, float(current_distance), int(out.index),
-                 int(out.ID), 0, float(total_distance), float(current_density), int(out.ID)))
-                del out
-            else:
-                ind = int(out.index)
-                if ind != i:
-                    message += "Index mismatch: {} {}".format(ind, i)
-                    raise RuntimeError('Index mismatch -- particles are getting jumbled somewhere (thats a bad thing)')
-                output.append((eini[ind], float(out.energy), thetas[ind], inds_left[j], iter_nCC[ind], iter_nNC[ind], out.ID))
-                iter_positions[int(out.index)] = float(out.position)
-                if not TR_specs['no_secondaries']:
-                    basket = out.basket
-                    for sec in basket:
-                        sec_particle = Particle(sec['ID'], sec['energy'], thetas[ind], sec['position'], inds_left[j], rand.randint(low=1e9),
-                                                            0.0, xs=xs,secondaries=False)
-                        sec_out      = Propagate(sec_particle, my_track, body)
-                        if(sec_out.isCC):
-                            output.append((sec_out.energy, 0.0, thetas[ind], inds_left[j], sec_out.nCC, sec_out.nNC, -sec_out.ID))
-                        else:
-                            output.append((sec_out.initial_energy, sec_out.energy, thetas[ind], 
-                                               inds_left[j], sec_out.nCC, sec_out.nNC, -sec_out.ID))
-                        del sec_particle
-                    del out.basket
-                    del basket
-                del inds_left[j]
-                del out           
-
-        if (len(cc_stack) > 0):
-            #if debug:
-            #    message += "{} events passed to MMC in loop iteration {}\n".format(len(cc_stack), counter)
-            EventCollection = DoAllCCThings(cc_stack, xs, TR_specs['no_losses'])
-            for event in EventCollection:
-                iter_positions[int(event[3])] = float(event[1])
-                iter_energies[int(event[3])] = float(event[0])
-                iter_particleID[int(event[3])] = int(event[4])
-                iter_ChargedPosition[int(event[3])] = float(event[5])
-                del event
-    #if debug:
-    #    print("Simulating {} events at {} degrees took {} seconds.".format(nevents, theta, time.time() - t0))
-
-    output = np.array(output, dtype = [('Eini', float), ('Eout',float), ('Theta', float), ('CDF_index', float), ('nCC', int), ('nNC', int), ('PDG_Encoding', int)])
+    for i in range(TR_specs['nevents']):
+        particle = Particle(particleIDs[i], energies[i], thetas[i], 0.0, rand.randint(low=1e9),
+    			    xs, propagator, proposal_lep, not TR_specs['no_secondaries'], TR_specs['no_losses'])
+        
+        my_track = tracks[thetas[i]]
+        out = Propagate(particle, my_track, body)
+    
+        if (out.survived==False):
+            #these muons were absorbed. we record them in the output with outgoing energy 0
+            output.append((energies[i], 0., thetas[i], out.nCC, out.nNC, out.ID))
+            del out
+        else:
+            output.append((energies[i], float(out.energy), thetas[i], out.nCC, out.nNC, out.ID))
+        if not TR_specs['no_secondaries']:
+            basket = out.basket
+            for sec in basket:
+                sec_particle = Particle(sec['ID'], sec['energy'], thetas[i], sec['position'], rand.randint(low=1e9),
+                                        xs=xs, proposal_propagator=None, proposal_lep=None, secondaries=False, no_losses=True)
+                sec_out      = Propagate(sec_particle, my_track, body)
+                if(not sec_out.survived):
+                    output.append((sec_out.energy, 0.0, thetas[i], sec_out.nCC, sec_out.nNC, -sec_out.ID))
+                else:
+                    output.append((sec_out.initial_energy, sec_out.energy, thetas[i], 
+    				                 sec_out.nCC, sec_out.nNC, -sec_out.ID))
+                del sec_particle
+            del out.basket
+            del basket
+        del out           
+    output = np.array(output, dtype = [('Eini', float), ('Eout',float), ('Theta', float), ('nCC', int), ('nNC', int), ('PDG_Encoding', int)])
     output['Theta'] *= 180. / np.pi #Give theta in degrees to user
 
     return output
@@ -263,7 +218,8 @@ if __name__ == "__main__": # pragma: no cover
     TR_specs['no_secondaries'] = args.no_secondaries
     TR_specs['prefix']         = args.prefix
     TR_specs['debug']          = ''
-    
+    rand = np.random.RandomState(TR_specs['seed'])
+    TR_specs['rand'] = rand
     if TR_specs['nevents']<=0:
         raise ValueError("We need to simulate at least one event, c'mon y'all")
 
@@ -274,11 +230,7 @@ if __name__ == "__main__": # pragma: no cover
         from taurunner.modules import setup_outdir
         TR_specs = setup_outdir(TR_specs)
 
-
-    try:
-        # Set up a random state
-        rand = np.random.RandomState(TR_specs['seed'])
-        
+    try:        
         # Make injected energies
         if is_floatable(TR_specs['energy']):
             e = float(TR_specs['energy'])
@@ -325,7 +277,35 @@ if __name__ == "__main__": # pragma: no cover
         # Make cross section obect
         xs = CrossSections(TR_specs['xs_model'])
 
-        result = run_MC(eini, thetas, body, xs, tracks, TR_specs)
+        #Make proposal object
+        #define geometry
+        sec_def = pp.SectorDefinition()
+        sec_def.medium = pp.medium.Ice(1.0)
+        sec_def.geometry = pp.geometry.Sphere(pp.Vector3D(), 1e20, 0)
+        sec_def.particle_location = pp.ParticleLocation.inside_detector        
+        sec_def.scattering_model = pp.scattering.ScatteringModel.Moliere
+        sec_def.crosssection_defs.brems_def.lpm_effect = True
+        sec_def.crosssection_defs.epair_def.lpm_effect = True
+        
+        sec_def.cut_settings.ecut = 500
+        sec_def.cut_settings.vcut = 0.1
+        
+        sec_def.crosssection_defs.photo_def.parametrization = pp.parametrization.photonuclear.PhotoParametrization.BlockDurandHa
+        
+        interpolation_def = pp.InterpolationDef()
+        interpolation_def.path_to_tables = "/home/isafa/.local/share/PROPOSAL/tables"
+        interpolation_def.path_to_tables_readonly = "/home/isafa/.local/share/PROPOSAL/tables"
+        interpolation_def.nodes_cross_section = 200
+        
+        #define propagator
+        prop = pp.Propagator(
+                particle_def=pp.particle.TauMinusDef(),
+                sector_defs=[sec_def],
+                detector=pp.geometry.Sphere(pp.Vector3D(), 1e20, 0),
+                interpolation_def=interpolation_def
+        )
+
+        result = run_MC(eini, thetas, body, xs, tracks, TR_specs, prop)
 
         if TR_specs['base_savedir']:
             base_fname = '%s/%s/%s' % (TR_specs['base_savedir'], TR_specs['prefix'], TR_specs['prefix'])
