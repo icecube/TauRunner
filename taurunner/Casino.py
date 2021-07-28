@@ -260,9 +260,10 @@ class Particle(object):
             self.SetParticleProperties()
             return
         if self.ID == 13:
+            print('uuuuh???')
             self.survived=False
 
-    def PropagateChargedLepton(self): #description is wrong that should be fixed
+    def PropagateChargedLepton(self, body, track): #description is wrong that should be fixed
         r'''
         propagate taus/mus through medium
         Parameters
@@ -284,8 +285,12 @@ class Particle(object):
         #elif self.ID==15: # pragma: no cover
         #  flavor='tau'
         #  lep = pp.particle.DynamicData(pp.particle.TauMinusDef().particle_type)
-        lep = self.lep
-        
+        lep = self.lep #[self.ID]
+        current_km_dist  = track.x_to_d(self.position)*body.radius/units.km
+        total_dist       = track.x_to_d(1.-self.position)*body.radius/units.km
+        current_density  = body.get_average_density(track.x_to_r(self.position))
+        dist_to_prop     = 1e3*(total_dist - current_km_dist)
+
         if(not self.losses): #easy
             return
         elif(self.energy/units.GeV <= 1e6):
@@ -296,16 +301,24 @@ class Particle(object):
             #need to add support to propagate without decay here (fixed distance propagation)
             lep.energy     = 1e3*self.energy/units.GeV
             #print(lep.energy)
-            sec            = self.propagator.propagate(lep) #, distance_to_prop)
+            rad = body.radius/units.km*1e5
+            phi            = 2.*track.theta
+            pos_vec   = pp.Vector3D(rad*np.sin(phi)*(1. - self.position), 0, rad*((1. - track.depth + np.cos(phi))*self.position - np.cos(phi)))
+            direction = [-np.sin(phi), 0., np.cos(phi) + (1. - track.depth)]
+            norm = np.linalg.norm(direction)
+            lep.position   = pos_vec
+            lep.direction  = pp.Vector3D(direction[0]/norm, 0., direction[2]/norm)
+            sec            = self.propagator.propagate(lep) #, dist_to_prop)
             particles      = sec.particles
-            lep_length     = sec.position[-1].magnitude() / 1e5     #convert to km
+            final_vec      = (sec.position[-1] - pos_vec)
+            lep_length     = final_vec.magnitude() / 1e5
             decay_products = [p for i,p in zip(range(max(len(particles)-3,0),len(particles)), particles[-3:]) if int(p.type) <= 1000000001]
             en_at_decay    = np.sum([p.energy for p in decay_products])
             self.energy    = en_at_decay*units.GeV/1e3
             self.chargedposition  = lep_length
         return
 
-    def Interact(self, interaction,  dist_to_prop=None, current_density=None):
+    def Interact(self, interaction, body=None, track=None): #  dist_to_prop=None, current_density=None):
         if self.ID in [12, 14, 16]:
             #Sample energy lost from differential distributions
             NeutrinoInteractionWeights = self.xs.DifferentialOutGoingLeptonDistribution(
@@ -325,11 +338,10 @@ class Particle(object):
                 #elif(self.ID==14):
                 #    self.ID = 13
                 elif(self.ID in [12, 14]):
+                    print('here????')
                     self.survived=False
                     return
                 self.SetParticleProperties()
-                #propagate it
-                self.PropagateChargedLepton()
             elif interaction == 'NC':
                 #continue being a neutrino
                 self.ID = self.ID
@@ -361,16 +373,17 @@ def Propagate(particle, track, body):
             CC_lint = particle.GetInteractionDepth(interaction='CC')
             p_int_CC = particle.GetTotalInteractionDepth() / CC_lint
             if(p2 <= p_int_CC):
-                current_km_dist = track.x_to_d(particle.position)*body.radius/units.km
-                #current_density=body.get_density(my_track.x_to_r(out.position))
-                current_density  = body.get_average_density(track.x_to_r(particle.position))
-                dist_to_prop     = 1e3*(total_distance - current_km_dist)
-                particle.Interact('CC', dist_to_prop=dist_to_prop, current_density=current_density)
+                #make a charged particle
+                particle.Interact('CC', body, track)
+                #propagate it 
+                particle.PropagateChargedLepton(body, track)
             else:
                 particle.Interact('NC')
+            #print(track.x_to_d(particle.position)/units.km*body.radius)
         elif(np.logical_or(particle.ID == 15, particle.ID == 13)):
-            current_distance=track.x_to_d(particle.position)
-            charged_distance = particle.chargedposition*units.km/body.radius
+            current_distance=track.x_to_d(particle.position)*body.radius
+            charged_distance = particle.chargedposition*units.km
+            print((current_distance + charged_distance)/units.km)
             if(track.d_to_x(current_distance+charged_distance) >=1.): # pragma: no cover
                 particle.position=1.
             else:

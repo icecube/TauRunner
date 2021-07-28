@@ -170,6 +170,7 @@ def run_MC(eini, thetas, body, xs, tracks, TR_specs, propagator):
     
         if (out.survived==False):
             #these muons were absorbed. we record them in the output with outgoing energy 0
+            print('this is weird')
             output.append((energies[i], 0., thetas[i], out.nCC, out.nNC, out.ID))
             del out
         else:
@@ -272,12 +273,13 @@ if __name__ == "__main__": # pragma: no cover
         # Premake all necessary tracks in case of redundancies
         # Make it so that you can pass radial tracks too
         tracks  = {theta:Chord(theta=theta, depth=TR_specs['depth']/body.radius) for theta in set(thetas)}
+        print(tracks)
         rr = np.linspace(0, 1, 50)
         #print(np.asarray([body.get_average_density(r) for r in rr])/units.gr*units.cm**3)
         # Make cross section obect
         xs = CrossSections(TR_specs['xs_model'])
 
-        prop = make_propagator()
+        prop = make_propagator(body)
 
         result = run_MC(eini, thetas, body, xs, tracks, TR_specs, prop)
 
