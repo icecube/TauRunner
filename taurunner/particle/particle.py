@@ -1,5 +1,5 @@
 import numpy as np
-
+import proposal as pp
 import taurunner
 from taurunner.modules import units
 from .utils import *
@@ -50,6 +50,7 @@ class Particle(object):
         '''
         #Set Initial Values
         self.ID              = ID
+        self.initial_energy  = energy
         self.energy          = energy
         self.position        = position
         self.chargedposition = 0.0

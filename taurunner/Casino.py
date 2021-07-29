@@ -5,7 +5,6 @@ import proposal as pp
 from taurunner.modules import units
 
 TOL  = 0.0
-
 #This is the propagation algorithm. The MCmeat, if you will.
 def Propagate(particle, track, body):
     total_column_depth = track.total_column_depth(body)
@@ -33,16 +32,14 @@ def Propagate(particle, track, body):
                 particle.PropagateChargedLepton(body, track)
             else:
                 particle.Interact('NC')
-            #print(track.x_to_d(particle.position)/units.km*body.radius)
         elif(np.logical_or(particle.ID == 15, particle.ID == 13)):
             current_distance=track.x_to_d(particle.position)*body.radius
             charged_distance = particle.chargedposition*units.km
-            print((current_distance + charged_distance)/units.km)
-            if(track.d_to_x(current_distance+charged_distance) >=1.): # pragma: no cover
+            if(track.d_to_x((current_distance+charged_distance)/body.radius) >=1.): # pragma: no cover
                 particle.position=1.
             else:
                 current_distance+=charged_distance
-                particle.position=track.d_to_x(current_distance)
+                particle.position=track.d_to_x(current_distance/body.radius)
             if(particle.position >= 1-TOL): # pragma: no cover
                 return particle
             else:

@@ -122,7 +122,7 @@ def initialize_parser(): # pragma: no cover
     parser.add_argument('--no_losses',
                         dest='no_losses', 
                         default=False,
-                        action='store_false',
+                        action='store_true',
                         help="Raise this flag if you want to turn off tau losses. In this case, taus will decay at rest."
                        )
     parser.add_argument('--no_secondaries',
