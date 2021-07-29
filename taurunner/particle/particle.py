@@ -255,7 +255,6 @@ class Particle(object):
                 #elif(self.ID==14):
                 #    self.ID = 13
                 elif(self.ID in [12, 14]):
-                    print('here????')
                     self.survived=False
                     return
                 self.SetParticleProperties()

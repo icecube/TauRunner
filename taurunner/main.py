@@ -252,11 +252,10 @@ if __name__ == "__main__": # pragma: no cover
     # Premake all necessary tracks in case of redundancies
     # TODO Make it so that you can pass radial tracks too
     tracks  = {theta:Chord(theta=theta, depth=TR_specs['depth']/body.radius) for theta in set(thetas)}
-    # TODO Make cross section obect
+
     xs = CrossSections(TR_specs['xs_model'])
 
-
-    prop = make_propagator(body)
+    prop = make_propagator(body, xs_model=xs.model)
 
     result = run_MC(eini, thetas, body, xs, tracks, TR_specs, prop)
 

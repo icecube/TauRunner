@@ -2,7 +2,6 @@ import numpy as np
 from taurunner.modules import units
 from scipy.interpolate import InterpolatedUnivariateSpline as iuvs
 
-
 ##########################################################
 ############## Tau Decay Parameterization ################
 ##########################################################
@@ -67,7 +66,6 @@ def TauDecayToAll(Etau, Enu, P):
     decay_spectra+=BrHad*TauDecayToHadrons(Etau, Enu, P)
 
     return decay_spectra
-
 
 proton_mass = ((0.9382720813+0.9395654133)/2.)*units.GeV
 NeutrinoDifferentialEnergyFractions = np.linspace(0.0,1.0,300)[1:-1]

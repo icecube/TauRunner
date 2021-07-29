@@ -45,7 +45,8 @@ class TestConservation(unittest.TestCase):
             body = Body(6.0, 500.0)
             tracks  = {theta:Chord(theta=theta, depth=0.) for theta in set(thetas)}
             xs = CrossSections(TR_specs['xs_model'])
-            sim = run_MC(eini, thetas, body, xs, tracks, TR_specs)
+            prop = make_propagator(body, xs_model=xs.model)
+            sim = run_MC(eini, thetas, body, xs, tracks, TR_specs, prop)
             cls.sim_dict[en] = sim
         cls.num_sim = num_sim
         cls.sim_dict_ens = list(cls.sim_dict.keys())

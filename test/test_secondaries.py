@@ -41,7 +41,8 @@ class TestSecondaries(unittest.TestCase):
             body, 
             xs, 
             tracks, 
-            TR_specs)
+            TR_specs,
+            None)
         cls.sim = sim
         cls.num_sim = num_sim
         cls.en = en

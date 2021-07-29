@@ -8,6 +8,7 @@ from taurunner.cross_sections import CrossSections
 from taurunner.modules import construct_body
 from taurunner.modules import make_initial_e
 from taurunner.modules import make_initial_thetas
+from taurunner.modules import make_propagator
 
 class TestMainMethods(unittest.TestCase):
     @classmethod
@@ -28,7 +29,8 @@ class TestMainMethods(unittest.TestCase):
         TR_specs_base['rand'] = rand
         body = construct_body({'body': 'earth', 'water': 0.})
         xs = CrossSections('dipole')
-        
+        prop = make_propagator(body, xs_model=xs.model)
+
         # GZK test
         TR_specs = copy.deepcopy(TR_specs_base)
         TR_specs['energy'] = path + '/../taurunner/gzk_cdf_phi_spline.npy'
@@ -44,7 +46,8 @@ class TestMainMethods(unittest.TestCase):
             body, 
             xs, 
             gzk_tracks, 
-            TR_specs)
+            TR_specs, 
+            prop)
         cls.gzk = gzk
 
         # spec_1
@@ -64,7 +67,8 @@ class TestMainMethods(unittest.TestCase):
             body, 
             xs, 
             spec_1_tracks, 
-            TR_specs)
+            TR_specs, 
+            prop)
         cls.spec_1 = spec_1
 
         # spec 2
@@ -83,7 +87,8 @@ class TestMainMethods(unittest.TestCase):
             body, 
             xs, 
             spec_2_tracks, 
-            TR_specs)
+            TR_specs,
+            prop)
         cls.spec_2 = spec_2
 
         # mono
@@ -101,7 +106,8 @@ class TestMainMethods(unittest.TestCase):
             body, 
             xs, 
             mono_tracks, 
-            TR_specs)
+            TR_specs,
+            prop)
         cls.mono = mono
 
     def test_main_things(self):

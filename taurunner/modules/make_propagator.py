@@ -27,28 +27,28 @@ def segment_body(body, granularity=0.5):
                 start = end
     return descs
 
-def make_propagator(body, granularity=0.5):
+def make_propagator(body, xs_model='dipole', granularity=0.5):
+
     #define how many layers of constant density we need for the tau
     descs = segment_body(body, granularity)
     #make the sectors
-    sec_defs = [make_sector(d/units.gr*units.cm**3, e*body.radius/units.cm, s*body.radius/units.cm) for s, e, d in descs]
+    sec_defs = [make_sector(d/units.gr*units.cm**3, e*body.radius/units.cm, s*body.radius/units.cm, xs_model) for s, e, d in descs]
         
     #define interpolator
     interpolation_def = pp.InterpolationDef()
     interpolation_def.path_to_tables = "/home/isafa/.local/share/PROPOSAL/tables"
     interpolation_def.path_to_tables_readonly = "/home/isafa/.local/share/PROPOSAL/tables"
     interpolation_def.nodes_cross_section = 200
-        
+
     #define propagator -- takes a particle definition - sector - detector - interpolator
     prop = pp.Propagator(particle_def=pp.particle.TauMinusDef(),
                          sector_defs=sec_defs,
                          detector=pp.geometry.Sphere(pp.Vector3D(), 1e20, 0),
                          interpolation_def=interpolation_def)
-
     return prop
 
 
-def make_sector(density, start, end): #, xs_model):
+def make_sector(density, start, end, xs_model):
     sec_def = pp.SectorDefinition()
     sec_def.medium = pp.medium.Ice(density)
     sec_def.geometry = pp.geometry.Sphere(pp.Vector3D(), end, start)
@@ -60,7 +60,9 @@ def make_sector(density, start, end): #, xs_model):
     sec_def.cut_settings.ecut = 1e5*1e3
     sec_def.cut_settings.vcut = 0.1
     
-    #if(xs_model=='dipole'):
-    sec_def.crosssection_defs.photo_def.parametrization = pp.parametrization.photonuclear.PhotoParametrization.BlockDurandHa
+    if(xs_model=='dipole'):
+        sec_def.crosssection_defs.photo_def.parametrization = pp.parametrization.photonuclear.PhotoParametrization.BlockDurandHa
+    else:
+        sec_def.crosssection_defs.photo_def.parametrization = pp.parametrization.photonuclear.AbramowiczLevinLevyMaor97
     
     return sec_def
