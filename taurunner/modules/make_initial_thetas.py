@@ -21,4 +21,3 @@ def make_initial_thetas(TR_specs, rand=None):
             raise ValueError('theta sampling %s not suppoorted' % TR_specs['theta'])
 
     return thetas
-

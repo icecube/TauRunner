@@ -1,7 +1,9 @@
 import unittest, os
 from taurunner import Casino
-from taurunner.main import run_MC
+from taurunner.main import *
 from taurunner.body import Body
+from taurunner.modules import make_initial_e
+from taurunner.modules import make_initial_thetas
 
 import numpy as np
 
@@ -23,14 +25,27 @@ class TestConservation(unittest.TestCase):
         table_inds = [find_nearest_ind(cls.tabled_ens, en*1e9) for en in ens]
         cls.atten_dict = {cls.tabled_ens[ind]/1e9: cls.tabled_attens[ind] for ind in table_inds}
         cls.sim_dict = dict()
-        body = Body(6.0, 500.0) # Construct earthsized body of constant density
+
         for en in cls.atten_dict.keys():
-            sim = run_MC(num_sim, 2, theta=0.,
-                                      debug=False, xs_model='dipole', 
-                                      energy=en, body=body, 
-                                      losses=False,
-                                      with_secondaries=False
-                                     )
+            # set up MC
+            TR_specs = {
+                'energy': en,
+                'theta': 0.,
+                'flavor': 16, 
+                'no_secondaries': True, 
+                'nevents': num_sim,
+                'seed': 5,
+                'xs_model': 'dipole',
+                'no_losses': True
+                }
+            rand = np.random.RandomState(TR_specs['seed'])
+            TR_specs['rand'] = rand
+            eini = make_initial_e(TR_specs, rand=rand)
+            thetas = make_initial_thetas(TR_specs, rand=rand)
+            body = Body(6.0, 500.0)
+            tracks  = {theta:Chord(theta=theta, depth=0.) for theta in set(thetas)}
+            xs = CrossSections(TR_specs['xs_model'])
+            sim = run_MC(eini, thetas, body, xs, tracks, TR_specs)
             cls.sim_dict[en] = sim
         cls.num_sim = num_sim
         cls.sim_dict_ens = list(cls.sim_dict.keys())

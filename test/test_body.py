@@ -1,9 +1,10 @@
 import unittest
 
 import numpy as np
-
+from taurunner.modules import construct_body
 import taurunner
 import taurunner.body as body
+
 from taurunner.modules import units
 
 class TestBodyMethods(unittest.TestCase):
@@ -13,9 +14,9 @@ class TestBodyMethods(unittest.TestCase):
         """ once before all tests """
         rad_km = 500.0
         dens = 6.
-        tst_bod = body.Body(dens, rad_km)
-        tst_earth = body.Earth
-        tst_sun = body.HZ_Sun
+        tst_bod = construct_body({'body': 6., 'radius': rad_km})
+        tst_earth = construct_body({'body': 'earth', 'water': 0.})
+        tst_sun = construct_body({'body': 'sun'})
         cls.bod_param = {'rad_km': rad_km, 'dens': dens}
         cls.body = tst_bod
         cls.earth = tst_earth
@@ -81,7 +82,7 @@ class TestBodyMethods(unittest.TestCase):
     def test_total_mass(self):
         import logging
         logging.getLogger('scipy').setLevel(logging.ERROR)
-        mass = body.check_total_mass(body.Earth)[0]
+        mass = body.check_total_mass(self.earth)[0]
         self.assertAlmostEqual(mass / units.kg, 5.970273732299387e+24, 5)
 
 if __name__ == '__main__':

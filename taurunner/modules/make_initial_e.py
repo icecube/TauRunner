@@ -21,4 +21,3 @@ def make_initial_e(TR_specs, rand=None):
         cdf         = np.load(TR_specs['energy'], allow_pickle=True, encoding='latin1').item()
         eini        = cdf(cdf_indices)*units.GeV
     return eini
-
