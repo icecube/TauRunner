@@ -57,12 +57,12 @@ def make_sector(density, start, end, xs_model):
     sec_def.crosssection_defs.brems_def.lpm_effect = True
     sec_def.crosssection_defs.epair_def.lpm_effect = True
     
-    sec_def.cut_settings.ecut = 1e5*1e3
+    sec_def.cut_settings.ecut = 1e3*1e3
     sec_def.cut_settings.vcut = 0.1
     
     if(xs_model=='dipole'):
         sec_def.crosssection_defs.photo_def.parametrization = pp.parametrization.photonuclear.PhotoParametrization.BlockDurandHa
     else:
-        sec_def.crosssection_defs.photo_def.parametrization = pp.parametrization.photonuclear.AbramowiczLevinLevyMaor97
+        sec_def.crosssection_defs.photo_def.parametrization = pp.parametrization.photonuclear.PhotoParametrization.AbramowiczLevinLevyMaor97
     
     return sec_def

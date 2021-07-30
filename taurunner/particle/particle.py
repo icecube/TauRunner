@@ -178,7 +178,7 @@ class Particle(object):
             self.SetParticleProperties()
             return
         if self.ID == 13:
-            print('uuuuh???')
+            #print('uuuuh???')
             self.survived=False
 
     def PropagateChargedLepton(self, body, track): #description is wrong that should be fixed
@@ -263,4 +263,7 @@ class Particle(object):
                 self.ID = self.ID
                 self.SetParticleProperties()
                 self.nNC += 1
+            
             return
+        else:
+            raise ValueError('Particle ID not supported by this function') 
