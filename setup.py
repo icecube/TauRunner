@@ -19,6 +19,9 @@ setuptools.setup(
     #long_description_content_type="text/markdown",
     url="https://github.com/icecube/TauRunner",
     packages=setuptools.find_packages(),
+    install_requires=['numpy>=1.16.6',
+                      'scipy>=1.2.3',
+                      'proposal==6.1.6'],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",
