@@ -3,11 +3,28 @@ os.environ['HDF5_DISABLE_VERSION_CHECK']='2'
 import numpy as np
 import proposal as pp
 from taurunner.modules import units
+from taurunner.particle import Particle
+from taurunner.track import Track
+from taurunner.body import Body
+
 
 TOL  = 0.0
 
 #This is the propagation algorithm. The MCmeat, if you will.
-def Propagate(particle, track, body):
+def Propagate(particle: Particle, track: Track, body: Body) -> Particle:
+    r'''
+    Simulate particle along a given track in a body including interactions and energy losses
+
+    Params
+    ______
+    particle : taurunner Particle object you wish to simulate the proagation od
+    track    : taurunner Track object which defines the geometry of the trajectory
+    body     : taurunner Body object which defines the medium in which to simulate
+
+    Returns
+    _______
+    particle : taurunner Particle object after propagation
+    '''
     total_column_depth = track.total_column_depth(body)
     total_distance     = track.x_to_d(1.-particle.position)*body.radius/units.km
     #keep iterating until final column depth is reached or a charged lepton is made
