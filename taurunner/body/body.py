@@ -54,7 +54,7 @@ class Body(object):
 
         Returns
         _______
-        current_density : Density of the body at the input radius [natural units]
+        current_density : Density of the body at the input radius in natural units [eV^4]
         '''
         if r==1:
             layer_index = -1
@@ -75,7 +75,7 @@ class Body(object):
 
         Returns
         _______
-        avg_dens : Average density in the given layer
+        avg_dens : Average density in the given layer in natural units [eV^4]
         '''
         if r==1:
             layer_index = -1
