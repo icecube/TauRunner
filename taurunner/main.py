@@ -140,14 +140,31 @@ def initialize_parser(): # pragma: no cover
     args = parser.parse_args()
     return args
 
-def run_MC(eini, thetas, body, xs, tracks, TR_specs, propagator):
+def run_MC(eini: np.ndarray, 
+           thetas: np.ndarray,
+           body: Body, 
+           xs: CrossSections, 
+           tracks: dict, 
+           TR_specs: dict, 
+           propagator: pp.Propagator
+          ) -> np.ndarray:
     r'''
-    Main simulation code. Propagates a flux of neutrinos and returns or
-    saves the outgoing particles
-
-
-    Returns:
-        np.recarray of the outgoing leptons
+    Main simulation code. Propagates an ensemble of initial states and returns the output
+    Params
+    ______
+    eini       : array containing the initial energies of particles to simulate
+    thetas     : array containing the incoming angles of particles to simulate
+    body       : taurunner Body object in which to propagate the particles
+    xs         : taurunner CrossSections object for interactions
+    tracks     : dictionary whose keys are angles and who values are taurunner Track objects
+    TR_specs   : dictionary specifiying additional TR options
+    propagator : PROPOSAL propagator object for charged lepton propagation
+    Returns
+    _______
+    output : Array containing the output information of the MC This includes 
+             initial and final energies, incident incoming angles, number of CC and NC interactionsl,
+             and particle type (PDG convention)
+             
     '''
     output                 = []
     energies               = list(eini)
