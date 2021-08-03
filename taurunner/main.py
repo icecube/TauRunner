@@ -1,17 +1,14 @@
 #!/usr/bin/env python
 
-import os, sys, time
-import json
-os.environ['HDF5_DISABLE_VERSION_CHECK']='2'
+import os, sys, json
+import proposal as pp
+
 from taurunner.modules import units, cleanup_outdir, sample_powerlaw, is_floatable, make_propagator
-#from taurunner.modules import units, make_outdir, todaystr, cleanup_outdir
 from taurunner.track import Chord
 from taurunner.body import *
 from taurunner.cross_sections import CrossSections
 from taurunner.Casino import *
-import proposal as pp
 from taurunner.particle import Particle
-
 
 def initialize_parser(): # pragma: no cover
     import argparse
@@ -161,8 +158,8 @@ def run_MC(eini: np.ndarray,
     propagator : PROPOSAL propagator object for charged lepton propagation
     Returns
     _______
-    output : Array containing the output information of the MC This includes 
-             initial and final energies, incident incoming angles, number of CC and NC interactionsl,
+    output : Array containing the output information of the MC. This includes 
+             initial and final energies, incident incoming angles, number of CC and NC interactions,
              and particle type (PDG convention)
              
     '''
@@ -178,7 +175,6 @@ def run_MC(eini: np.ndarray,
     # All neutrinos are propagated until exiting as tau neutrino or taus.
     # If secondaries are on, then each event has a corresponding secondaries basket
     # which are propagated all at once in the end.
-    t0 = time.time()
     for i in range(TR_specs['nevents']):
         particle = Particle(particleIDs[i], energies[i], thetas[i], 0.0, rand.randint(low=1e9),
     			    xs, propagator, proposal_lep, not TR_specs['no_secondaries'], TR_specs['no_losses'])
@@ -275,7 +271,6 @@ if __name__ == "__main__": # pragma: no cover
     prop = make_propagator(body, xs_model=xs.model)
 
     result = run_MC(eini, thetas, body, xs, tracks, TR_specs, prop)
-
 
     # TODO simplify this
     if TR_specs['base_savedir']:
