@@ -3,6 +3,7 @@ import warnings
 from scipy.integrate import quad
 from scipy.interpolate import splrep, splev, interp1d
 from taurunner.modules import units
+from taurunner.body import Body
 
 class Track(object):
 
@@ -10,17 +11,23 @@ class Track(object):
         self.depth                   = depth
         self._column_depth_functions = {}
       
-    def _column_depth(self, body, xi, xf, safe_mode=True):
+    def _column_depth(self,
+                      body: Body,
+                      xi: float,
+                      xf: float,
+                      safe_mode=True
+                     ) -> float:
         '''
         params
         ______
-        body (Body)  : TauRunner Body object for which you want the column depth
-        xi   (float) : Affine track parameter at which to start the integeration.
-        xf   (float) : Affine track parameter at which to end the integeration.
+        body      : TauRunner Body object for which you want the column depth
+        xi        : Affine track parameter at which to start the integeration.
+        xf        : Affine track parameter at which to end the integeration.
+        safe_mode : If True make sure the error on the integral is small
 
         returns
         _______
-        column_depth (float) : column depth on the portion of the track from xi to xf [natural units]
+        column_depth : column depth on the portion of the track from xi to xf [natural units]
         '''
         if not (xi<=xf):
             raise RuntimeError('xi must be less than or equal to xf')
@@ -46,30 +53,30 @@ class Track(object):
             II.append(I[0])
         return np.sum(II)
 
-    def d_to_x(self, d) :
+    def d_to_x(self, d: float) -> float:
         '''
         Convert from distance traveled to track parameter
 
         params
         ______
-        d (float) Distance traveled along the track in units of radius of the body.
+        d : Distance traveled along the track in units of radius of the body.
     
         returns
         _______
-        x (float): Affine parameter between 0 and 1 which parametrizes the track
+        x : Affine parameter between 0 and 1 which parametrizes the track
         '''
         pass 
 
-    def _initialize_column_depth_functions(self, body):
+    # Precompute column depths when the object is initialized so that we are computing integrals
+    # every time
+    def _initialize_column_depth_functions(self, body: Body):
         xx            = np.linspace(0, 1, 101)
         column_depths = np.append(0, np.cumsum([self._column_depth(body, x[0], x[1]) for x in zip(xx[:-1], xx[1:])]))
-        # Pad arrays to help spliine stability
+        # Pad arrays to help spline stability
         npad          = 5
         xpad          = np.linspace(0.01, 0.05, npad)
         padded_xx     = np.hstack([-xpad[::-1], xx, 1+xpad])
         padded_cds    = np.hstack([np.full(npad, column_depths[0]), column_depths, np.full(npad, column_depths[-1])])
-        #x_to_X        = interp1d(xx, column_depths, kind='linear', bounds_error=False, fill_value=(np.min(column_depths), np.max(column_depths)))
-        #X_to_x        = interp1d(column_depths, xx, kind='linear', bounds_error=False, fill_value=(np.min(xx), np.max(xx)))
         x_to_X_tck    = splrep(padded_xx, padded_cds)
         X_to_x_tck    = splrep(column_depths, xx)
         x_to_X        = lambda x: splev(x, x_to_X_tck)
@@ -79,29 +86,30 @@ class Track(object):
         
 
 
-    def r_to_x(self, r):
+    def r_to_x(self, r: float) -> float:
         '''
         Convert from radius to track parameter
 
         params
         ______
-        r (float) Radius. Must be between 0 and 1.
+        r : Radius. Must be between 0 and 1.
     
         returns
         _______
-        x (float): Affine parameter between 0 and 1 which parametrizes the track
+        x : Affine parameter between 0 and 1 which parametrizes the track
         '''
         pass
 
-    def total_column_depth(self, body, safe_mode=True):
+    def total_column_depth(self, body: Body, safe_mode=True) -> float:
         '''
         params
         ______
-        body (Body) : TauRunner Body object for which you want the column depth
+        body      : TauRunner Body object for which you want the column depth
+        safe_mode : If True make sure the error on the integral is small
 
         returns
         _______
-        column_depth (float) : total column depth for the entire track [natural units]
+        column_depth : total column depth for the entire track [natural units]
         '''
         if body._name not in self._column_depth_functions.keys():
             self._initialize_column_depth_functions(body)
@@ -123,61 +131,61 @@ class Track(object):
         '''
         pass
 
-    def x_to_d(self, x):
+    def x_to_d(self, x: float) -> float:
         '''
         Convert from track parameter to distance traveled
 
         params
         ______
-        x (float): Affine parameter between 0 and 1 which parametrizes the track
+        x : Affine parameter between 0 and 1 which parametrizes the track
     
         returns
         _______
-        d (float) Distance traveled along the track in units of radius of the body.
+        d : Distance traveled along the track in units of radius of the body.
         '''
         pass
 
-    def x_to_d_prime(self, x):
+    def x_to_d_prime(self, x: float) -> float:
         '''
         Derivative of self.x_to_d with respect to the affine track parameter
 
         params
         ______
-        x (float): Affine parameter between 0 and 1 which parametrizes the track
+        x : Affine parameter between 0 and 1 which parametrizes the track
     
         returns
         _______
-        dd/dx (float) Derivative of self.x_to_r with respect to the affine track parameter
+        dd/dx : Derivative of self.x_to_r with respect to the affine track parameter
         '''
         pass
 
-    def x_to_r(self, x):
+    def x_to_r(self, x:float) -> float:
         '''
         Convert from radius to track parameter
 
         params
         ______
-        x (float): Affine parameter between 0 and 1 which parametrizes the track
+        x : Affine parameter between 0 and 1 which parametrizes the track
     
         returns
         _______
-        r (float) Radius. Must be between 0 and 1.
+        r : Radius. Must be between 0 and 1.
         '''
         pass
 
-    def X_to_x(self, body, X):
+    def X_to_x(self, body : Body, X: float) -> float:
         '''
         Returns the affine track parameter at which the track has traversed a given column depth
         in a given body. If column depth is greater than the total column depth it raises an error
         
         params
         ______
-        body (Body) : TauRunner body object
-        X    (float): Column depth [natural units]
+        body : TauRunner body object
+        X    : Column depth [natural units]
 
         returns
         _______
-        x (float): Affine track parameter
+        x : Affine track parameter
         '''
         if body._name not in self._column_depth_functions.keys():
             self._initialize_column_depth_functions(body)
@@ -188,7 +196,20 @@ class Track(object):
         else:
             raise ValueError('Column depth was greater than total')
 
-    def x_to_X(self, body, x):
+    def x_to_X(self, body: Body, x: float) -> float:
+        r'''
+        Returns the total column depth the particle has crossed after traversing up 
+        to a given affine track parameter
+
+        Params
+        ______
+        body : TauRunner body object
+        x    : Affine track parameter
+
+        Returns
+        _______
+        X : Column depth [natural units]
+        '''
         if body._name not in self._column_depth_functions.keys():
             print('should only print once')
             self._initialize_column_depth_functions(body)

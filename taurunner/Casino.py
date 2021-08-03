@@ -1,12 +1,22 @@
-import os
-os.environ['HDF5_DISABLE_VERSION_CHECK']='2'
-import numpy as np
 import proposal as pp
 from taurunner.modules import units
+from taurunner.particle import Particle
+from taurunner.body import Body
+from taurunner.track import Track
 
-TOL  = 0.0
 #This is the propagation algorithm. The MCmeat, if you will.
-def Propagate(particle, track, body):
+def Propagate(particle: Particle, track: Track, body: Body) -> Particle:
+    r'''
+    Simulate particle along a given track in a body including interactions and energy losses
+    Params
+    ______
+    particle : taurunner Particle object you wish to propagate
+    track    : taurunner Track object which defines the geometry of the trajectory
+    body     : taurunner Body object which defines the medium in which to simulate
+    Returns
+    _______
+    particle : taurunner Particle object after propagation
+    '''
     total_column_depth = track.total_column_depth(body)
     total_distance     = track.x_to_d(1.-particle.position)*body.radius/units.km
     #keep iterating until final column depth is reached or a charged lepton is made
@@ -26,9 +36,8 @@ def Propagate(particle, track, body):
             CC_lint = particle.GetInteractionDepth(interaction='CC')
             p_int_CC = particle.GetTotalInteractionDepth() / CC_lint
             if(p2 <= p_int_CC):
-                #make a charged particle
+                #make and propagate charged lepton
                 particle.Interact('CC', body, track)
-                #propagate it 
                 particle.PropagateChargedLepton(body, track)
             else:
                 particle.Interact('NC')
@@ -40,8 +49,5 @@ def Propagate(particle, track, body):
             else:
                 current_distance+=charged_distance
                 particle.position=track.d_to_x(current_distance/body.radius)
-            if(particle.position >= 1-TOL): # pragma: no cover
-                return particle
-            else:
                 particle.Decay()
     return particle

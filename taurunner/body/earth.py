@@ -18,7 +18,19 @@ def helper(param):
     func = lambda x: prem_density(x, param)
     return func
 
-def lumen_sit(layers=[]):
+def lumen_sit(layers: list=[]) -> Body:
+    r'''
+    Function for making the PREM Earth
+
+    Params
+    ______
+    layers : Optional list of tuples with radii [km] and densities [gr/cm^3] to add as constant
+             density layers on top of the PREM model. Used for adding ice or water
+
+    Returns
+    _______
+    earth : TauRunner Earth object
+    '''
     r_tot            =  6368.
     layer_boundaries = [0, 1221, 3480, 5701, 5771, 5971, 6151, 6346.6, 6356, 6368]
     pparams          = prem_params
