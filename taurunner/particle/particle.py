@@ -1,15 +1,21 @@
 import numpy as np
 import proposal as pp
+from importlib.resources import path
+
 import taurunner
 from taurunner.modules import units
 from .utils import *
+from taurunner.resources import secondaries_splines
 
 # TODO move this into utils
 # load secondary cdfs
-xs_path = '/'.join(taurunner.__file__.split('/')[:-1]) + '/cross_sections/secondaries_splines/'
-#xs_path = os.path.dirname(os.path.realpath(__file__)) + '/cross_sections/secondaries_splines/'
-antinue_cdf = np.load(xs_path + 'antinue_cdf.npy')
-antinumu_cdf = np.load(xs_path + 'antinumu_cdf.npy')
+with path(secondaries_splines, 'antinue_cdf.npy') as p:
+        nue_path = str(p)
+with path(secondaries_splines, 'antinumu_cdf.npy') as p:
+        numu_path = str(p)
+
+antinue_cdf = np.load(nue_path)
+antinumu_cdf = np.load(numu_path)
 bins = list(np.logspace(-5,0,101))[:-1] # bins for the secondary splines
 
 def get_sample(u, cdf):

@@ -1,10 +1,7 @@
-#cross section module
-import os
-import sys
-info = sys.version_info
-pyv  = int(info.major)
+import os, sys, pickle
 import numpy as np
-import pickle
+from importlib.resources import path
+
 from taurunner.modules import units
 
 def hima_tot_xs(E, spl): # pragma: no cover
@@ -23,62 +20,54 @@ def jeff_diff_xs(E_in, E_out, spl):
     res = np.power(10,spl(np.log10(E_in),z)[0])/E_in
     return res
 
+def get_file_path(name):
+    with path('taurunner.resources.cross_section_tables', name) as p:
+        return str(p)
+
 class CrossSections(object):
 
     def __init__(self, model):
 
         self.model = model
-        #cross section tables
-        ######################################
-        self.cross_section_path = os.path.dirname(os.path.realpath(__file__))+'/cross_section_tables/'
-        cross_section_path      = self.cross_section_path
+
+        #self.cross_section_path = os.path.dirname(os.path.realpath(__file__))+'/cross_section_tables/'
+        #cross_section_path      = self.cross_section_path
         if(self.model=='dipole'):
-            if(pyv==3):
-                self.f_NC = np.load(cross_section_path+'NC_table_py3.npy', allow_pickle=True).item()
-                self.f_CC = np.load(cross_section_path+'CC_table_py3.npy', allow_pickle=True).item()
+            self.f_NC = np.load(get_file_path('NC_table_py3.npy'), allow_pickle=True).item()
+            self.f_CC = np.load(get_file_path('CC_table_py3.npy'), allow_pickle=True).item()
 
-                self.dsdy_spline_CC = np.load(cross_section_path + 'dsigma_dy_CC_py3.npy', allow_pickle=True).item()
-                self.dsdy_spline_CC_lowe = np.load(cross_section_path + 'dsigma_dy_CC_lowE_py3.npy', allow_pickle=True).item()
-                self.dsdy_spline_NC = np.load(cross_section_path + 'dsigma_dy_NC_py3.npy', allow_pickle=True).item()
-                self.dsdy_spline_NC_lowe = np.load(cross_section_path + 'dsigma_dy_NC_lowE_py3.npy', allow_pickle=True).item()
-            else: # pragma: no cover
-                self.f_NC = np.load(cross_section_path+'NC_table.npy', allow_pickle=True).item()
-                self.f_CC = np.load(cross_section_path+'CC_table.npy', allow_pickle=True).item()
-
-                self.dsdy_spline_CC = np.load(cross_section_path + 'dsigma_dy_CC.npy', allow_pickle=True).item()
-                self.dsdy_spline_CC_lowe = np.load(cross_section_path + 'dsigma_dy_CC_lowE.npy', allow_pickle=True).item()
-                self.dsdy_spline_NC = np.load(cross_section_path + 'dsigma_dy_NC.npy', allow_pickle=True).item()
-                self.dsdy_spline_NC_lowe = np.load(cross_section_path + 'dsigma_dy_NC_lowE.npy', allow_pickle=True).item()
+            self.dsdy_spline_CC = np.load(get_file_path('dsigma_dy_CC_py3.npy'), allow_pickle=True).item()
+            self.dsdy_spline_CC_lowe = np.load(get_file_path('dsigma_dy_CC_lowE_py3.npy'), allow_pickle=True).item()
+            self.dsdy_spline_NC = np.load(get_file_path('dsigma_dy_NC_py3.npy'), allow_pickle=True).item()
+            self.dsdy_spline_NC_lowe = np.load(get_file_path('dsigma_dy_NC_lowE_py3.npy'), allow_pickle=True).item()
         elif(self.model=='CSMS'):
-                with open(self.cross_section_path+'nu_n_dsde_CC.pkl', 'rb') as pkl_f:
-                    diff_nu_n_CC = pickle.load(pkl_f)
-                with open(self.cross_section_path+'nu_p_dsde_CC.pkl', 'rb') as pkl_f:
-                    diff_nu_p_CC = pickle.load(pkl_f)
-                with open(self.cross_section_path+'nu_n_dsde_NC.pkl', 'rb') as pkl_f:
-                    diff_nu_n_NC = pickle.load(pkl_f)
-                with open(self.cross_section_path+'nu_n_dsde_NC.pkl', 'rb') as pkl_f:
-                    diff_nu_p_NC = pickle.load(pkl_f)
-                with open(self.cross_section_path+'nu_n_sigma_CC.pkl', 'rb') as pkl_f:
-                    nu_n_CC = pickle.load(pkl_f)
-                with open(self.cross_section_path+'nu_p_sigma_CC.pkl', 'rb') as pkl_f:
-                    nu_p_CC = pickle.load(pkl_f)
-                with open(self.cross_section_path+'nu_n_sigma_NC.pkl', 'rb') as pkl_f:
-                    nu_n_NC = pickle.load(pkl_f)
-                with open(self.cross_section_path+'nu_p_sigma_NC.pkl', 'rb') as pkl_f:
-                    nu_p_NC = pickle.load(pkl_f)
-                self._nu_p_NC = lambda E:jeff_tot_xs(E,nu_p_NC)
-                self._nu_n_NC = lambda E:jeff_tot_xs(E,nu_n_NC)
-                self._nu_p_CC = lambda E:jeff_tot_xs(E,nu_p_CC)
-                self._nu_n_CC = lambda E:jeff_tot_xs(E,nu_n_CC)
-                self.f_NC = lambda E: (jeff_tot_xs(E, nu_p_NC)+jeff_tot_xs(E, nu_n_NC))/2.
-                self.f_CC = lambda E: (jeff_tot_xs(E, nu_p_CC)+jeff_tot_xs(E, nu_n_CC))/2.
+            with open(get_file_path('nu_n_dsde_CC.pkl'), 'rb') as pkl_f:
+                diff_nu_n_CC = pickle.load(pkl_f)
+            with open(get_file_path('nu_p_dsde_CC.pkl'), 'rb') as pkl_f:
+                diff_nu_p_CC = pickle.load(pkl_f)
+            with open(get_file_path('nu_n_dsde_NC.pkl'), 'rb') as pkl_f:
+                diff_nu_n_NC = pickle.load(pkl_f)
+            with open(get_file_path('nu_n_dsde_NC.pkl'), 'rb') as pkl_f:
+                diff_nu_p_NC = pickle.load(pkl_f)
+            with open(get_file_path('nu_n_sigma_CC.pkl'), 'rb') as pkl_f:
+                nu_n_CC = pickle.load(pkl_f)
+            with open(get_file_path('nu_p_sigma_CC.pkl'), 'rb') as pkl_f:
+                nu_p_CC = pickle.load(pkl_f)
+            with open(get_file_path('nu_n_sigma_NC.pkl'), 'rb') as pkl_f:
+                nu_n_NC = pickle.load(pkl_f)
+            with open(get_file_path('nu_p_sigma_NC.pkl'), 'rb') as pkl_f:
+                nu_p_NC = pickle.load(pkl_f)
+            self._nu_p_NC = lambda E:jeff_tot_xs(E,nu_p_NC)
+            self._nu_n_NC = lambda E:jeff_tot_xs(E,nu_n_NC)
+            self._nu_p_CC = lambda E:jeff_tot_xs(E,nu_p_CC)
+            self._nu_n_CC = lambda E:jeff_tot_xs(E,nu_n_CC)
+            self.f_NC = lambda E: (jeff_tot_xs(E, nu_p_NC)+jeff_tot_xs(E, nu_n_NC))/2.
+            self.f_CC = lambda E: (jeff_tot_xs(E, nu_p_CC)+jeff_tot_xs(E, nu_n_CC))/2.
                 
-                self.dsdy_spline_CC = lambda Ein, Eout: (jeff_diff_xs(Ein,Eout,diff_nu_p_CC)+jeff_diff_xs(Ein,Eout,diff_nu_n_CC))/2
-                self.dsdy_spline_CC_lowe = self.dsdy_spline_CC
-                self.dsdy_spline_NC = lambda Ein, Eout: (jeff_diff_xs(Ein,Eout,diff_nu_p_NC)+jeff_diff_xs(Ein,Eout,diff_nu_n_NC))/2
-                self.dsdy_spline_NC_lowe = self.dsdy_spline_NC
-         ##########################
-         ### Load your tables ####
+            self.dsdy_spline_CC = lambda Ein, Eout: (jeff_diff_xs(Ein,Eout,diff_nu_p_CC)+jeff_diff_xs(Ein,Eout,diff_nu_n_CC))/2
+            self.dsdy_spline_CC_lowe = self.dsdy_spline_CC
+            self.dsdy_spline_NC = lambda Ein, Eout: (jeff_diff_xs(Ein,Eout,diff_nu_p_NC)+jeff_diff_xs(Ein,Eout,diff_nu_n_NC))/2
+            self.dsdy_spline_NC_lowe = self.dsdy_spline_NC
 
     def TotalNeutrinoCrossSection(self, enu, interaction = 'NC'):
         r'''

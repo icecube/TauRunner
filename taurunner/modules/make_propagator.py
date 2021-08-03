@@ -2,6 +2,8 @@ import os
 import numpy as np
 import proposal as pp
 from scipy.optimize import ridder
+from importlib.resources import path
+
 from taurunner.modules import units
 
 def segment_body(body, granularity=0.5):
@@ -34,10 +36,13 @@ def make_propagator(body, xs_model='dipole', granularity=0.5):
     #make the sectors
     sec_defs = [make_sector(d/units.gr*units.cm**3, e*body.radius/units.cm, s*body.radius/units.cm, xs_model) for s, e, d in descs]
         
+    with path('taurunner.resources.proposal_tables', '') as p:
+        tables_path = str(p)
+
     #define interpolator
     interpolation_def = pp.InterpolationDef()
-    interpolation_def.path_to_tables = "/home/isafa/.local/share/PROPOSAL/tables"
-    interpolation_def.path_to_tables_readonly = "/home/isafa/.local/share/PROPOSAL/tables"
+    interpolation_def.path_to_tables = tables_path
+    interpolation_def.path_to_tables_readonly = tables_path
     interpolation_def.nodes_cross_section = 200
 
     #define propagator -- takes a particle definition - sector - detector - interpolator
@@ -57,7 +62,7 @@ def make_sector(density, start, end, xs_model):
     sec_def.crosssection_defs.brems_def.lpm_effect = True
     sec_def.crosssection_defs.epair_def.lpm_effect = True
     
-    sec_def.cut_settings.ecut = 1e3*1e3
+    sec_def.cut_settings.ecut = 1e5*1e3
     sec_def.cut_settings.vcut = 0.1
     
     if(xs_model=='dipole'):

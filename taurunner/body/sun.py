@@ -1,9 +1,10 @@
 import numpy as np
 from scipy.interpolate import splev, splrep
+from importlib.resources import path
 
 from .body import Body
 from taurunner.modules import Callable, units
-import taurunner 
+from taurunner.resources import solar_models
 
 def mass_density_from_model(solar_model_file):
     model   = np.genfromtxt(solar_model_file)
@@ -42,5 +43,10 @@ def make_sun(model_file):
     edensity = e_density_from_model(model_file)
     return Sun(density, 6.963e5, edensity)
 
-HZ_Sun = make_sun(taurunner.__path__[0]+'/solar_models/Hybrid_model_DM_SUN_HZ.txt')  
-LZ_Sun = make_sun(taurunner.__path__[0]+'/solar_models/Hybrid_model_DM_SUN_LZ.txt')  
+with path(solar_models, 'Hybrid_model_DM_SUN_HZ.txt') as p:
+    HZ_path = str(p)
+with path(solar_models, 'Hybrid_model_DM_SUN_LZ.txt') as p:
+    LZ_path = str(p)
+
+HZ_Sun = make_sun(HZ_path)  
+LZ_Sun = make_sun(LZ_path)  
