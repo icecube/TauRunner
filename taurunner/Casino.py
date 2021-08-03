@@ -1,5 +1,8 @@
 import proposal as pp
 from taurunner.modules import units
+from taurunner.particle import Particle
+from taurunner.body import Body
+from taurunner.track import Track
 
 #This is the propagation algorithm. The MCmeat, if you will.
 def Propagate(particle: Particle, track: Track, body: Body) -> Particle:
