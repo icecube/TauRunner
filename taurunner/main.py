@@ -167,9 +167,6 @@ def run_MC(eini: np.ndarray,
     energies               = list(eini)
     particleIDs            = np.ones(TR_specs['nevents'], dtype=int)*TR_specs['flavor']
     rand                   = TR_specs['rand']
-    proposal_lep           = pp.particle.DynamicData(pp.particle.TauMinusDef().particle_type)
-    proposal_lep.position  = pp.Vector3D(0, 0, 0)
-    proposal_lep.direction = pp.Vector3D(0, 0, 1)
 
     # Run the algorithm
     # All neutrinos are propagated until exiting as tau neutrino or taus.
@@ -177,7 +174,7 @@ def run_MC(eini: np.ndarray,
     # which are propagated all at once in the end.
     for i in range(TR_specs['nevents']):
         particle = Particle(particleIDs[i], energies[i], thetas[i], 0.0, rand.randint(low=1e9),
-    			    xs, propagator, proposal_lep, not TR_specs['no_secondaries'], TR_specs['no_losses'])
+    			    xs, propagator, not TR_specs['no_secondaries'], TR_specs['no_losses'])
         
         my_track = tracks[thetas[i]]
         out = Propagate(particle, my_track, body)
@@ -193,7 +190,7 @@ def run_MC(eini: np.ndarray,
             basket = out.basket
             for sec in basket:
                 sec_particle = Particle(sec['ID'], sec['energy'], thetas[i], sec['position'], rand.randint(low=1e9),
-                                        xs=xs, proposal_propagator=None, proposal_lep=None, secondaries=False, no_losses=True)
+                                        xs=xs, proposal_propagator=None, secondaries=False, no_losses=True)
                 sec_out      = Propagate(sec_particle, my_track, body)
                 if(not sec_out.survived):
                     output.append((sec_out.energy, 0.0, thetas[i], sec_out.nCC, sec_out.nNC, -sec_out.ID))

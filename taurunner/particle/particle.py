@@ -4,6 +4,7 @@ from importlib.resources import path
 
 import taurunner
 from taurunner.modules import units
+from taurunner.cross_section import CrossSections
 from .utils import *
 from taurunner.resources import secondaries_splines
 
@@ -31,14 +32,24 @@ def get_sample(u, cdf):
 
 proton_mass = ((0.9382720813+0.9395654133)/2.)*units.GeV
 
+ID_2_name = {13:'MuMinusDef', 15:'TauMinusDef'}
+
 #Particle object. 
 class Particle(object):
     r'''
     This is the class that contains all relevant 
     particle information stored in an object.
     '''
-    def __init__(self, ID, energy, incoming_angle, position, seed,
-                   xs, proposal_propagator, proposal_lep, secondaries, no_losses):
+    def __init__(self, 
+                 ID: int, 
+                 energy: float, 
+                 incoming_angle: float, 
+                 position: float, seed:int,
+                 xs: CrossSections, 
+                 proposal_propagator,
+                 secondaries, 
+                 no_losses
+                ):
         r'''
         Class initializer. This function sets all initial conditions based 
         on the particle's incoming angle, energy, ID, and position.
@@ -72,7 +83,6 @@ class Particle(object):
         self.xs_model        = xs.model
         self.propagator      = proposal_propagator
         self.losses          = not no_losses
-        self.lep             = proposal_lep
         
     def SetParticleProperties(self):
         r'''
@@ -209,7 +219,7 @@ class Particle(object):
         #elif self.ID==15: # pragma: no cover
         #  flavor='tau'
         #  lep = pp.particle.DynamicData(pp.particle.TauMinusDef().particle_type)
-        lep = self.lep #[self.ID]
+        lep              = pp.particle.DynamicData(getattr(pp.particle, ID_2_name[self.ID])().particle_type)
         current_km_dist  = track.x_to_d(self.position)*body.radius/units.km
         total_dist       = track.x_to_d(1.-self.position)*body.radius/units.km
         current_density  = body.get_average_density(track.x_to_r(self.position))
