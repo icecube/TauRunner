@@ -3,7 +3,7 @@
 import os, sys, json
 import proposal as pp
 
-from taurunner.modules import units, cleanup_outdir, sample_powerlaw, is_floatable, make_propagator
+from taurunner.modules import units, sample_powerlaw, is_floatable, make_propagator
 from taurunner.track import Chord
 from taurunner.body import *
 from taurunner.cross_sections import CrossSections
