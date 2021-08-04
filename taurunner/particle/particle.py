@@ -4,7 +4,7 @@ from importlib.resources import path
 
 import taurunner
 from taurunner.modules import units
-from taurunner.cross_section import CrossSections
+from taurunner.cross_sections import CrossSections
 from .utils import *
 from taurunner.resources import secondaries_splines
 
