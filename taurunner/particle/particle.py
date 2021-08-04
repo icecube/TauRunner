@@ -8,6 +8,8 @@ from taurunner.cross_section import CrossSections
 from .utils import *
 from taurunner.resources import secondaries_splines
 
+from proposal import Propagator
+
 # TODO move this into utils
 # load secondary cdfs
 with path(secondaries_splines, 'antinue_cdf.npy') as p:
@@ -44,26 +46,28 @@ class Particle(object):
                  ID: int, 
                  energy: float, 
                  incoming_angle: float, 
-                 position: float, seed:int,
+                 position: float, 
+                 seed:int,
                  xs: CrossSections, 
-                 proposal_propagator,
-                 secondaries, 
-                 no_losses
+                 proposal_propagator: Propagator,
+                 secondaries: bool, 
+                 no_losses: bool
                 ):
         r'''
         Class initializer. This function sets all initial conditions based 
         on the particle's incoming angle, energy, ID, and position.
 
-        Parameters
-        ----------
-        ID:    int
-            The particle ID as defined in the PDG MC encoding.
-        energy:         float
-            Initial energy in eV.
-        incoming_angle: float
-            The incident angle with respect to nadir in radians.
-        seed:           int
-            Seed corresponding to the random number generator.
+        Params
+        ------
+        ID                  : PDG particle identifier
+        energy              : Initial energy of the particle [eV]
+        incoming_angle      : Incoming_angle [radians]
+        position            : Affine paramter describing the distance along the track of the particle (0<x<1)
+        seed                : Integer with which to seed the random number generator
+        xs                  : TauRunner CrossSections object
+        proposal_propagator : PROPOSAL propagator object for moving charged lepton
+        secondaries         : Boolean telling whether to include secondary (mu and e) neutrinos from tau decay
+        no_losses           : Boolean to turn off charged lepton losses
         '''
         #Set Initial Values
         self.ID              = ID
