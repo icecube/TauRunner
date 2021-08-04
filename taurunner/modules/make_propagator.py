@@ -36,9 +36,9 @@ def make_propagator(body, xs_model='dipole', granularity=0.5):
     #make the sectors
     sec_defs = [make_sector(d/units.gr*units.cm**3, e*body.radius/units.cm, s*body.radius/units.cm, xs_model) for s, e, d in descs]
         
-    with path('taurunner.resources.proposal_tables', '') as p:
-        tables_path = str(p)
-
+    with path('taurunner.resources.proposal_tables', 'tables.txt') as p:
+        tables_path = str(p).split('tables.txt')[0]
+    
     #define interpolator
     interpolation_def = pp.InterpolationDef()
     interpolation_def.path_to_tables = tables_path

@@ -7,7 +7,7 @@ try:
 except:
     long_message = 'TauRunner'
 
-version = "0.0.1"
+version = "0.0.4"
 
 setuptools.setup(
     name="taurunner", 
@@ -27,4 +27,8 @@ setuptools.setup(
         "License :: OSI Approved :: MIT License",
     ],
     python_requires='>=3.1',
+    package_data={"taurunner.resources.solar_models"         : ["*.txt"],
+                  "taurunner.resources.cross_section_tables" : ["*"],
+                  "taurunner.resources.secondaries_splines"  : ["*"],
+                  "taurunner.resources.proposal_tables"      : ["tables.txt"],}    
 )
