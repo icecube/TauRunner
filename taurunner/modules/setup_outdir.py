@@ -1,5 +1,21 @@
 import os, json
-from .make_outdir import make_outdir
+from datetime import date
+
+def make_dirname(savedir, i):
+    today    = date.today()
+    TODAYSTR = today.strftime("%Y%m%d")
+    stri     = ('000000'+str(i))[-6:]
+    dir_name = '%s/%s_%s' % (savedir, TODAYSTR, stri)
+    return dir_name
+
+def make_outdir(savedir):
+    i            = 0
+    proposed_dir = make_dirname(savedir, i)
+    while os.path.isdir(proposed_dir):
+        i+=1
+        proposed_dir = make_dirname(savedir, i)
+    return proposed_dir
+
 def setup_outdir(TR_specs):
     if not TR_specs['prefix']:
         outdir = make_outdir(TR_specs['base_savedir'])
