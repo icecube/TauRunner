@@ -43,3 +43,5 @@ taurunner.egg-info/
 
 */__pycache__/*
 taurunner/__pycache__/
+
+*ipynb_checkpoints/
