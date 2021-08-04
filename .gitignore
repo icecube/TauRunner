@@ -45,3 +45,12 @@ taurunner.egg-info/
 taurunner/__pycache__/
 
 *ipynb_checkpoints/
+taurunner/resources/proposal_tables/dE*
+taurunner/resources/proposal_tables/dN*
+taurunner/resources/proposal_tables/Epair*
+taurunner/resources/proposal_tables/Photo*
+taurunner/resources/proposal_tables/time*
+taurunner/resources/proposal_tables/displacement*
+taurunner/resources/proposal_tables/contrand*
+taurunner/resources/proposal_tables/decay*
+taurunner/resources/proposal_tables/interaction*
