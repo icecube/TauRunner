@@ -15,7 +15,7 @@ def make_initial_e(TR_specs, rand=None):
     else:
         # TODO figure out this part lol
         if not os.path.isfile(TR_specs['energy']):
-            raise RuntimeError("GZK CDF Spline file does not exist")
+            raise RuntimeError(f"GZK CDF Spline file {TR_specs['energy']} does not exist")
         # sample initial energies and incoming angles from GZK parameterization
         cdf_indices = rand.uniform(low=0., high=1.,size=TR_specs['nevents'])
         cdf         = np.load(TR_specs['energy'], allow_pickle=True, encoding='latin1').item()
