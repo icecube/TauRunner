@@ -29,7 +29,7 @@ class TestMainMethods(unittest.TestCase):
         TR_specs_base['rand'] = rand
         body = construct_body({'body': 'earth', 'water': 0.})
         xs = CrossSections('dipole')
-        prop = make_propagator(body, xs_model=xs.model)
+        prop = make_propagator(TR_specs_base['flavor'], body, xs_model=xs.model)
 
         # GZK test
         TR_specs = copy.deepcopy(TR_specs_base)
