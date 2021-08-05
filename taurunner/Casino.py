@@ -22,8 +22,8 @@ def Propagate(particle: Particle, track: Track, body: Body) -> Particle:
     total_column_depth = track.total_column_depth(body)
     total_distance     = track.x_to_d(1.-particle.position)*body.radius/units.km
     #keep iterating until final column depth is reached or a charged lepton is made
-    while(not particle.position >= 1.):
-        if(particle.ID in [12, 14, 16]):
+    while(not np.logical_or(particle.position >= 1., particle.survived==False)):
+        if(np.abs(particle.ID) in [12, 14, 16]):
             #Determine how far you're going
             p1 = particle.rand.random_sample()
             DepthStep = particle.GetProposedDepthStep(p1)
@@ -43,7 +43,7 @@ def Propagate(particle: Particle, track: Track, body: Body) -> Particle:
                 particle.PropagateChargedLepton(body, track)
             else:
                 particle.Interact('NC')
-        elif(np.logical_or(particle.ID == 15, particle.ID == 13)):
+        elif(np.abs(particle.ID) in [11, 13, 15]):
             current_distance=track.x_to_d(particle.position)*body.radius
             charged_distance = particle.chargedposition*units.km
             if(track.d_to_x((current_distance+charged_distance)/body.radius) >=1.): # pragma: no cover

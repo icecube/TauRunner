@@ -6,6 +6,10 @@ from importlib.resources import path
 
 from taurunner.modules import units
 
+ID_2_name = {16: 'TauMinusDef', -16: 'TauPlusDef',
+             14: 'MuMinusDef',  -14: 'MuPlusDef',
+             12: 'EMinusDef',   -12: 'EPlusDef',}
+
 def segment_body(body, granularity=0.5):
     descs = []
     for xi, xf in zip(body.layer_boundaries[1:], body.layer_boundaries[:-1]):
@@ -29,7 +33,12 @@ def segment_body(body, granularity=0.5):
                 start = end
     return descs
 
-def make_propagator(body, xs_model='dipole', granularity=0.5):
+def make_propagator(ID, body, xs_model='dipole', granularity=0.5):
+    
+    if(ID in [12, -12]):
+        return None
+    
+    particle_def              = getattr(pp.particle, ID_2_name[ID])()
 
     #define how many layers of constant density we need for the tau
     descs = segment_body(body, granularity)
@@ -46,10 +55,11 @@ def make_propagator(body, xs_model='dipole', granularity=0.5):
     interpolation_def.nodes_cross_section = 200
 
     #define propagator -- takes a particle definition - sector - detector - interpolator
-    prop = pp.Propagator(particle_def=pp.particle.TauMinusDef(),
+    prop = pp.Propagator(particle_def=particle_def,
                          sector_defs=sec_defs,
                          detector=pp.geometry.Sphere(pp.Vector3D(), 1e20, 0),
                          interpolation_def=interpolation_def)
+
     return prop
 
 
@@ -62,12 +72,12 @@ def make_sector(density, start, end, xs_model):
     sec_def.crosssection_defs.brems_def.lpm_effect = True
     sec_def.crosssection_defs.epair_def.lpm_effect = True
     
-    sec_def.cut_settings.ecut = 1e5*1e3
+    sec_def.cut_settings.ecut = 1e4*1e3
     sec_def.cut_settings.vcut = 0.1
     
     if(xs_model=='dipole'):
         sec_def.crosssection_defs.photo_def.parametrization = pp.parametrization.photonuclear.PhotoParametrization.BlockDurandHa
     else:
         sec_def.crosssection_defs.photo_def.parametrization = pp.parametrization.photonuclear.PhotoParametrization.AbramowiczLevinLevyMaor97
-    
+
     return sec_def

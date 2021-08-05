@@ -167,40 +167,45 @@ def run_MC(eini: np.ndarray,
     energies               = list(eini)
     particleIDs            = np.ones(TR_specs['nevents'], dtype=int)*TR_specs['flavor']
     rand                   = TR_specs['rand']
+    secondary_basket       = []
 
     # Run the algorithm
     # All neutrinos are propagated until exiting as tau neutrino or taus.
     # If secondaries are on, then each event has a corresponding secondaries basket
     # which are propagated all at once in the end.
     for i in range(TR_specs['nevents']):
-        particle = Particle(particleIDs[i], energies[i], thetas[i], 0.0, rand.randint(low=1e9),
-    			    xs, propagator, not TR_specs['no_secondaries'], TR_specs['no_losses'])
+        particle = Particle(particleIDs[i], energies[i], thetas[i], 0.0, rand, xs,
+                            propagator, not TR_specs['no_secondaries'], TR_specs['no_losses'])
         
         my_track = tracks[thetas[i]]
         out = Propagate(particle, my_track, body)
     
         if (out.survived==False):
-            #these muons were absorbed. we record them in the output with outgoing energy 0
-            print('this is weird')
+            #these muons/electrons were absorbed. we record them in the output with outgoing energy 0
             output.append((energies[i], 0., thetas[i], out.nCC, out.nNC, out.ID))
-            del out
         else:
             output.append((energies[i], float(out.energy), thetas[i], out.nCC, out.nNC, out.ID))
         if not TR_specs['no_secondaries']:
-            basket = out.basket
-            for sec in basket:
-                sec_particle = Particle(sec['ID'], sec['energy'], thetas[i], sec['position'], rand.randint(low=1e9),
-                                        xs=xs, proposal_propagator=None, secondaries=False, no_losses=True)
-                sec_out      = Propagate(sec_particle, my_track, body)
-                if(not sec_out.survived):
-                    output.append((sec_out.energy, 0.0, thetas[i], sec_out.nCC, sec_out.nNC, -sec_out.ID))
-                else:
-                    output.append((sec_out.initial_energy, sec_out.energy, thetas[i], 
-    				                 sec_out.nCC, sec_out.nNC, -sec_out.ID))
-                del sec_particle
+            secondary_basket.append(np.asarray(out.basket))
             del out.basket
-            del basket
         del out     
+        del particle
+    if not TR_specs['no_secondaries']:    
+        #make muon propagator
+        secondary_basket = np.concatenate(secondary_basket)
+        #ids = np.unique([s['ID'] for s in secondary_basket])
+        sec_prop = {ID:make_propagator(ID, body, TR_specs['xs_model']) for ID in [-12, -14]}
+        for sec in secondary_basket:
+            sec_particle = Particle(sec['ID'], sec['energy'], thetas[i], sec['position'], rand,
+                                    xs=xs, proposal_propagator=sec_prop[sec['ID']], secondaries=False, no_losses=False)
+            sec_out      = Propagate(sec_particle, my_track, body)
+            if(not sec_out.survived):
+                output.append((sec_out.energy, 0.0, thetas[i], sec_out.nCC, sec_out.nNC, sec_out.ID))
+            else:
+                output.append((sec_out.initial_energy, sec_out.energy, thetas[i], 
+    				                 sec_out.nCC, sec_out.nNC, sec_out.ID))
+            del sec_particle
+            del sec_out     
         
     output = np.array(output, dtype = [('Eini', float), ('Eout',float), ('Theta', float), ('nCC', int), ('nNC', int), ('PDG_Encoding', int)])
     output['Theta'] = np.degrees(output['Theta'])
@@ -265,7 +270,7 @@ if __name__ == "__main__": # pragma: no cover
 
     xs = CrossSections(TR_specs['xs_model'])
 
-    prop = make_propagator(body, xs_model=xs.model)
+    prop = make_propagator(TR_specs['flavor'], body, TR_specs['xs_model'])
 
     result = run_MC(eini, thetas, body, xs, tracks, TR_specs, prop)
 

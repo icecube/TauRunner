@@ -63,7 +63,6 @@ class Body(object):
         current_density = self._density[layer_index]
         return current_density(r)
 
-    # TODO do we need this ?
     def get_average_density(self, r: float) -> float:
         r'''
         Function to return the average density of the layer in which the input radius is.

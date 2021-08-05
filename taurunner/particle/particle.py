@@ -9,6 +9,7 @@ from .utils import *
 from taurunner.resources import secondaries_splines
 
 from proposal import Propagator
+from numpy.random import RandomState
 
 # TODO move this into utils
 # load secondary cdfs
@@ -34,7 +35,8 @@ def get_sample(u, cdf):
 
 proton_mass = ((0.9382720813+0.9395654133)/2.)*units.GeV
 
-ID_2_name = {13:'MuMinusDef', 15:'TauMinusDef'}
+ID_2_name = {13:'MuMinusDef', -13:'MuPlusDef', 
+             15:'TauMinusDef', -15:'TauPlusDef'}
 
 #Particle object. 
 class Particle(object):
@@ -43,15 +45,15 @@ class Particle(object):
     particle information stored in an object.
     '''
     def __init__(self, 
-                 ID: int, 
-                 energy: float, 
-                 incoming_angle: float, 
-                 position: float, 
-                 seed:int,
-                 xs: CrossSections, 
+                 ID:                  int, 
+                 energy:              float, 
+                 incoming_angle:      float, 
+                 position:            float, 
+                 rand:                RandomState,
+                 xs:                  CrossSections, 
                  proposal_propagator: Propagator,
-                 secondaries: bool, 
-                 no_losses: bool
+                 secondaries:         bool, 
+                 no_losses:           bool
                 ):
         r'''
         Class initializer. This function sets all initial conditions based 
@@ -63,7 +65,7 @@ class Particle(object):
         energy              : Initial energy of the particle [eV]
         incoming_angle      : Incoming_angle [radians]
         position            : Affine paramter describing the distance along the track of the particle (0<x<1)
-        seed                : Integer with which to seed the random number generator
+        rand                : numpy random number generator
         xs                  : TauRunner CrossSections object
         proposal_propagator : PROPOSAL propagator object for moving charged lepton
         secondaries         : Boolean telling whether to include secondary (mu and e) neutrinos from tau decay
@@ -82,7 +84,7 @@ class Particle(object):
         self.nCC             = 0
         self.nNC             = 0
         self.ntdecay         = 0
-        self.rand            = np.random.RandomState(seed=seed)
+        self.rand            = rand
         self.xs              = xs
         self.xs_model        = xs.model
         self.propagator      = proposal_propagator
@@ -92,13 +94,13 @@ class Particle(object):
         r'''
         Sets particle properties, either when initializing or after an interaction.
         '''
-        if self.ID in [12, 14, 16]:
+        if np.abs(self.ID) in [12, 14, 16]:
             self.mass = 0.0          #this is not true.. and it seems to have caused quite the stir.
-            self.lifetime = np.inf   #this is unknown
-        if self.ID == 15:
+            self.lifetime = np.inf   #this is unclear
+        if np.abs(self.ID) == 15:
             self.mass = 1.776*units.GeV
             self.lifetime = 2.9e-13*units.sec
-        if self.ID == 13:
+        if np.abs(self.ID) == 13:
             self.mass = 0.105*units.GeV
             self.livetime = 2.2e-6*units.sec
 
@@ -166,18 +168,18 @@ class Particle(object):
         Interaction depth: float
             mean column depth to interaction in natural units
         '''
-        if self.ID in [12, 14, 16]:
+        if np.abs(self.ID) in [12, 14, 16]:
             return proton_mass/(self.xs.TotalNeutrinoCrossSection(self.energy, interaction = interaction))
-        if self.ID == 15:
+        if np.abs(self.ID) == 15:
             raise ValueError("Tau interaction length should never be sampled.")
 
     def GetInteractionProbability(self,ddepth,interaction):
         return 1.-np.exp(-ddepth/self.GetInteractionDepth(interaction))
 
     def Decay(self):
-        if self.ID in [12, 14, 16]:
+        if np.abs(self.ID) in [12, 14, 16]:
             raise ValueError("no neutrino decays.. yet")
-        if self.ID == 15:
+        if np.abs(self.ID) == 15:
             if self.secondaries:
                 # sample branching ratio of tau leptonic decay
                 p0 = self.rand.uniform(0,1)
@@ -186,77 +188,68 @@ class Particle(object):
                     sample = get_sample(self.rand.uniform(0,1), antinumu_cdf)
                     enu = sample*self.energy
                     # add secondary to basket, prepare propagation
-                    self.basket.append({"ID" : 14, "position" : self.position, "energy" : enu})
+                    self.basket.append({"ID" : -np.sign(self.ID)*14, "position" : self.position, "energy" : enu})
                 elif p0 > .18 and p0 < .36:
                     # sample energy of secondary antinue
                     sample = get_sample(self.rand.uniform(0,1), antinue_cdf)
                     enu = sample*self.energy
                     # add secondary to basket, prepare propagation
-                    self.basket.append({"ID" : 12,  "position" : self.position, "energy" : enu})
+                    self.basket.append({"ID" : -np.sign(self.ID)*12,  "position" : self.position, "energy" : enu})
             self.energy = self.energy*self.rand.choice(TauDecayFractions, p=TauDecayWeights)
-            self.ID = 16
+            self.ID = np.sign(self.ID)*16
             self.SetParticleProperties()
             return
-        if self.ID == 13:
-            #print('uuuuh???')
+        if np.abs(self.ID) in [11, 13]:
             self.survived=False
 
-    def PropagateChargedLepton(self, body, track): #description is wrong that should be fixed
+    def PropagateChargedLepton(self, body, track):
         r'''
-        propagate taus/mus through medium
+        Propagate taus/mus with PROPOSAL along 'track' through 'body'
+
         Parameters
         ----------
-        objects: list
-            List of CasinoEvents that need to have tau losses sampled stochastically.
-        xs: str 
+        body: str 
             Cross section model to use for the photohadronic losses
-        losses: bool
+        track: bool
             This can be set to False to turn off energy losses. In this case, the particle decays at rest.
-        Returns
-        -------
-        objects: list
-            List of CasinoEvents after losses are calculated
         '''
-        #if self.ID==13:
-        #  flavor='mu'
-        #  lep = pp.particle.DynamicData(pp.particle.MuMinusDef().particle_type)
-        #elif self.ID==15: # pragma: no cover
-        #  flavor='tau'
-        #  lep = pp.particle.DynamicData(pp.particle.TauMinusDef().particle_type)
+        if(np.logical_or(not self.losses, np.abs(self.ID) in [11, 12])):
+            return
         lep              = pp.particle.DynamicData(getattr(pp.particle, ID_2_name[self.ID])().particle_type)
         current_km_dist  = track.x_to_d(self.position)*body.radius/units.km
         total_dist       = track.x_to_d(1.-self.position)*body.radius/units.km
         current_density  = body.get_average_density(track.x_to_r(self.position))
-        dist_to_prop     = 1e3*(total_dist - current_km_dist)
+        km_dist_to_prop  = total_dist - current_km_dist
+        
+        if(np.logical_and(np.abs(self.ID) in [13, 14], km_dist_to_prop > 100.)):
+             return
 
-        if(not self.losses): #easy
-            return
-        #elif(self.energy/units.GeV <= 1e6):
-        #    self.chargedposition = ((self.energy/units.GeV/1e6)*50.)/1e3
-        else: # pragma: no cover
-            lep_length  = []
-            en_at_decay = []
-            #need to add support to propagate without decay here (fixed distance propagation)
-            lep.energy     = 1e3*self.energy/units.GeV
-            rad = body.radius/units.km*1e5
-            phi            = 2.*track.theta
-            pos_vec   = pp.Vector3D(rad*np.sin(phi)*(1. - self.position), 0, rad*((1. - track.depth + np.cos(phi))*self.position - np.cos(phi)))
-            direction = [-np.sin(phi), 0., np.cos(phi) + (1. - track.depth)]
-            norm = np.linalg.norm(direction)
-            lep.position   = pos_vec
-            lep.direction  = pp.Vector3D(direction[0]/norm, 0., direction[2]/norm)
-            sec            = self.propagator.propagate(lep) #, dist_to_prop)
-            particles      = sec.particles
-            final_vec      = (sec.position[-1] - pos_vec)
-            lep_length     = final_vec.magnitude() / 1e5
-            decay_products = [p for i,p in zip(range(max(len(particles)-3,0),len(particles)), particles[-3:]) if int(p.type) <= 1000000001]
-            en_at_decay    = np.sum([p.energy for p in decay_products])
-            self.energy    = en_at_decay*units.GeV/1e3
-            self.chargedposition  = lep_length
+        lep_length  = []
+        en_at_decay = []
+        #need to add support to propagate without decay here (fixed distance propagation)
+        lep.energy     = 1e3*self.energy/units.GeV
+        rad = body.radius/units.km*1e5
+        #compute direction and position in proposal body
+        phi            = 2.*track.theta
+        pos_vec   = pp.Vector3D(rad*np.sin(phi)*(1. - self.position), 0, rad*((1. - track.depth + np.cos(phi))*self.position - np.cos(phi)))
+        direction = [-np.sin(phi), 0., np.cos(phi) + (1. - track.depth)]
+        norm = np.linalg.norm(direction)
+        lep.position   = pos_vec
+        lep.direction  = pp.Vector3D(direction[0]/norm, 0., direction[2]/norm)
+        #propagate
+        sec            = self.propagator.propagate(lep) #, dist_to_prop)
+        particles      = sec.particles
+        #update particle info
+        final_vec      = (sec.position[-1] - pos_vec)
+        lep_length     = final_vec.magnitude() / 1e5
+        decay_products = [p for i,p in zip(range(max(len(particles)-3,0),len(particles)), particles[-3:]) if int(p.type) <= 1000000001]
+        en_at_decay    = np.sum([p.energy for p in decay_products])
+        self.energy    = en_at_decay*units.GeV/1e3
+        self.chargedposition  = lep_length
         return
 
     def Interact(self, interaction, body=None, track=None): #  dist_to_prop=None, current_density=None):
-        if self.ID in [12, 14, 16]:
+        if np.abs(self.ID) in [12, 14, 16]:
             #Sample energy lost from differential distributions
             NeutrinoInteractionWeights = self.xs.DifferentialOutGoingLeptonDistribution(
                 self.energy/units.GeV,
@@ -270,11 +263,8 @@ class Particle(object):
             if interaction == 'CC':
                 #make a charged particle
                 self.nCC += 1
-                if(self.ID==16):
-                    self.ID = 15
-                #elif(self.ID==14):
-                #    self.ID = 13
-                elif(self.ID in [12, 14]):
+                self.ID = np.sign(self.ID)*(np.abs(self.ID)-1)
+                if(np.abs(self.ID)==11): #electrons have no chance
                     self.survived=False
                     return
                 self.SetParticleProperties()
