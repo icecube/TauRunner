@@ -163,12 +163,14 @@ def run_MC(eini: np.ndarray,
              and particle type (PDG convention)
              
     '''
-    output                 = []
-    energies               = list(eini)
-    particleIDs            = np.ones(TR_specs['nevents'], dtype=int)*TR_specs['flavor']
+    output      = []
+    energies    = list(eini)
+    particleIDs = np.ones(TR_specs['nevents'], dtype=int)*TR_specs['flavor']
+
     if rand is None:
         rand = np.random.RandomState()
-    secondary_basket       = []
+    secondary_basket = []
+    idxx             = []
 
     # Run the algorithm
     # All neutrinos are propagated until exiting as tau neutrino or taus.
@@ -188,15 +190,17 @@ def run_MC(eini: np.ndarray,
             output.append((energies[i], float(out.energy), thetas[i], out.nCC, out.nNC, out.ID))
         if not TR_specs['no_secondaries']:
             secondary_basket.append(np.asarray(out.basket))
+            idxx = np.hstack([idxx, [i for _ in out.basket]])
             del out.basket
         del out     
         del particle
+    idxx = idxx.astype(np.int32)
     if not TR_specs['no_secondaries']:    
         #make muon propagator
         secondary_basket = np.concatenate(secondary_basket)
         #ids = np.unique([s['ID'] for s in secondary_basket])
         sec_prop = {ID:make_propagator(ID, body, TR_specs['xs_model']) for ID in [-12, -14]}
-        for sec in secondary_basket:
+        for sec, i in zip(secondary_basket, idxx):
             sec_particle = Particle(sec['ID'], sec['energy'], thetas[i], sec['position'], rand,
                                     xs=xs, proposal_propagator=sec_prop[sec['ID']], secondaries=False, no_losses=False)
             sec_out      = Propagate(sec_particle, my_track, body)
