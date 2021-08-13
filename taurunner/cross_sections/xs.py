@@ -2,7 +2,7 @@ import os, sys, pickle
 import numpy as np
 from importlib.resources import path
 
-from taurunner.modules import units
+from taurunner.utils import units
 
 def hima_tot_xs(E, spl): # pragma: no cover
     pass

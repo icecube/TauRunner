@@ -1,5 +1,5 @@
 import numpy as np
-from taurunner.modules import is_floatable
+from taurunner.utils import is_floatable
 def make_initial_thetas(TR_specs, rand=None):
 
     if rand is None:
@@ -17,6 +17,8 @@ def make_initial_thetas(TR_specs, rand=None):
             costh_min = np.cos(np.radians(TR_specs['th_max']))
             costh_max = np.cos(np.radians(TR_specs['th_min']))
             thetas = np.arccos(rand.uniform(costh_min, costh_max, TR_specs['nevents']))
+        elif TR_specs['theta']=='radial':
+            thetas = np.zeros(TR_specs['nevents'])
         else:
             raise ValueError('theta sampling %s not suppoorted' % TR_specs['theta'])
 

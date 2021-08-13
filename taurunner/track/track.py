@@ -2,12 +2,12 @@ import numpy as np
 import warnings
 from scipy.integrate import quad
 from scipy.interpolate import splrep, splev, interp1d
-from taurunner.modules import units
+from taurunner.utils import units
 from taurunner.body import Body
 
 class Track(object):
 
-    def __init__(self, depth=0.0):
+    def __init__(self, depth=0.0, theta=None):
         self.depth                   = depth
         self._column_depth_functions = {}
       
@@ -214,3 +214,9 @@ class Track(object):
             print('should only print once')
             self._initialize_column_depth_functions(body)
         return self._column_depth_functions[body._name][1](x)
+
+    def x_to_pp_dir(self, x):
+        pass
+
+    def x_to_pp_pos(self, x):
+        pass

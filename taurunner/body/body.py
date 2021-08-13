@@ -1,5 +1,5 @@
 import numpy as np
-from taurunner.modules import units, Callable
+from taurunner.utils import units, Callable
 from scipy.integrate import quad
 
 class Body(object):

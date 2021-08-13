@@ -1,6 +1,6 @@
 import os
 import numpy as np
-from taurunner.modules import units, sample_powerlaw, is_floatable
+from taurunner.utils import units, sample_powerlaw, is_floatable
 def make_initial_e(TR_specs, rand=None):
     if rand is None:
         rand = np.random.RandomState()

@@ -3,7 +3,7 @@ import proposal as pp
 from importlib.resources import path
 
 import taurunner
-from taurunner.modules import units
+from taurunner.utils import units
 from taurunner.cross_sections import CrossSections
 from .utils import *
 from taurunner.resources import secondaries_splines
@@ -228,14 +228,10 @@ class Particle(object):
         en_at_decay = []
         #need to add support to propagate without decay here (fixed distance propagation)
         lep.energy     = 1e3*self.energy/units.GeV
-        rad = body.radius/units.km*1e5
-        #compute direction and position in proposal body
-        phi            = 2.*track.theta
-        pos_vec   = pp.Vector3D(rad*np.sin(phi)*(1. - self.position), 0, rad*((1. - track.depth + np.cos(phi))*self.position - np.cos(phi)))
-        direction = [-np.sin(phi), 0., np.cos(phi) + (1. - track.depth)]
-        norm = np.linalg.norm(direction)
+        pos_vec        = track.x_to_pp_pos(self.position, body.radius/units.km*1e5) # radius in cm
+        dir_vec        = track.x_to_pp_dir(self.position)
         lep.position   = pos_vec
-        lep.direction  = pp.Vector3D(direction[0]/norm, 0., direction[2]/norm)
+        lep.direction  = dir_vec
         #propagate
         sec            = self.propagator.propagate(lep) #, dist_to_prop)
         particles      = sec.particles

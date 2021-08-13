@@ -1,5 +1,5 @@
 import numpy as np
-from taurunner.modules import units
+from taurunner.utils import units
 from scipy.interpolate import InterpolatedUnivariateSpline as iuvs
 
 ##########################################################

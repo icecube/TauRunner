@@ -4,7 +4,7 @@ import proposal as pp
 from scipy.optimize import ridder
 from importlib.resources import path
 
-from taurunner.modules import units
+from taurunner.utils import units
 
 ID_2_name = {16: 'TauMinusDef', -16: 'TauPlusDef',
              14: 'MuMinusDef',  -14: 'MuPlusDef',
