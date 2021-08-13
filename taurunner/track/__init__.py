@@ -1,3 +1,3 @@
-from .chord import *
-from .track import *
-from .radial import *
+from .chord import Chord as chord
+from .track import Track
+from .radial import Radial as radial

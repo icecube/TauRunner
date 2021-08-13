@@ -241,9 +241,6 @@ if __name__ == "__main__": # pragma: no cover
     TR_specs['no_secondaries'] = args.no_secondaries
     TR_specs['debug']          = ''
 
-    if args.track=='Radial':
-        TR_specs['theta'] = 'radial'
-
     if TR_specs['nevents']<=0:
         raise ValueError("We need to simulate at least one event, c'mon y'all")
 

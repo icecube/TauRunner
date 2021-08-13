@@ -5,7 +5,10 @@ def make_initial_thetas(TR_specs, rand=None):
     if rand is None:
         rand=np.random.RandomState()
 
-    if is_floatable(TR_specs['theta']):
+    if TR_specs['track'].lower()=='radial':
+        thetas = np.zeros(TR_specs['nevents'])
+
+    elif is_floatable(TR_specs['theta']):
         t = float(TR_specs['theta'])
         if t<0 or t>90:
             raise ValueError('Angles must be between 0 and 90')
@@ -17,8 +20,6 @@ def make_initial_thetas(TR_specs, rand=None):
             costh_min = np.cos(np.radians(TR_specs['th_max']))
             costh_max = np.cos(np.radians(TR_specs['th_min']))
             thetas = np.arccos(rand.uniform(costh_min, costh_max, TR_specs['nevents']))
-        elif TR_specs['theta']=='radial':
-            thetas = np.zeros(TR_specs['nevents'])
         else:
             raise ValueError('theta sampling %s not suppoorted' % TR_specs['theta'])
 
