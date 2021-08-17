@@ -44,7 +44,7 @@ class Body(object):
             self.layer_boundaries = np.array([0.0, 1.0])
         self._average_densities()
 
-    def get_density(self, r: float) -> float:
+    def get_density(self, r: float, right: bool=False) -> float:
         r'''
         Function to get density at an input radius (0<=r<=1)
 
@@ -58,8 +58,11 @@ class Body(object):
         '''
         if r==1:
             layer_index = -1
+        elif r==0:
+            layer_index = 0
+	
         else:
-            layer_index = np.digitize(r, self.layer_boundaries)-1
+            layer_index = np.digitize(r, self.layer_boundaries, right=right)-1
         current_density = self._density[layer_index]
         return current_density(r)
 
