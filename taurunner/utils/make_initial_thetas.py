@@ -1,11 +1,14 @@
 import numpy as np
-from taurunner.modules import is_floatable
+from taurunner.utils import is_floatable
 def make_initial_thetas(TR_specs, rand=None):
 
     if rand is None:
         rand=np.random.RandomState()
 
-    if is_floatable(TR_specs['theta']):
+    if TR_specs['track'].lower()=='radial':
+        thetas = np.zeros(TR_specs['nevents'])
+
+    elif is_floatable(TR_specs['theta']):
         t = float(TR_specs['theta'])
         if t<0 or t>90:
             raise ValueError('Angles must be between 0 and 90')

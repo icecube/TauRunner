@@ -1,6 +1,8 @@
 import numpy as np
-from taurunner.modules import units
+from taurunner.utils import units
 from scipy.interpolate import InterpolatedUnivariateSpline as iuvs
+from importlib.resources import path
+from taurunner.resources import secondaries_splines
 
 ##########################################################
 ############## Tau Decay Parameterization ################
@@ -74,4 +76,30 @@ Etau = 100.
 dNTaudz = lambda z: TauDecayToAll(Etau, Etau*z, 0.)
 TauDecayWeights = np.array(list(map(dNTaudz,TauDecayFractions)))
 TauDecayWeights = np.divide(TauDecayWeights, np.sum(TauDecayWeights))
+
+
+#########################################################
+#### SECONDARIES ########################################
+#########################################################
+
+with path(secondaries_splines, 'antinue_cdf.npy') as p:
+        nue_path = str(p)
+with path(secondaries_splines, 'antinumu_cdf.npy') as p:
+        numu_path = str(p)
+
+antinue_cdf = np.load(nue_path)
+antinumu_cdf = np.load(numu_path)
+bins = list(np.logspace(-5,0,101))[:-1] # bins for the secondary splines
+
+def SampleSecondariesEnergyFraction(u, cdf):
+    spl_cdf = iuvs(bins, cdf)
+    # check if random sample u is in the range where the spline is defined
+    try:
+        return (iuvs(bins,cdf-u).roots())[0]
+    except:
+        if u <= np.min(spl_cdf(bins)): 
+            return 1e-3
+        elif u == np.max(spl_cdf(bins)):
+            return 1
+
 

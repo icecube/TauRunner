@@ -3,8 +3,8 @@
 import os, sys, json
 import proposal as pp
 
-from taurunner.modules import units, sample_powerlaw, is_floatable, make_propagator
-from taurunner.track import Chord
+from taurunner.utils import units, sample_powerlaw, is_floatable, make_propagator
+import taurunner.track as track
 from taurunner.body import *
 from taurunner.cross_sections import CrossSections
 from taurunner.Casino import *
@@ -30,7 +30,12 @@ def initialize_parser(): # pragma: no cover
                         type=int, default=16,
                         help='neutrino flavor (default is nutau): 12 for nue 14 for numu 16 for nutau'
                        )
-
+    parser.add_argument('--track',
+                        dest='track',
+                        type=str,
+                        default='Chord',
+                        help='Track type to use. curently only radial and chord trajectories supported.'
+                       )
     # Energy arguments
     parser.add_argument('-e', 
                         dest='energy',
@@ -70,17 +75,11 @@ def initialize_parser(): # pragma: no cover
                        )
     
     # Saving arguments
-    parser.add_argument('--savedir', 
-                        dest='savedir', 
+    parser.add_argument('--save', 
+                        dest='save', 
                         type=str, 
                         default='', 
                         help="If saving output, provide a path here, if not specified, output will be printed"
-                       )
-    parser.add_argument('--prefix',
-                        dest='prefix', 
-                        default='',
-                        type=str,
-                        help='(Optional) argument to give specify name of outdir'
                        )
 
     # cross section args
@@ -143,7 +142,8 @@ def run_MC(eini: np.ndarray,
            xs: CrossSections, 
            tracks: dict, 
            TR_specs: dict, 
-           propagator: pp.Propagator
+           propagator: pp.Propagator,
+           rand: np.random.RandomState = None
           ) -> np.ndarray:
     r'''
     Main simulation code. Propagates an ensemble of initial states and returns the output
@@ -163,11 +163,14 @@ def run_MC(eini: np.ndarray,
              and particle type (PDG convention)
              
     '''
-    output                 = []
-    energies               = list(eini)
-    particleIDs            = np.ones(TR_specs['nevents'], dtype=int)*TR_specs['flavor']
-    rand                   = TR_specs['rand']
-    secondary_basket       = []
+    output      = []
+    energies    = list(eini)
+    particleIDs = np.ones(TR_specs['nevents'], dtype=int)*TR_specs['flavor']
+
+    if rand is None:
+        rand = np.random.RandomState()
+    secondary_basket = []
+    idxx             = []
 
     # Run the algorithm
     # All neutrinos are propagated until exiting as tau neutrino or taus.
@@ -187,15 +190,17 @@ def run_MC(eini: np.ndarray,
             output.append((energies[i], float(out.energy), thetas[i], out.nCC, out.nNC, out.ID))
         if not TR_specs['no_secondaries']:
             secondary_basket.append(np.asarray(out.basket))
+            idxx = np.hstack([idxx, [i for _ in out.basket]])
             del out.basket
         del out     
         del particle
+    idxx = idxx.astype(np.int32)
     if not TR_specs['no_secondaries']:    
         #make muon propagator
         secondary_basket = np.concatenate(secondary_basket)
         #ids = np.unique([s['ID'] for s in secondary_basket])
         sec_prop = {ID:make_propagator(ID, body, TR_specs['xs_model']) for ID in [-12, -14]}
-        for sec in secondary_basket:
+        for sec, i in zip(secondary_basket, idxx):
             sec_particle = Particle(sec['ID'], sec['energy'], thetas[i], sec['position'], rand,
                                     xs=xs, proposal_propagator=sec_prop[sec['ID']], secondaries=False, no_losses=False)
             sec_out      = Propagate(sec_particle, my_track, body)
@@ -219,13 +224,14 @@ if __name__ == "__main__": # pragma: no cover
     TR_specs['seed']           = args.seed
     TR_specs['nevents']        = args.nevents
     TR_specs['flavor']         = args.flavor
+    TR_specs['track']          = args.track
     TR_specs['energy']         = args.energy
     TR_specs['e_min']          = args.e_min
     TR_specs['e_max']          = args.e_max
     TR_specs['theta']          = args.theta
     TR_specs['th_min']         = args.th_min
     TR_specs['th_max']         = args.th_max
-    TR_specs['base_savedir']   = args.savedir
+    TR_specs['save']           = args.save
     TR_specs['water']          = args.water
     TR_specs['xs_model']       = args.xs_model
     TR_specs['no_losses']      = args.no_losses
@@ -233,53 +239,47 @@ if __name__ == "__main__": # pragma: no cover
     TR_specs['radius']         = args.radius
     TR_specs['depth']          = args.depth
     TR_specs['no_secondaries'] = args.no_secondaries
-    TR_specs['prefix']         = args.prefix
     TR_specs['debug']          = ''
-    rand = np.random.RandomState(TR_specs['seed'])
-    TR_specs['rand'] = rand
+
     if TR_specs['nevents']<=0:
         raise ValueError("We need to simulate at least one event, c'mon y'all")
 
     # Set up outdir and make seed if not provided
-    if TR_specs['base_savedir']:
-        if not os.path.isdir(TR_specs['base_savedir']):
-            raise ValueError('Savedir %s does not exist' % TR_specs['base_savedir'])
-        from taurunner.modules import setup_outdir
-        TR_specs = setup_outdir(TR_specs)
+    if TR_specs['save']:
+        savedir = '/'.join(TR_specs['save'].split('/')[:-1])
+        if not os.path.isdir(savedir):
+            raise ValueError('Savedir %s does not exist' % TR_specs['save'])
     
     # Set up a random state
     rand = np.random.RandomState(TR_specs['seed'])
-    TR_specs['rand'] = rand
-
-    # Make an array of injected energies
-    from taurunner.modules import make_initial_e
-    eini = make_initial_e(TR_specs, rand=rand)
-
-    # Make an array of injected incident angles
-    from taurunner.modules import make_initial_thetas
-    thetas = make_initial_thetas(TR_specs, rand=rand)
 
     # Make body
     # TODO Make this not suck. i.e. make construct body more comprehensive
-    from taurunner.modules import construct_body
+    from taurunner.utils import construct_body
     body = construct_body(TR_specs)
 
-    # Premake all necessary tracks in case of redundancies
-    # TODO Make it so that you can pass radial tracks too
-    tracks  = {theta:Chord(theta=theta, depth=TR_specs['depth']/body.radius) for theta in set(thetas)}
+    # Make an array of injected energies
+    from taurunner.utils.make_initial_e import make_initial_e
+    eini = make_initial_e(TR_specs, rand=rand)
+
+    # Make an array of injected incident angles
+    from taurunner.utils.make_initial_thetas import make_initial_thetas
+    thetas = make_initial_thetas(TR_specs, rand=rand)
+
+    from taurunner.utils.make_tracks import make_tracks
+    tracks = make_tracks(TR_specs, thetas, body.radius)
 
     xs = CrossSections(TR_specs['xs_model'])
 
     prop = make_propagator(TR_specs['flavor'], body, TR_specs['xs_model'])
 
-    result = run_MC(eini, thetas, body, xs, tracks, TR_specs, prop)
+    result = run_MC(eini, thetas, body, xs, tracks, TR_specs, prop, rand=rand)
 
-    # TODO simplify this
-    if TR_specs['base_savedir']:
-        base_fname = '%s/%s/%s' % (TR_specs['base_savedir'], TR_specs['prefix'], TR_specs['prefix'])
-        np.save(base_fname+'.npy', result)
-        with open(base_fname + '.json', 'w') as f:
-            TR_specs.pop('rand')
+    if TR_specs['save']:
+        if '.npy' not in TR_specs['save']:
+            TR_specs['save'] += '.npy'
+        np.save(TR_specs['save'], result)
+        with open(TR_specs['save'].replace('npy', 'json'), 'w') as f:
             json.dump(TR_specs, f)
         if TR_specs['debug']:
             print(message)

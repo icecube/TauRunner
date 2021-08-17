@@ -3,7 +3,7 @@ from scipy.interpolate import splev, splrep
 from importlib.resources import path
 
 from .body import Body
-from taurunner.modules import Callable, units
+from taurunner.utils import Callable, units
 from taurunner.resources import solar_models
 
 def mass_density_from_model(solar_model_file):

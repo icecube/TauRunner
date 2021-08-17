@@ -1,7 +1,7 @@
 import proposal as pp
 import numpy as np
 
-from taurunner.modules import units
+from taurunner.utils import units
 from taurunner.particle import Particle
 from taurunner.body import Body
 from taurunner.track import Track

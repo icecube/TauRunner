@@ -2,13 +2,14 @@ import numpy as np
 import sys
 
 from .track import Track
-from taurunner.modules import doc_inherit
+from taurunner.utils import doc_inherit
+import proposal as pp
 
 class Chord(Track):
 
     def __init__(self,
-                 depth: float = 0.0, 
-                 theta: float = 0.0,
+                 depth: float = 0.0,
+                 theta: float = 0.0
                 ):
         r'''
         depth : Optional argument to specify the depth of the detector
@@ -59,3 +60,19 @@ class Chord(Track):
     @doc_inherit
     def x_to_r_prime(self, x: float):
         return np.abs(self._c-self._m*x)*(-self._m)/self.x_to_r(x)
+
+    def x_to_pp_dir(self, x: float):
+        phi       = 2.*self.theta
+        direction = [-np.sin(phi), 0., np.cos(phi) + (1. - self.depth)]
+        direction = np.divide(direction, np.linalg.norm(direction))
+        dir_vec   = pp.Vector3D(direction[0], 0., direction[2])
+        return dir_vec
+
+    def x_to_pp_pos(self, x:float, rad: float):
+        #compute direction and position in proposal body
+        phi       = 2.*self.theta
+        pos_vec   = pp.Vector3D(rad*np.sin(phi)*(1. - x), 
+                                0, 
+                                rad*((1. - self.depth + np.cos(phi))*x - np.cos(phi))
+                               )
+        return pos_vec

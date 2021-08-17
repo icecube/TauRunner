@@ -3,35 +3,12 @@ import proposal as pp
 from importlib.resources import path
 
 import taurunner
-from taurunner.modules import units
+from taurunner.utils import units
 from taurunner.cross_sections import CrossSections
 from .utils import *
-from taurunner.resources import secondaries_splines
 
 from proposal import Propagator
 from numpy.random import RandomState
-
-# TODO move this into utils
-# load secondary cdfs
-with path(secondaries_splines, 'antinue_cdf.npy') as p:
-        nue_path = str(p)
-with path(secondaries_splines, 'antinumu_cdf.npy') as p:
-        numu_path = str(p)
-
-antinue_cdf = np.load(nue_path)
-antinumu_cdf = np.load(numu_path)
-bins = list(np.logspace(-5,0,101))[:-1] # bins for the secondary splines
-
-def get_sample(u, cdf):
-    spl_cdf = iuvs(bins, cdf)
-    # check if random sample u is in the range where the spline is defined
-    try:
-        return (iuvs(bins,cdf-u).roots())[0]
-    except:
-        if u <= np.min(spl_cdf(bins)): 
-            return 1e-3
-        elif u == np.max(spl_cdf(bins)):
-            return 1
 
 proton_mass = ((0.9382720813+0.9395654133)/2.)*units.GeV
 
@@ -185,13 +162,13 @@ class Particle(object):
                 p0 = self.rand.uniform(0,1)
                 if p0 < .18:
                     # sample energy of secondary antinumu
-                    sample = get_sample(self.rand.uniform(0,1), antinumu_cdf)
+                    sample = SampleSecondariesEnergyFraction(self.rand.uniform(0,1), antinumu_cdf)
                     enu = sample*self.energy
                     # add secondary to basket, prepare propagation
                     self.basket.append({"ID" : -np.sign(self.ID)*14, "position" : self.position, "energy" : enu})
                 elif p0 > .18 and p0 < .36:
                     # sample energy of secondary antinue
-                    sample = get_sample(self.rand.uniform(0,1), antinue_cdf)
+                    sample = SampleSecondariesEnergyFraction(self.rand.uniform(0,1), antinue_cdf)
                     enu = sample*self.energy
                     # add secondary to basket, prepare propagation
                     self.basket.append({"ID" : -np.sign(self.ID)*12,  "position" : self.position, "energy" : enu})
@@ -228,14 +205,10 @@ class Particle(object):
         en_at_decay = []
         #need to add support to propagate without decay here (fixed distance propagation)
         lep.energy     = 1e3*self.energy/units.GeV
-        rad = body.radius/units.km*1e5
-        #compute direction and position in proposal body
-        phi            = 2.*track.theta
-        pos_vec   = pp.Vector3D(rad*np.sin(phi)*(1. - self.position), 0, rad*((1. - track.depth + np.cos(phi))*self.position - np.cos(phi)))
-        direction = [-np.sin(phi), 0., np.cos(phi) + (1. - track.depth)]
-        norm = np.linalg.norm(direction)
+        pos_vec        = track.x_to_pp_pos(self.position, body.radius/units.km*1e5) # radius in cm
+        dir_vec        = track.x_to_pp_dir(self.position)
         lep.position   = pos_vec
-        lep.direction  = pp.Vector3D(direction[0]/norm, 0., direction[2]/norm)
+        lep.direction  = dir_vec
         #propagate
         sec            = self.propagator.propagate(lep) #, dist_to_prop)
         particles      = sec.particles
