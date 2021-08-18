@@ -25,7 +25,7 @@ def lumen_sit(layers: list=[]) -> Body:
     Params
     ______
     layers : Optional list of tuples with radii [km] and densities [gr/cm^3] to add as constant
-             density layers on top of the PREM model. Used for adding ice or water
+             density layers on top of the PREM model. for example a 4km ocean layer is [(4, 1.0)]
 
     Returns
     _______
