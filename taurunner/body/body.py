@@ -26,8 +26,9 @@ class Body(object):
         
         '''
 
-        self.radius = radius*units.km
-        self._name  = name
+        self.radius    = radius*units.km
+        self.radius_km = radius
+        self._name     = name
         # Check if body is segmented
         if hasattr(density, '__iter__'):
             if layer_boundaries is None:
