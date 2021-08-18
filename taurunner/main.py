@@ -274,7 +274,7 @@ if __name__ == "__main__": # pragma: no cover
     thetas = make_initial_thetas(TR_specs['nevents'], theta, rand=rand, track_type=TR_specs['track'])
 
     from taurunner.utils.make_tracks import make_tracks
-    tracks = make_tracks(thetas, body.radius, depth=TR_specs['depth'], track_type=TR_specs['track'])
+    tracks = make_tracks(thetas, depth=TR_specs['depth']*units.km/body.radius, track_type=TR_specs['track'])
 
     xs = CrossSections(TR_specs['xs_model'])
 

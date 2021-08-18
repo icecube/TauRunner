@@ -232,6 +232,7 @@ class Particle(object):
                 self.energy/units.GeV,
                 self.energy*NeutrinoDifferentialEnergyFractions/units.GeV,
                 interaction)
+     
             NeutrinoInteractionWeights = np.divide(NeutrinoInteractionWeights, 
                                                    np.sum(NeutrinoInteractionWeights))
             self.energy = self.energy*self.rand.choice(NeutrinoDifferentialEnergyFractions,
