@@ -14,7 +14,7 @@ def hima_diff_xs(E_in, E_out, spl): # pragma: no cover
     return(10**spl(np.log10(E_in), np.log10(E_out))[0][0]/E_in)
 
 def jeff_diff_xs(E_in, E_out, spl):
-    E_min = 1e9 # Lowest knot on spline in eV
+    E_min = 1. # Lowest knot on spline in GeV
     E_in  = E_in
     E_out = E_out
     zz    = (E_out-E_min)/(E_in-E_min)
