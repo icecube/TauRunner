@@ -15,9 +15,11 @@ def hima_diff_xs(E_in, E_out, spl): # pragma: no cover
 
 def jeff_diff_xs(E_in, E_out, spl):
     #E_min = np.power(10, spl.extents[0][0])
-    E_min = 1 # Lowest knot on spline in GeV
-    z     = (E_out-E_min)/(E_in-E_min)
-    res = np.power(10,spl(np.log10(E_in),z)[0])/E_in
+    E_min  = 1 # Lowest knot on spline in GeV
+    E_in   = E_in / units.GeV # Convert to GeV, the units of the spline
+    E_out  = E_in / units.GeV # Convert to GeV, the units of the spline
+    z      = (E_out-E_min)/(E_in-E_min)
+    res    = np.power(10,spl(np.log10(E_in),z)[0])/E_in
     return res
 
 def get_file_path(name):
