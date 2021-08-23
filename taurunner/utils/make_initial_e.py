@@ -3,6 +3,23 @@ import numpy as np
 from taurunner.utils import units, sample_powerlaw, is_floatable
 
 def make_initial_e(nevents, energy, e_min=None, e_max=None, rand=None):
+    r'''
+    Creates an array of energies
+    Params
+    ------
+    nevents (int): Number of events
+    energy (float or str): If positive float, then energy in GeV. If
+        negative float, then spectral index. If str, then path
+        to a flux cdf
+    e_min (float or None): If not None, minimum energy in GeV 
+        for a power-law
+    e_max (float or None): If not None, maximum energy in GeV 
+        for a power-law
+    rand (np.random.RandomState): numpy random number generator object
+    Returns
+    -------
+    output (array-like) : Energies in eV
+    '''
     if rand is None:
         rand = np.random.RandomState()
     
