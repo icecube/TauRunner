@@ -13,23 +13,22 @@ ID_2_name = {16: 'TauMinusDef', -16: 'TauPlusDef',
 def segment_body(body, granularity=0.5):
     descs = []
     for xi, xf in zip(body.layer_boundaries[:-1], body.layer_boundaries[1:]):
-        gran = np.abs(body.get_density(xf, right=True) - body.get_density(xi, right=False)) / body.get_density(xi, right=False)
+        f_density = body.get_density(xf, right=True)
+        gran      = np.abs(f_density - body.get_density(xi, right=False)) / body.get_density(xi, right=False)
         if gran<granularity:  # the percent difference within a layer is small
             descs.append((xi, xf, body.get_average_density(0.5*(xi+xf))))
         else:
-            end   = 0.0
-            start = xi
-            while end<xf:
-                s_density = body.get_density(start, right=False)
-                func      = lambda x: np.abs(body.get_density(x, right=True)-s_density)/s_density-granularity
-                end       = ridder(func, xi, xf)
-                if end>xf: # you've left the layer so only go to end of layer
-                    end = xf
-                wrap = lambda x: body.get_density(x, right=True)
-                I = quad(wrap, start, end, full_output=1)
+            start     = xi
+            s_density = body.get_density(start)
+            while np.abs(f_density-s_density)/s_density-granularity>0:
+                func         = lambda x: np.abs(body.get_density(x, right=True)-s_density)/s_density-granularity
+                end          = ridder(func, start, xf)
+                wrap         = lambda x: body.get_density(x, right=True)
+                I            = quad(wrap, start, end, full_output=1)
                 avg_density  = I[0]/(end-start)
                 descs.append((start, end, avg_density))
                 start = end
+                s_density = body.get_density(start)
     return descs
 
 def make_propagator(ID, body, xs_model='dipole', granularity=0.5):
