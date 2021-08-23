@@ -189,7 +189,6 @@ class Track(object):
         '''
         if body._name not in self._column_depth_functions.keys():
             self._initialize_column_depth_functions(body)
-            print('should only print once')
         max_X = self._column_depth_functions[body._name][0]
         if X<=max_X:
             return self._column_depth_functions[body._name][2](X)
@@ -211,7 +210,6 @@ class Track(object):
         X : Column depth [natural units]
         '''
         if body._name not in self._column_depth_functions.keys():
-            print('should only print once')
             self._initialize_column_depth_functions(body)
         return self._column_depth_functions[body._name][1](x)
 
