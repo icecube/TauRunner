@@ -194,7 +194,7 @@ def run_MC(eini: np.ndarray,
             del out.basket
         del out     
         del particle
-    idxx = idxx.astype(np.int32)
+    idxx = np.array(idxx).astype(np.int32)
     if not TR_specs['no_secondaries']:    
         #make muon propagator
         secondary_basket = np.concatenate(secondary_basket)
