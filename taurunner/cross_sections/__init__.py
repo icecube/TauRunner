@@ -1,1 +1,1 @@
-from .xs import *
+from .xs_model import XSModel as CrossSections

@@ -146,7 +146,12 @@ class Particle(object):
             mean column depth to interaction in natural units
         '''
         if np.abs(self.ID) in [12, 14, 16]:
-            return proton_mass/(self.xs.TotalNeutrinoCrossSection(self.energy, interaction = interaction))
+            return proton_mass/(self.xs.total_cross_section(
+                                                            self.energy, 
+                                                            'nu', 
+                                                            interaction
+                                                           )
+                               )
         if np.abs(self.ID) == 15:
             raise ValueError("Tau interaction length should never be sampled.")
 
@@ -182,7 +187,6 @@ class Particle(object):
     def PropagateChargedLepton(self, body, track):
         r'''
         Propagate taus/mus with PROPOSAL along 'track' through 'body'
-
         Parameters
         ----------
         body: str 
@@ -197,7 +201,7 @@ class Particle(object):
         total_dist       = track.x_to_d(1.-self.position)*body.radius/units.km
         current_density  = body.get_average_density(track.x_to_r(self.position))
         km_dist_to_prop  = total_dist - current_km_dist
-        
+
         if(np.logical_and(np.abs(self.ID) in [13, 14], km_dist_to_prop > 100.)):
              return
 
@@ -217,17 +221,24 @@ class Particle(object):
         lep_length     = final_vec.magnitude() / 1e5
         decay_products = [p for i,p in zip(range(max(len(particles)-3,0),len(particles)), particles[-3:]) if int(p.type) <= 1000000001]
         en_at_decay    = np.sum([p.energy for p in decay_products])
-        self.energy    = en_at_decay*units.GeV/1e3
-        self.chargedposition  = lep_length
+        if(en_at_decay==0):    #particle reached the border before decaying
+            self.energy = particles[-1].parent_particle_energy*units.GeV/1e3
+            self.chargedposition = float(np.ceil(lep_length))
+        else:                  #particle decayed before reaching the border
+            self.energy    = en_at_decay*units.GeV/1e3
+            self.chargedposition  = lep_length
         return
 
     def Interact(self, interaction, body=None, track=None): #  dist_to_prop=None, current_density=None):
         if np.abs(self.ID) in [12, 14, 16]:
             #Sample energy lost from differential distributions
-            NeutrinoInteractionWeights = self.xs.DifferentialOutGoingLeptonDistribution(
-                self.energy/units.GeV,
-                self.energy*NeutrinoDifferentialEnergyFractions/units.GeV,
-                interaction)
+            NeutrinoInteractionWeights = self.xs.differential_cross_section(self.energy,
+                                                                            self.energy*NeutrinoDifferentialEnergyFractions,
+                                                                            # TODO make this work with different neutrino types
+                                                                            'nu',
+                                                                            interaction,
+                                                                            # TODO make this work with different proton fractions
+                                                    )
             NeutrinoInteractionWeights = np.divide(NeutrinoInteractionWeights, 
                                                    np.sum(NeutrinoInteractionWeights))
             self.energy = self.energy*self.rand.choice(NeutrinoDifferentialEnergyFractions,
