@@ -2,7 +2,19 @@ import numpy as np
 from taurunner.utils import is_floatable
 
 def make_initial_thetas(nevents, theta, track_type='chord', rand=None):
-
+    r'''
+    Creates an array of initial nadir angles
+    Params
+    ------
+    nevents (int): Number of events
+    theta (float or tuple): If float, then initial angle in degrees. If
+        tuple, then minimum and maximum angles
+    track_type (str, default="chord") : which type of taurunner.track object
+    rand (np.random.RandomState): numpy random number generator object
+    Returns
+    -------
+    output (array-like) : Nadir angles in radians
+    '''
     if rand is None:
         rand=np.random.RandomState()
 

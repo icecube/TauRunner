@@ -2,112 +2,92 @@ import unittest, os, copy
 import numpy as np
 
 import taurunner
-from taurunner.main import run_MC
-from taurunner.track import Chord
+from taurunner.main import *
 from taurunner.cross_sections import CrossSections
-from taurunner.modules import construct_body
-from taurunner.modules import make_initial_e
-from taurunner.modules import make_initial_thetas
-from taurunner.modules import make_propagator
+from taurunner.body import Body
+from taurunner.utils import make_initial_e
+from taurunner.utils import make_initial_thetas
+from taurunner.utils import make_propagator
+from taurunner.utils.make_tracks import make_tracks
 
 class TestMainMethods(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         """ once before all tests """
         path = os.path.dirname(os.path.realpath(__file__))
+
         num_sim = 30
-        # set up MC
-        TR_specs_base = {
-            'flavor': 16,
-            'no_secondaries': True,
-            'nevents': num_sim,
-            'seed': 5,
-            'xs_model': 'dipole',
-            'no_losses': True
-            }
-        rand = np.random.RandomState(TR_specs_base['seed'])
-        TR_specs_base['rand'] = rand
-        body = construct_body({'body': 'earth', 'water': 0.})
+        rand = np.random.RandomState(5)
+        body = lumen_sit(layers=[])
         xs = CrossSections('dipole')
-        prop = make_propagator(TR_specs_base['flavor'], body, xs_model=xs.model)
+        prop = make_propagator(16, body, xs_model=xs.model)
 
         # GZK test
-        TR_specs = copy.deepcopy(TR_specs_base)
-        TR_specs['energy'] = path + '/../taurunner/gzk_cdf_phi_spline.npy'
-        TR_specs['theta'] = 'range'
-        TR_specs['th_max'] = 90.
-        TR_specs['th_min'] = 0.
-        gzk_eini = make_initial_e(TR_specs, rand=rand)
-        gzk_thetas = make_initial_thetas(TR_specs)
-        gzk_tracks  = {theta:Chord(theta=theta, depth=0.) for theta in set(gzk_thetas)}
+        gzk_thetas = make_initial_thetas(num_sim, (0., 90.), rand=rand)
+        gzk_eini = make_initial_e(
+            num_sim, 
+            path + '/../taurunner/resources/gzk_cdf_phi_spline.npy', 
+            rand=rand
+        )
+        gzk_tracks  = make_tracks(gzk_thetas)
         gzk = run_MC(
             gzk_eini, 
             gzk_thetas, 
             body, 
             xs, 
             gzk_tracks, 
-            TR_specs, 
-            prop)
+            prop,
+            no_losses=True,
+            no_secondaries=True
+        )
         cls.gzk = gzk
 
         # spec_1
-        TR_specs = copy.deepcopy(TR_specs_base)
-        TR_specs['energy'] = -1.
-        TR_specs['e_max'] = 1e8
-        TR_specs['e_min'] = 1e5
-        TR_specs['theta'] = 'range'
-        TR_specs['th_max'] = 90.
-        TR_specs['th_min'] = 0.
-        spec_1_eini = make_initial_e(TR_specs, rand=rand)
-        spec_1_thetas = make_initial_thetas(TR_specs)
-        spec_1_tracks  = {theta:Chord(theta=theta, depth=0.) for theta in set(spec_1_thetas)}
+        spec_1_eini = make_initial_e(num_sim, -1., e_min=1e5, e_max=1e8, rand=rand)
+        spec_1_thetas = make_initial_thetas(num_sim, (0., 90.), rand=rand)
+        spec_1_tracks  = make_tracks(spec_1_thetas)
         spec_1 = run_MC(
             spec_1_eini, 
             spec_1_thetas, 
             body, 
             xs, 
-            spec_1_tracks, 
-            TR_specs, 
-            prop)
+            spec_1_tracks,
+            prop,
+            no_losses=True,
+            no_secondaries=True
+        )
         cls.spec_1 = spec_1
 
         # spec 2
-        TR_specs = copy.deepcopy(TR_specs_base)
-        TR_specs['energy'] = -2.
-        TR_specs['e_max'] = 1e8
-        TR_specs['e_min'] = 1e5
-        TR_specs['theta'] = 30.
-        TR_specs['no_secondaries'] = False
-        spec_2_eini = make_initial_e(TR_specs, rand=rand)
-        spec_2_thetas = make_initial_thetas(TR_specs)
-        spec_2_tracks  = {theta:Chord(theta=theta, depth=0.) for theta in set(spec_2_thetas)}
+        spec_2_eini = make_initial_e(num_sim, -2., e_min=1e5, e_max=1e8, rand=rand)
+        spec_2_thetas = make_initial_thetas(num_sim, 30., rand=rand)
+        spec_2_tracks  = make_tracks(spec_2_thetas)
         spec_2 = run_MC(
             spec_2_eini, 
             spec_2_thetas, 
             body, 
             xs, 
-            spec_2_tracks, 
-            TR_specs,
-            prop)
+            spec_2_tracks,
+            prop,
+            no_losses=True,
+            no_secondaries=False
+        )
         cls.spec_2 = spec_2
 
         # mono
-        TR_specs = copy.deepcopy(TR_specs_base)
-        TR_specs['energy'] = 1e8
-        TR_specs['theta'] = 'range'
-        TR_specs['th_max'] = 90.
-        TR_specs['th_min'] = 0.
-        mono_eini = make_initial_e(TR_specs, rand=rand)
-        mono_thetas = make_initial_thetas(TR_specs)
-        mono_tracks  = {theta:Chord(theta=theta, depth=0.) for theta in set(mono_thetas)}
+        mono_eini = make_initial_e(num_sim, 1e8, rand=rand)
+        mono_thetas = make_initial_thetas(num_sim, (0., 90.), rand=rand)
+        mono_tracks  = make_tracks(mono_thetas)
         mono = run_MC(
             mono_eini, 
             mono_thetas, 
             body, 
             xs, 
-            mono_tracks, 
-            TR_specs,
-            prop)
+            mono_tracks,
+            prop,
+            no_losses=True,
+            no_secondaries=True
+        )
         cls.mono = mono
 
     def test_main_things(self):

@@ -45,7 +45,7 @@ class Track(object):
         xx        = np.hstack([[xi], xx[mask], [xf]])
         II        = []
         for xi, xf in zip(xx[:-1], xx[1:]):
-            I = quad(integrand, xi, xf)
+            I = quad(integrand, xi, xf, full_output=1)
             if safe_mode:
                 if I[0]!=0:
                     if I[1]/I[0]>1e-3:

@@ -1,11 +1,12 @@
 import unittest
 
 import numpy as np
-from taurunner.modules import construct_body
-import taurunner
-import taurunner.body as body
+from scipy.integrate import quad
 
-from taurunner.modules import units
+from taurunner.utils import construct_body
+import taurunner.body as body
+from taurunner.main import *
+from taurunner.utils import units
 
 class TestBodyMethods(unittest.TestCase):
 
@@ -82,8 +83,13 @@ class TestBodyMethods(unittest.TestCase):
     def test_total_mass(self):
         import logging
         logging.getLogger('scipy').setLevel(logging.ERROR)
-        mass = body.check_total_mass(self.earth)[0]
+        earth = lumen_sit(layers=[])
+        mass = check_total_mass(earth)[0]
         self.assertAlmostEqual(mass / units.kg, 5.970273732299387e+24, 5)
+
+    def check_total_mass(Body):
+        func = lambda x: 4*np.pi*Body.radius**3*Body.get_density(x)*x**2
+        return quad(func, 0, 1, full_output=1)
 
 if __name__ == '__main__':
     unittest.main()

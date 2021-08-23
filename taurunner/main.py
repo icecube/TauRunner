@@ -11,6 +11,9 @@ from taurunner.Casino import *
 from taurunner.particle import Particle
 
 def initialize_parser(): # pragma: no cover
+    r'''
+    Helper function to parse command-line arguments
+    '''
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('-s',
@@ -60,7 +63,7 @@ def initialize_parser(): # pragma: no cover
                         dest='theta',
                         default='',
                         help='nadir angle in degrees if numerical value(0 is through the core).\n\
-                              "Range" if you want to sample from a range of thetas. Use --th_min and --th_max to specify lims.'
+                              "range" if you want to sample from a range of thetas. Use --th_min and --th_max to specify lims.'
                        )
     parser.add_argument('--th_max',
                         dest='th_max',
