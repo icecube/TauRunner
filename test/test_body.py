@@ -1,11 +1,11 @@
 import unittest
 
 import numpy as np
+from taurunner.main import *
+import taurunner.body as body
+from taurunner.body import HZ_Sun
 from scipy.integrate import quad
 
-from taurunner.utils import construct_body
-import taurunner.body as body
-from taurunner.main import *
 from taurunner.utils import units
 
 class TestBodyMethods(unittest.TestCase):
@@ -15,9 +15,9 @@ class TestBodyMethods(unittest.TestCase):
         """ once before all tests """
         rad_km = 500.0
         dens = 6.
-        tst_bod = construct_body({'body': 6., 'radius': rad_km})
-        tst_earth = construct_body({'body': 'earth', 'water': 0.})
-        tst_sun = construct_body({'body': 'sun'})
+        tst_bod = body.Body(dens, rad_km)
+        tst_earth = lumen_sit([])
+        tst_sun = HZ_Sun
         cls.bod_param = {'rad_km': rad_km, 'dens': dens}
         cls.body = tst_bod
         cls.earth = tst_earth
@@ -83,11 +83,10 @@ class TestBodyMethods(unittest.TestCase):
     def test_total_mass(self):
         import logging
         logging.getLogger('scipy').setLevel(logging.ERROR)
-        earth = lumen_sit(layers=[])
-        mass = check_total_mass(earth)[0]
+        mass = self.check_total_mass(self.earth)[0]
         self.assertAlmostEqual(mass / units.kg, 5.970273732299387e+24, 5)
 
-    def check_total_mass(Body):
+    def check_total_mass(self, Body):
         func = lambda x: 4*np.pi*Body.radius**3*Body.get_density(x)*x**2
         return quad(func, 0, 1, full_output=1)
 
