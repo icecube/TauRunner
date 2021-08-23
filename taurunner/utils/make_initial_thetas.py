@@ -1,26 +1,39 @@
 import numpy as np
 from taurunner.utils import is_floatable
-def make_initial_thetas(TR_specs, rand=None):
 
+def make_initial_thetas(nevents, theta, track_type='chord', rand=None):
+    r'''
+    Creates an array of initial nadir angles
+    Params
+    ------
+    nevents (int): Number of events
+    theta (float or tuple): If float, then initial angle in degrees. If
+        tuple, then minimum and maximum angles
+    track_type (str, default="chord") : which type of taurunner.track object
+    rand (np.random.RandomState): numpy random number generator object
+    Returns
+    -------
+    output (array-like) : Nadir angles in radians
+    '''
     if rand is None:
         rand=np.random.RandomState()
 
-    if TR_specs['track'].lower()=='radial':
-        thetas = np.zeros(TR_specs['nevents'])
+    if track_type=='radial':
+        thetas = np.zeros(nevents)
 
-    elif is_floatable(TR_specs['theta']):
-        t = float(TR_specs['theta'])
+    elif is_floatable(theta):
+        t = float(theta)
         if t<0 or t>90:
             raise ValueError('Angles must be between 0 and 90')
-        thetas = np.radians(np.ones(TR_specs['nevents'])*t)
+        thetas = np.radians(np.ones(nevents)*t)
     else:
-        if TR_specs['theta']=='range':
-            if TR_specs['th_min']<0 or TR_specs['th_max']>90:
+        if type(theta)==tuple:
+            if theta[0]<0 or theta[1]>90:
                 raise ValueError('Angles must be between 0 and 90')
-            costh_min = np.cos(np.radians(TR_specs['th_max']))
-            costh_max = np.cos(np.radians(TR_specs['th_min']))
-            thetas = np.arccos(rand.uniform(costh_min, costh_max, TR_specs['nevents']))
+            costh_min = np.cos(np.radians(theta[0]))
+            costh_max = np.cos(np.radians(theta[1]))
+            thetas = np.arccos(rand.uniform(costh_min, costh_max, nevents))
         else:
-            raise ValueError('theta sampling %s not suppoorted' % TR_specs['theta'])
+            raise ValueError('theta sampling %s not suppoorted' % theta)
 
     return thetas

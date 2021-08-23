@@ -11,6 +11,9 @@ from taurunner.Casino import *
 from taurunner.particle import Particle
 
 def initialize_parser(): # pragma: no cover
+    r'''
+    Helper function to parse command-line arguments
+    '''
     import argparse
     parser = argparse.ArgumentParser()
     parser.add_argument('-s',
@@ -60,7 +63,7 @@ def initialize_parser(): # pragma: no cover
                         dest='theta',
                         default='',
                         help='nadir angle in degrees if numerical value(0 is through the core).\n\
-                              "Range" if you want to sample from a range of thetas. Use --th_min and --th_max to specify lims.'
+                              "range" if you want to sample from a range of thetas. Use --th_min and --th_max to specify lims.'
                        )
     parser.add_argument('--th_max',
                         dest='th_max',
@@ -141,9 +144,11 @@ def run_MC(eini: np.ndarray,
            body: Body, 
            xs: CrossSections, 
            tracks: dict, 
-           TR_specs: dict, 
            propagator: pp.Propagator,
-           rand: np.random.RandomState = None
+           rand: np.random.RandomState = None,
+           no_secondaries: bool = False,
+           flavor: int = 16,
+           no_losses: bool = False,
           ) -> np.ndarray:
     r'''
     Main simulation code. Propagates an ensemble of initial states and returns the output
@@ -153,8 +158,7 @@ def run_MC(eini: np.ndarray,
     thetas     : array containing the incoming angles of particles to simulate
     body       : taurunner Body object in which to propagate the particles
     xs         : taurunner CrossSections object for interactions
-    tracks     : dictionary whose keys are angles and who values are taurunner Track objects
-    TR_specs   : dictionary specifiying additional TR options
+    tracks     : dictionary whose keys are angles and whose values are taurunner Track objects
     propagator : PROPOSAL propagator object for charged lepton propagation
     Returns
     _______
@@ -163,9 +167,11 @@ def run_MC(eini: np.ndarray,
              and particle type (PDG convention)
              
     '''
+    nevents     = len(eini)
     output      = []
     energies    = list(eini)
-    particleIDs = np.ones(TR_specs['nevents'], dtype=int)*TR_specs['flavor']
+    particleIDs = np.ones(nevents, dtype=int)*flavor
+    xs_model    = xs.model
 
     if rand is None:
         rand = np.random.RandomState()
@@ -176,9 +182,9 @@ def run_MC(eini: np.ndarray,
     # All neutrinos are propagated until exiting as tau neutrino or taus.
     # If secondaries are on, then each event has a corresponding secondaries basket
     # which are propagated all at once in the end.
-    for i in range(TR_specs['nevents']):
+    for i in range(nevents):
         particle = Particle(particleIDs[i], energies[i], thetas[i], 0.0, rand, xs,
-                            propagator, not TR_specs['no_secondaries'], TR_specs['no_losses'])
+                            propagator, not no_secondaries, no_losses)
         
         my_track = tracks[thetas[i]]
         out = Propagate(particle, my_track, body)
@@ -188,18 +194,17 @@ def run_MC(eini: np.ndarray,
             output.append((energies[i], 0., thetas[i], out.nCC, out.nNC, out.ID))
         else:
             output.append((energies[i], float(out.energy), thetas[i], out.nCC, out.nNC, out.ID))
-        if not TR_specs['no_secondaries']:
+        if not no_secondaries:
             secondary_basket.append(np.asarray(out.basket))
             idxx = np.hstack([idxx, [i for _ in out.basket]])
-            del out.basket
-        del out     
+        del out
         del particle
-    idxx = np.array(idxx).astype(np.int32)
-    if not TR_specs['no_secondaries']:    
+    idxx = np.asarray(idxx).astype(np.int32)
+    if not no_secondaries:    
         #make muon propagator
         secondary_basket = np.concatenate(secondary_basket)
         #ids = np.unique([s['ID'] for s in secondary_basket])
-        sec_prop = {ID:make_propagator(ID, body, TR_specs['xs_model']) for ID in [-12, -14]}
+        sec_prop = {ID:make_propagator(ID, body, xs_model) for ID in [-12, -14]}
         for sec, i in zip(secondary_basket, idxx):
             sec_particle = Particle(sec['ID'], sec['energy'], thetas[i], sec['position'], rand,
                                     xs=xs, proposal_propagator=sec_prop[sec['ID']], secondaries=False, no_losses=False)
@@ -260,20 +265,27 @@ if __name__ == "__main__": # pragma: no cover
 
     # Make an array of injected energies
     from taurunner.utils.make_initial_e import make_initial_e
-    eini = make_initial_e(TR_specs, rand=rand)
+    eini = make_initial_e(TR_specs['nevents'], TR_specs['energy'],
+                          e_min=TR_specs['e_min'], e_max=TR_specs['e_max'], rand=rand)
 
     # Make an array of injected incident angles
     from taurunner.utils.make_initial_thetas import make_initial_thetas
-    thetas = make_initial_thetas(TR_specs, rand=rand)
+    if(TR_specs['theta']=='range'):
+        theta = (TR_specs['th_min'], TR_specs['th_max'])
+    else:
+        theta = TR_specs['theta']
+    thetas = make_initial_thetas(TR_specs['nevents'], theta, rand=rand, track_type=TR_specs['track'])
 
     from taurunner.utils.make_tracks import make_tracks
-    tracks = make_tracks(TR_specs, thetas, body.radius)
+    tracks = make_tracks(thetas, depth=TR_specs['depth']*units.km/body.radius, track_type=TR_specs['track'])
 
     xs = CrossSections(TR_specs['xs_model'])
 
     prop = make_propagator(TR_specs['flavor'], body, TR_specs['xs_model'])
 
-    result = run_MC(eini, thetas, body, xs, tracks, TR_specs, prop, rand=rand)
+    result = run_MC(eini, thetas, body, xs, tracks, prop, rand=rand,
+                    no_secondaries=TR_specs['no_secondaries'], no_losses=TR_specs['no_losses'],
+                    flavor=TR_specs['flavor'])
 
     if TR_specs['save']:
         if '.npy' not in TR_specs['save']:

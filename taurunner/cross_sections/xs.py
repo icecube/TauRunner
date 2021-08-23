@@ -8,18 +8,17 @@ def hima_tot_xs(E, spl): # pragma: no cover
     pass
 
 def jeff_tot_xs(E, spl):
-    return np.exp(spl(np.log(E/1e9)))
+    return np.exp(spl(np.log(E)))
 
 def hima_diff_xs(E_in, E_out, spl): # pragma: no cover
     return(10**spl(np.log10(E_in), np.log10(E_out))[0][0]/E_in)
 
 def jeff_diff_xs(E_in, E_out, spl):
-    #E_min = np.power(10, spl.extents[0][0])
-    E_min  = 1 # Lowest knot on spline in GeV
-    E_in   = E_in / units.GeV # Convert to GeV, the units of the spline
-    E_out  = E_in / units.GeV # Convert to GeV, the units of the spline
-    z      = (E_out-E_min)/(E_in-E_min)
-    res    = np.power(10,spl(np.log10(E_in),z)[0])/E_in
+    E_min = 1. # Lowest knot on spline in GeV
+    E_in  = E_in
+    E_out = E_out
+    zz    = (E_out-E_min)/(E_in-E_min)
+    res   = np.exp(spl(np.log(E_in), zz)[0])/E_in
     return res
 
 def get_file_path(name):
@@ -43,21 +42,21 @@ class CrossSections(object):
             self.dsdy_spline_NC = np.load(get_file_path('dsigma_dy_NC_py3.npy'), allow_pickle=True).item()
             self.dsdy_spline_NC_lowe = np.load(get_file_path('dsigma_dy_NC_lowE_py3.npy'), allow_pickle=True).item()
         elif(self.model=='CSMS'):
-            with open(get_file_path('nu_n_dsde_CC.pkl'), 'rb') as pkl_f:
+            with open(get_file_path('CSMS_nu_n_dsde_CC.pkl'), 'rb') as pkl_f:
                 diff_nu_n_CC = pickle.load(pkl_f)
-            with open(get_file_path('nu_p_dsde_CC.pkl'), 'rb') as pkl_f:
+            with open(get_file_path('CSMS_nu_p_dsde_CC.pkl'), 'rb') as pkl_f:
                 diff_nu_p_CC = pickle.load(pkl_f)
-            with open(get_file_path('nu_n_dsde_NC.pkl'), 'rb') as pkl_f:
+            with open(get_file_path('CSMS_nu_n_dsde_NC.pkl'), 'rb') as pkl_f:
                 diff_nu_n_NC = pickle.load(pkl_f)
-            with open(get_file_path('nu_n_dsde_NC.pkl'), 'rb') as pkl_f:
+            with open(get_file_path('CSMS_nu_n_dsde_NC.pkl'), 'rb') as pkl_f:
                 diff_nu_p_NC = pickle.load(pkl_f)
-            with open(get_file_path('nu_n_sigma_CC.pkl'), 'rb') as pkl_f:
+            with open(get_file_path('CSMS_nu_n_sigma_CC.pkl'), 'rb') as pkl_f:
                 nu_n_CC = pickle.load(pkl_f)
-            with open(get_file_path('nu_p_sigma_CC.pkl'), 'rb') as pkl_f:
+            with open(get_file_path('CSMS_nu_p_sigma_CC.pkl'), 'rb') as pkl_f:
                 nu_p_CC = pickle.load(pkl_f)
-            with open(get_file_path('nu_n_sigma_NC.pkl'), 'rb') as pkl_f:
+            with open(get_file_path('CSMS_nu_n_sigma_NC.pkl'), 'rb') as pkl_f:
                 nu_n_NC = pickle.load(pkl_f)
-            with open(get_file_path('nu_p_sigma_NC.pkl'), 'rb') as pkl_f:
+            with open(get_file_path('CSMS_nu_p_sigma_NC.pkl'), 'rb') as pkl_f:
                 nu_p_NC = pickle.load(pkl_f)
             self._nu_p_NC = lambda E:jeff_tot_xs(E,nu_p_NC)
             self._nu_n_NC = lambda E:jeff_tot_xs(E,nu_n_NC)
@@ -154,9 +153,4 @@ class CrossSections(object):
                 diff = self.dsdy_spline_CC(ein, eout)
             else:
                 raise ValueError('Interaction %s not allowed. Must be "CC" or "NC"')
-#            diff = dis.SingleDifferentialCrossSection(ein*units.GeV, eout*units.GeV, 
-#                        nsq.NeutrinoCrossSections_NeutrinoFlavor.tau, 
-#                        nsq.NeutrinoCrossSections_NeutrinoType.neutrino,
-#                        getattr(nsq.NeutrinoCrossSections_Current, interaction) 
-#                       )
         return diff

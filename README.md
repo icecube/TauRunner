@@ -2,32 +2,35 @@
 	title="taurunner logo" width="350" height="250" />
  
 
-Authors: Ibrahim Safa, Carlos A. Argüelles, Alex Pizzuto
+Authors: Ibrahim Safa, Carlos A. Argüelles, Jeff Lazar, Alex Pizzuto
 =======
 
 ## Introduction
 
-`TauRunner` is a tool that propagates tau-neutrinos and taus through the Earth. Although it was developed for extremely high energy (EeV+) applications, it is able to propagate neutrinos from 1 to 10^16 GeV. Note that oscillations are not taken into account at the lowest energies, but they become negligible above 1TeV.   
+`TauRunner` is a tool that propagates ultra-high-energy neutrinos, with a focus on tau neutrinos. Although it was developed for extremely high energy (EeV+) applications, it is able to propagate neutrinos from 1 to 10^16 GeV. Note that oscillations are not taken into account at the lowest energies, but they become negligible above 1 TeV.   
 
 ## Installation
 
-`TauRunner` has a `nuSQuIDS` dependcy. To run it, you need to: 
+`taurunner` is available via PyPI. If you are interested in using `taurunner` but do not plan on contributing to the code base, you can install it with
+```console
+pip install taurunner
+```
 
-1) Install `nuSQuIDS` with python interface. 
-  *For more information on `nuSQuIDS` including installation instructions see: https://github.com/arguelles/nuSQuIDS
+If you would like to be able to modify the code, then we recommend downloading the code via git and then installing with `pip`
+```console
+git clone git@github.com:icecube/TauRunner.git
+pip install taurunner
+```
 
-2) Run `TauRunner/MMC/MMC/ammc -compile -f` to compile the tau propagation code. 
-  *For more information on MMC see: https://arxiv.org/abs/hep-ph/0407075
-
-3) You're ready to propagate neutrinos! See the examples section for execution instructions.
+If you find any problems with the code or have any feature requests, please open an issue on [Github](https://github.com/icecube/TauRunner/issues).
 
 ## Examples
-Below are three prototypical use cases for this project:
+Below are three prototypical use cases for this project. For more examples, see `notebooks/TauRunner_examples.ipynb`
 
 ### Injecting a beam of monoenergetic tau-neutrinos
 We can simulate 500 tau neutrinos with an energy of 1 EeV that travel directly through the core. At the point of emergence from the Earth, we receive the resultant particle ID and energy.
 ```console
-python main.py -n 500 -t 0.0 -s 1 -e 1000000000
+python taurunner/main.py -n 500 -t 0.0 -e 1e9
 ```
 `-n` specifies the number of events, `-t` is the nadir angle in degrees (0-90), `-s` specifies a unique seed, and `-e` is the particle energy in GeV. 
 
@@ -35,52 +38,51 @@ python main.py -n 500 -t 0.0 -s 1 -e 1000000000
 
 We can simulate 500 tau neutrinos with energies following a power-law distribution from 100 Tev to 10 PeV that travel directly through the core. At the point of emergence from the Earth, we receive the resultant particle ID and energy.
 ```console
-python main.py -n 500 -t 0.0 -s 1 -spectrum -2 --range 1e5 1e7
+python taurunner/main.py -e=-2. -t=30. -n=100 --e_min=1e5 --e_max=1e7
 ```
-`-n` specifies the number of events, `-t` is the nadir angle in degrees, `-s` specifies a unique seed for purposes of reproducibility, `-spectrum` specifies the power-law index, and `--range` gives the range of energies to sample from in GeV. 
+`-n` specifies the number of events, `-t` is the nadir angle in degrees, a negative `-e` indicates a power law spectrum with a given spectral index, and `e_min` and `e_max` specify the range over which to sample these energies.
 
 ### Simulating a model of an isotropic cosmogenic flux
 The user also has the option to simulate an isotropic (over half of the sky) flux, where the energy spectrum is specified by spline of a cdf:
 ```console
-python main.py -n 500 -gzk ./gzk_cdf_phi_spline.npy -s 2
+python main.py -e=resources/gzk_cdf_phi_spline.npy -n=10 -t="range" --th_max=90. --th_min=0.
 ```
-here, when the `-gzk` option is raised with the path to a cdf spline, the energy spectrum is sampled from the relevant file, and the angle is sampled uniformly over solid angle. An example on how to make one of these cdf splines is shown in `resources/cdf_maker.ipynb`
+if the `-e` argument points to a file, it loads this in and attempts to sample from it assuming the file contains a spline of the CDF of this flux (details on how to construct this in the `notebooks` directory). This is usefull for propagating fluxes with more complicated spectral shapes. 
 
 ### Output
 Output can either be saved or printed. If saved, data is stored in a `numpy.ndarray`, otherwise it is printed in a format such as the one below (this is for a gzk flux simulated with 5 events):
 ```console
-╒═════════════╤═════════════╤══════════╤═════════════╕
-│        Eini │        Eout │    Theta │   CDF_index │
-╞═════════════╪═════════════╪══════════╪═════════════╡
-│ 2.86713e+16 │ 2.86713e+16 │ 1.26366  │   0.396767  │
-├─────────────┼─────────────┼──────────┼─────────────┤
-│ 2.01731e+16 │ 2.01731e+16 │ 1.57068  │   0.345561  │
-├─────────────┼─────────────┼──────────┼─────────────┤
-│ 3.09344e+15 │ 3.85069e+14 │ 1.14063  │   0.0923386 │
-├─────────────┼─────────────┼──────────┼─────────────┤
-│ 7.88035e+16 │ 4.51484e+13 │ 1.42351  │   0.538817  │
-├─────────────┼─────────────┼──────────┼─────────────┤
-│ 6.72391e+15 │ 1.44919e+13 │ 0.766526 │   0.18626   │
-╘═════════════╧═════════════╧══════════╧═════════════╛
-╒════════╤════════╤═════════╤═════════════╕
-│ Eini   │ Eout   │ Theta   │ CDF_index   │
-╞════════╪════════╪═════════╪═════════════╡
-╘════════╧════════╧═════════╧═════════════╛
+╒═════════════╤═════════════╤═════════╤═══════╤═══════╤════════════════╕
+│        Eini │        Eout │   Theta │   nCC │   nNC │   PDG_Encoding │
+╞═════════════╪═════════════╪═════════╪═══════╪═══════╪════════════════╡
+│ 8.72753e+17 │ 1.9929e+15  │ 64.6839 │     4 │     1 │             16 │
+├─────────────┼─────────────┼─────────┼───────┼───────┼────────────────┤
+│ 1.14611e+16 │ 5.29122e+13 │ 67.4882 │     2 │     0 │             16 │
+├─────────────┼─────────────┼─────────┼───────┼───────┼────────────────┤
+│ 5.53607e+15 │ 2.19641e+13 │ 33.8733 │     3 │     1 │             16 │
+├─────────────┼─────────────┼─────────┼───────┼───────┼────────────────┤
+│ 4.92978e+17 │ 1.75953e+15 │ 75.4485 │     1 │     0 │             16 │
+├─────────────┼─────────────┼─────────┼───────┼───────┼────────────────┤
+│ 1.2461e+15  │ 6.1269e+13  │ 67.1521 │     1 │     0 │             16 │
+├─────────────┼─────────────┼─────────┼───────┼───────┼────────────────┤
+│ 7.76704e+14 │ 7.76704e+14 │ 64.6839 │     0 │     0 │            -14 │
+├─────────────┼─────────────┼─────────┼───────┼───────┼────────────────┤
+│ 1.23876e+15 │ 0           │ 64.6839 │     1 │     0 │            -11 │
+├─────────────┼─────────────┼─────────┼───────┼───────┼────────────────┤
+│ 6.85498e+14 │ 0           │ 67.4882 │     1 │     0 │            -13 │
+├─────────────┼─────────────┼─────────┼───────┼───────┼────────────────┤
+│ 1.43932e+14 │ 1.43932e+14 │ 33.8733 │     0 │     0 │            -14 │
+├─────────────┼─────────────┼─────────┼───────┼───────┼────────────────┤
+│ 1.29186e+14 │ 1.29186e+14 │ 33.8733 │     0 │     0 │            -14 │
+╘═════════════╧═════════════╧═════════╧═══════╧═══════╧════════════════╛
 ```
-The first column provides you with the initial energy, the second with the outgoing energy, the third with the sampled nadir angle, and finally the cdf index so one can check against the initial energies to make sure their spline is behaving properly. The first table is the tau neutrinos exiting the Earth, and the second table is the taus which exit the Earth, if any.
+The first column provides you with the initial energy, the second with the outgoing energy, the third with the sampled nadir angle. The other columns contain the number of charged current (CC) and neutral current (NC) interactions the particle underwent, and the outgoing particle ID is in the last column.
 
 ## Other options
-There are a variety of other options not specified in the examples that the user may specify at the command line:
-* `spectrum`: instead of using a monoenergetic beam or a splined energy spectrum, simulate a power law (index provided as argument)
-* `--range`: If using a power law, this is to specify the range over which to sample energies
-* `-spectrum`: instead of using a monoenergetic beam or a splined energy spectrum, simulate a power law (index provided as argument)
-* `-buff`: Stop the simulation a finite distance (in kilometers) below the surface of Earth. This is helpful for calculating fluxes incident upon underground detectors.
-* `-p`: Path to run script from another directory (if running the script from another directory, provide the path to the script here).
-* `-d`: print debug statements during execution
-* `-save`: specify the path to where you would like output saved. If no path is provided, output is formatted into a table and printed
-* `-water`: int. Add a water layer to the Earth in km. 0 by default.
-* `-xs`: string. Choose between two cross section models "dipole" (default) and "CSMS". details of these cross sections are discussed in the linked publication. Note that changing the neutrino cross-section also changes the tau energy loss model consistently (dipole mode for dipole, and ALLM for CSMS).
-* `-onlytau`: If only the tau distribution is needed. When this flag is raised, neutrino distributions are not saved.
+For a full list of the available options available when running `taurunner` from the command line, run
+```console
+python taurunner/main.py --h
+```
 
 ## Citation
 

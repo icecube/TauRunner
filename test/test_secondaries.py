@@ -1,9 +1,10 @@
 import unittest, os
 from taurunner import Casino
 from taurunner.main import *
-from taurunner.modules import construct_body
-from taurunner.modules import make_initial_e
-from taurunner.modules import make_initial_thetas
+from taurunner.utils import make_initial_e
+from taurunner.utils import make_initial_thetas
+from taurunner.body import Body
+from taurunner.utils.make_tracks import make_tracks
 
 import numpy as np
 
@@ -18,31 +19,22 @@ class TestSecondaries(unittest.TestCase):
         """ once before all tests """
         num_sim = 200
         en = 1e6
-        TR_specs = {
-            'flavor': 16,
-            'no_secondaries': False,
-            'nevents': num_sim,
-            'seed': 2,
-            'energy': en,
-            'theta': 0.,
-            'xs_model': 'dipole',
-            'no_losses': True
-            }
-        rand = np.random.RandomState(TR_specs['seed'])
-        TR_specs['rand'] = rand
-        body = construct_body({'body': 6.0, 'radius': 500.})
+        rand = np.random.RandomState(2)
+        eini = make_initial_e(num_sim, en)
         xs = CrossSections('dipole')
-        eini = make_initial_e(TR_specs, rand=rand)
-        thetas = make_initial_thetas(TR_specs)
-        tracks  = {theta:Chord(theta=theta, depth=0.) for theta in set(thetas)}
+        thetas = make_initial_thetas(num_sim, 0.)
+        body = Body(6.0, 500.)
+        tracks = make_tracks(thetas)
         sim = run_MC(
             eini, 
             thetas, 
             body, 
             xs, 
             tracks, 
-            TR_specs,
-            None)
+            None,
+            no_secondaries=False,
+            no_losses=True
+        )
         cls.sim = sim
         cls.num_sim = num_sim
         cls.en = en
