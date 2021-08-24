@@ -21,7 +21,6 @@ class Body(object):
         radius           : Radius of the body [meters]
         layer_boundaries : List which tells the boundaries of different denstiy regions.
                            Must be provided if the density is given as a list, else will be ignored
-        # TODO check if name gets used at all....
         name             : Name to give your object
         
         '''
