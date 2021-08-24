@@ -48,8 +48,12 @@ class XSModel(object):
         return val
 
     def differential_cross_section(self, Ein, Eout, nutype, interaction, proton_fraction=0.5):
+        Eout = np.atleast_1d(Eout)
         neutron_fraction = 1.0-proton_fraction
         val = proton_fraction *diff_xs(Ein, Eout, getattr(self, f'_{nutype}_p_dsde_{interaction}')) + \
               neutron_fraction*diff_xs(Ein, Eout, getattr(self, f'_{nutype}_n_dsde_{interaction}'))
+        val[Eout > Ein] = 0.
+        if val.shape == (1,):
+            val = val[0]
         return val
     

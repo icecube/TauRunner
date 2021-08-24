@@ -40,8 +40,8 @@ class TestCasinoHelpers(unittest.TestCase):
         self.assertEqual(self.csms.GetLifetime(), self.dipole.GetLifetime())
         self.assertAlmostEqual(self.csms.GetLifetime(), 441.67, 3)
         self.assertAlmostEqual(self.csms.GetMass(), 1776000000.0, 4)
-        self.assertAlmostEqual(self.nutau.GetInteractionDepth('CC'), 
-            5.545643041570203e+34, 5)
+        self.assertAlmostEqual(np.log10(self.nutau.GetInteractionDepth('CC')), 
+            np.log10(5.545643041570203e+34), 2)
         self.assertAlmostEqual(self.nutau.GetInteractionProbability(1e33, 'CC'),
             0.017870567135038762, 5)
 
