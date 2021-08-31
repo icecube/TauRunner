@@ -1,5 +1,5 @@
 import os
-import warnings
+import logging
 import numpy as np
 import proposal as pp
 from scipy.optimize import ridder
@@ -72,10 +72,10 @@ def make_sector(density, start, end, xs_model, **kwargs):
     else:
         vcut = 1e-3
     if (vcut > 1e-2) or ecut > (1e11):
-        warnings.warn(
+        logging.warning(
             'PROPOSAL settings exceed maximum TauRunner recommended ecut/vcut'
-            + '\tRecommended settings:  Ecut <= 1.00e11 MeV vcut <= 1.00e-2'
-            + f'\tCurrent user settings: Ecut  = {ecut:.2e} MeV vcut  = {vcut:.2e}')
+            + '\n\tRecommended settings:  Ecut <= 1.00e+11 MeV vcut <= 1.00e-02'
+            + f'\n\tCurrent user settings: Ecut  = {ecut:.2e} MeV vcut  = {vcut:.2e}')
     sec_def = pp.SectorDefinition()
     sec_def.medium = pp.medium.Ice(density)
     sec_def.geometry = pp.geometry.Sphere(pp.Vector3D(), end, start)
