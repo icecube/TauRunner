@@ -57,7 +57,6 @@ class Chord(Track):
     def x_to_r(self, x: float):
         return np.sqrt(self._s**2 + (self._c-self._m*x)**2)
     
-    @doc_inherit
     def x_to_r_prime(self, x: float):
         return np.abs(self._c-self._m*x)*(-self._m)/self.x_to_r(x)
 
