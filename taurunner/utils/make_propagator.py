@@ -1,4 +1,5 @@
 import os
+import warnings
 import numpy as np
 import proposal as pp
 from scipy.optimize import ridder
@@ -31,7 +32,7 @@ def segment_body(body, granularity=0.5):
                 s_density = body.get_density(start)
     return descs
 
-def make_propagator(ID, body, xs_model='dipole', granularity=0.5):
+def make_propagator(ID, body, xs_model='dipole', granularity=0.5, **kwargs):
     
     if(ID in [12, -12]):
         return None
@@ -41,7 +42,7 @@ def make_propagator(ID, body, xs_model='dipole', granularity=0.5):
     #define how many layers of constant density we need for the tau
     descs = segment_body(body, granularity)
     #make the sectors
-    sec_defs = [make_sector(d/units.gr*units.cm**3, s*body.radius/units.meter, e*body.radius/units.meter, xs_model) for s, e, d in descs]
+    sec_defs = [make_sector(d/units.gr*units.cm**3, s*body.radius/units.meter, e*body.radius/units.meter, xs_model, **kwargs) for s, e, d in descs]
 
     with path('taurunner.resources.proposal_tables', 'tables.txt') as p:
         tables_path = str(p).split('tables.txt')[0]
@@ -61,7 +62,20 @@ def make_propagator(ID, body, xs_model='dipole', granularity=0.5):
     return prop
 
 
-def make_sector(density, start, end, xs_model):
+def make_sector(density, start, end, xs_model, **kwargs):
+    if 'ecut' in kwargs.keys():
+        ecut = kwargs['ecut']
+    else:
+        ecut = 1e4*1e3
+    if 'vcut' in kwargs.keys():
+        vcut = kwargs['vcut']
+    else:
+        vcut = 1e-3
+    if (vcut > 1e-2) or ecut > (1e11):
+        warnings.warn(
+            'PROPOSAL settings exceed maximum TauRunner recommended ecut/vcut'
+            + '\tRecommended settings:  Ecut <= 1.00e11 MeV vcut <= 1.00e-2'
+            + f'\tCurrent user settings: Ecut  = {ecut:.2e} MeV vcut  = {vcut:.2e}')
     sec_def = pp.SectorDefinition()
     sec_def.medium = pp.medium.Ice(density)
     sec_def.geometry = pp.geometry.Sphere(pp.Vector3D(), end, start)
@@ -69,9 +83,10 @@ def make_sector(density, start, end, xs_model):
     sec_def.scattering_model  = pp.scattering.ScatteringModel.Moliere
     sec_def.crosssection_defs.brems_def.lpm_effect = True
     sec_def.crosssection_defs.epair_def.lpm_effect = True
+    # change out epair_def.parametrization or photonuclear.parametrization 
     
-    sec_def.cut_settings.ecut = 1e9*1e3
-    sec_def.cut_settings.vcut = 1.0
+    sec_def.cut_settings.ecut = ecut
+    sec_def.cut_settings.vcut = vcut
     sec_def.do_continuous_randomization = True
 
     if(xs_model=='dipole'):

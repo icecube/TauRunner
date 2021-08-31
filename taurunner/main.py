@@ -149,6 +149,8 @@ def run_MC(eini: np.ndarray,
            no_secondaries: bool = False,
            flavor: int = 16,
            no_losses: bool = False,
+           ecut: float = 1e7,
+           vcut: float = 1e-3
           ) -> np.ndarray:
     r'''
     Main simulation code. Propagates an ensemble of initial states and returns the output
@@ -160,6 +162,8 @@ def run_MC(eini: np.ndarray,
     xs         : taurunner CrossSections object for interactions
     tracks     : dictionary whose keys are angles and whose values are taurunner Track objects
     propagator : PROPOSAL propagator object for charged lepton propagation
+    ecut       : PROPOSAL setting for threshold between stochastics/continuous losses (in MeV)
+    vcut       : PROPOSAL setting for fractional threshold between stochastics/continuous losses
     Returns
     _______
     output : Array containing the output information of the MC. This includes 
@@ -204,7 +208,7 @@ def run_MC(eini: np.ndarray,
         #make muon propagator
         secondary_basket = np.concatenate(secondary_basket)
         #ids = np.unique([s['ID'] for s in secondary_basket])
-        sec_prop = {ID:make_propagator(ID, body, xs_model) for ID in [-12, -14]}
+        sec_prop = {ID:make_propagator(ID, body, xs_model, ecut=ecut, vcut=vcut) for ID in [-12, -14]}
         for sec, i in zip(secondary_basket, idxx):
             sec_particle = Particle(sec['ID'], sec['energy'], thetas[i], sec['position'], rand,
                                     xs=xs, proposal_propagator=sec_prop[sec['ID']], secondaries=False, no_losses=False)
