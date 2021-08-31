@@ -191,9 +191,9 @@ def run_MC(eini: np.ndarray,
     
         if (out.survived==False):
             #these muons/electrons were absorbed. we record them in the output with outgoing energy 0
-            output.append((energies[i], 0., thetas[i], out.nCC, out.nNC, out.ID))
+            output.append((energies[i], 0., thetas[i], out.nCC, out.nNC, out.ID, i))
         else:
-            output.append((energies[i], float(out.energy), thetas[i], out.nCC, out.nNC, out.ID))
+            output.append((energies[i], float(out.energy), thetas[i], out.nCC, out.nNC, out.ID, i))
         if not no_secondaries:
             secondary_basket.append(np.asarray(out.basket))
             idxx = np.hstack([idxx, [i for _ in out.basket]])
@@ -210,14 +210,14 @@ def run_MC(eini: np.ndarray,
                                     xs=xs, proposal_propagator=sec_prop[sec['ID']], secondaries=False, no_losses=False)
             sec_out      = Propagate(sec_particle, my_track, body)
             if(not sec_out.survived):
-                output.append((sec_out.energy, 0.0, thetas[i], sec_out.nCC, sec_out.nNC, sec_out.ID))
+                output.append((sec_out.energy, 0.0, thetas[i], sec_out.nCC, sec_out.nNC, sec_out.ID, i))
             else:
                 output.append((sec_out.initial_energy, sec_out.energy, thetas[i], 
-    				                 sec_out.nCC, sec_out.nNC, sec_out.ID))
+    				                 sec_out.nCC, sec_out.nNC, sec_out.ID, i))
             del sec_particle
             del sec_out     
         
-    output = np.array(output, dtype = [('Eini', float), ('Eout',float), ('Theta', float), ('nCC', int), ('nNC', int), ('PDG_Encoding', int)])
+    output = np.array(output, dtype = [('Eini', float), ('Eout',float), ('Theta', float), ('nCC', int), ('nNC', int), ('PDG_Encoding', int), ('primary_tau', int)])
     output['Theta'] = np.degrees(output['Theta'])
                        
     return output
