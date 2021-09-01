@@ -10,8 +10,8 @@ NUCLEONS     = ['n', 'p']
 INTERACTIONS = ['CC', 'NC']
 TOT_DIF      = ['dsde', 'sigma']
 
-with path('taurunner.resources', 'cross_section_tables') as p:
-    TABLES_PATH = str(p)
+with path('taurunner.resources.cross_section_tables', '__init__.py') as p:
+    TABLES_PATH = str(p).split('__init__.py')[0]
 
 # Helper functions
 def tot_xs(E, spl):
