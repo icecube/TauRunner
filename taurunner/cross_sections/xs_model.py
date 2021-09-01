@@ -1,6 +1,6 @@
 import numpy as np
 import pickle as pkl
-from importlib.resources import path
+from importlib.resources import imppath
 
 import taurunner as tr
 from taurunner.utils import units
@@ -10,8 +10,6 @@ NUCLEONS     = ['n', 'p']
 INTERACTIONS = ['CC', 'NC']
 TOT_DIF      = ['dsde', 'sigma']
 
-with path('taurunner.resources.cross_section_tables', '__init__.py') as p:
-    TABLES_PATH = str(p).split('__init__.py')[0]
 
 # Helper functions
 def tot_xs(E, spl):
@@ -27,9 +25,13 @@ def diff_xs(E_in, E_out, spl):
 
 class XSModel(object):
 
-    def __init__(self, model:str):
+    def __init__(self, model:str, path:str=''):
         
         self.model = model
+        if not path:
+            with imppath('taurunner.resources.cross_section_tables', '__init__.py') as p:
+                path = str(p).split('__init__.py')[0]
+
 
         # Iterate through all posibilities
         for nucleon in NUCLEONS:
