@@ -155,6 +155,7 @@ def run_MC(eini: np.ndarray,
            no_secondaries: bool = False,
            flavor: int = 16,
            no_losses: bool = False,
+           e_cut=0
           ) -> np.ndarray:
     r'''
     Main simulation code. Propagates an ensemble of initial states and returns the output
@@ -193,7 +194,7 @@ def run_MC(eini: np.ndarray,
                             propagator, not no_secondaries, no_losses)
         
         my_track = tracks[thetas[i]]
-        out      = Propagate(particle, my_track, body, e_cut=args.e_cut*units.GeV)
+        out      = Propagate(particle, my_track, body, e_cut=e_cut)
     
         if (out.survived==False):
             #these muons/electrons were absorbed. we record them in the output with outgoing energy 0
@@ -224,7 +225,7 @@ def run_MC(eini: np.ndarray,
                                     secondaries=False, 
                                     no_losses=False
                                    )
-            sec_out = Propagate(sec_particle, my_track, body, e_cut=args.e_cut*units.GeV)
+            sec_out = Propagate(sec_particle, my_track, body, e_cut=e_cut)
             if(not sec_out.survived):
                 output.append((sec_out.initial_energy, 0.0, thetas[i], sec_out.nCC, sec_out.nNC, sec_out.ID, i, sec_out.position))
             else:
@@ -301,7 +302,7 @@ if __name__ == "__main__": # pragma: no cover
 
     result = run_MC(eini, thetas, body, xs, tracks, prop, rand=rand,
                     no_secondaries=TR_specs['no_secondaries'], no_losses=TR_specs['no_losses'],
-                    flavor=TR_specs['flavor'])
+                    flavor=TR_specs['flavor'], e_cut=args.e_cut*units.GeV)
 
     if TR_specs['save']:
         if '.npy' not in TR_specs['save']:
