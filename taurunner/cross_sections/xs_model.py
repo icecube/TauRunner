@@ -1,6 +1,6 @@
 import numpy as np
 import pickle as pkl
-from importlib.resources import imppath
+from importlib.resources import path as imppath
 
 import taurunner as tr
 from taurunner.utils import units
@@ -40,7 +40,7 @@ class XSModel(object):
                     for interaction in INTERACTIONS:
                         desc_str = f'{nutype}_{nucleon}_{td}_{interaction}'
                         # TODO add check to throw more readable error
-                        with open(f'{TABLES_PATH}/{model}_{desc_str}.pkl', 'rb') as pkl_f:
+                        with open(f'{path}/{model}_{desc_str}.pkl', 'rb') as pkl_f:
                             setattr(self, f'_{desc_str}', pkl.load(pkl_f))
 
     def total_cross_section(self, E, nutype, interaction, proton_fraction=0.5):
