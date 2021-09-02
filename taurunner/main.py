@@ -135,6 +135,12 @@ def initialize_parser(): # pragma: no cover
                         action='store_true', 
                         help='Do you want to print out debug statments? If so, raise this flag'
                        ) 
+    parser.add_argument('--e_cut',
+                        dest='e_cut',
+                        default=0.0,
+                        type=float,
+                        help='Energy at which to stop the propagation.'
+                       )
 
     args = parser.parse_args()
     return args
@@ -187,13 +193,13 @@ def run_MC(eini: np.ndarray,
                             propagator, not no_secondaries, no_losses)
         
         my_track = tracks[thetas[i]]
-        out      = Propagate(particle, my_track, body)
+        out      = Propagate(particle, my_track, body, e_cut=args.e_cut*units.GeV)
     
         if (out.survived==False):
             #these muons/electrons were absorbed. we record them in the output with outgoing energy 0
-            output.append((energies[i], 0.,                thetas[i], out.nCC, out.nNC, out.ID, i))
+            output.append((energies[i], 0., thetas[i], out.nCC, out.nNC, out.ID, i, out.position))
         else:
-            output.append((energies[i], float(out.energy), thetas[i], out.nCC, out.nNC, out.ID, i))
+            output.append((energies[i], float(out.energy), thetas[i], out.nCC, out.nNC, out.ID, i, out.position))
         if not no_secondaries:
             secondary_basket.append(np.asarray(out.basket))
             idxx = np.hstack([idxx, [i for _ in out.basket]])
@@ -206,6 +212,7 @@ def run_MC(eini: np.ndarray,
         sec_prop         = {ID:make_propagator(ID, body, xs_model) for ID in [-12, -14]}
 
         for sec, i in zip(secondary_basket, idxx):
+            my_track = tracks[thetas[i]]
             sec_particle = Particle(
                                     sec['ID'], 
                                     sec['energy'],
@@ -217,16 +224,16 @@ def run_MC(eini: np.ndarray,
                                     secondaries=False, 
                                     no_losses=False
                                    )
-            sec_out = Propagate(sec_particle, tracks[thetas[i]], body)
+            sec_out = Propagate(sec_particle, my_track, body, e_cut=args.e_cut*units.GeV)
             if(not sec_out.survived):
-                output.append((sec_out.initial_energy, 0.0, thetas[i], sec_out.nCC, sec_out.nNC, sec_out.ID, i))
+                output.append((sec_out.initial_energy, 0.0, thetas[i], sec_out.nCC, sec_out.nNC, sec_out.ID, i, sec_out.position))
             else:
                 output.append((sec_out.initial_energy, sec_out.energy, thetas[i], 
-    				                 sec_out.nCC, sec_out.nNC, sec_out.ID, i))
+    				                 sec_out.nCC, sec_out.nNC, sec_out.ID, i, sec_out.position))
             del sec_particle
             del sec_out     
         
-    output = np.array(output, dtype = [('Eini', float), ('Eout',float), ('Theta', float), ('nCC', int), ('nNC', int), ('PDG_Encoding', int), ('primary_tau', int)])
+    output = np.array(output, dtype = [('Eini', float), ('Eout',float), ('Theta', float), ('nCC', int), ('nNC', int), ('PDG_Encoding', int), ('primary_tau', int), ('final_position', float)])
     output['Theta'] = np.degrees(output['Theta'])
                        
     return output
