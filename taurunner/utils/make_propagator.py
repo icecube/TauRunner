@@ -47,10 +47,10 @@ def make_propagator(ID, body, xs_model='dipole', granularity=0.5):
         tables_path = str(p).split('tables.txt')[0]
     
     #define interpolator
-    interpolation_def = pp.InterpolationDef()
-    interpolation_def.path_to_tables = tables_path
+    interpolation_def                         = pp.InterpolationDef()
+    interpolation_def.path_to_tables          = tables_path
     interpolation_def.path_to_tables_readonly = tables_path
-    interpolation_def.nodes_cross_section = 199
+    interpolation_def.nodes_cross_section     = 199
 
     #define propagator -- takes a particle definition - sector - detector - interpolator
     prop = pp.Propagator(particle_def=particle_def,
@@ -62,13 +62,14 @@ def make_propagator(ID, body, xs_model='dipole', granularity=0.5):
 
 
 def make_sector(density, start, end, xs_model):
-    sec_def = pp.SectorDefinition()
-    sec_def.medium = pp.medium.Ice(density)
-    sec_def.geometry = pp.geometry.Sphere(pp.Vector3D(), end, start)
-    sec_def.particle_location = pp.ParticleLocation.inside_detector        
-    sec_def.scattering_model  = pp.scattering.ScatteringModel.Moliere
+    sec_def                                        = pp.SectorDefinition()
+    sec_def.medium                                 = pp.medium.Ice(density)
+    sec_def.geometry                               = pp.geometry.Sphere(pp.Vector3D(), end, start)
+    sec_def.particle_location                      = pp.ParticleLocation.inside_detector        
+    sec_def.scattering_model                       = pp.scattering.ScatteringModel.Moliere
     sec_def.crosssection_defs.brems_def.lpm_effect = True
     sec_def.crosssection_defs.epair_def.lpm_effect = True
+
     
     sec_def.cut_settings.ecut = 1e9*1e3
     sec_def.cut_settings.vcut = 1.0
