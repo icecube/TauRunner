@@ -187,11 +187,11 @@ def run_MC(eini: np.ndarray,
                             propagator, not no_secondaries, no_losses)
         
         my_track = tracks[thetas[i]]
-        out = Propagate(particle, my_track, body)
+        out      = Propagate(particle, my_track, body)
     
         if (out.survived==False):
             #these muons/electrons were absorbed. we record them in the output with outgoing energy 0
-            output.append((energies[i], 0., thetas[i], out.nCC, out.nNC, out.ID, i))
+            output.append((energies[i], 0.,                thetas[i], out.nCC, out.nNC, out.ID, i))
         else:
             output.append((energies[i], float(out.energy), thetas[i], out.nCC, out.nNC, out.ID, i))
         if not no_secondaries:
@@ -203,14 +203,23 @@ def run_MC(eini: np.ndarray,
     if not no_secondaries:    
         #make muon propagator
         secondary_basket = np.concatenate(secondary_basket)
-        #ids = np.unique([s['ID'] for s in secondary_basket])
-        sec_prop = {ID:make_propagator(ID, body, xs_model) for ID in [-12, -14]}
+        sec_prop         = {ID:make_propagator(ID, body, xs_model) for ID in [-12, -14]}
+
         for sec, i in zip(secondary_basket, idxx):
-            sec_particle = Particle(sec['ID'], sec['energy'], thetas[i], sec['position'], rand,
-                                    xs=xs, proposal_propagator=sec_prop[sec['ID']], secondaries=False, no_losses=False)
-            sec_out      = Propagate(sec_particle, my_track, body)
+            sec_particle = Particle(
+                                    sec['ID'], 
+                                    sec['energy'],
+                                    thetas[i], 
+                                    sec['position'], 
+                                    rand,
+                                    xs=xs, 
+                                    proposal_propagator=sec_prop[sec['ID']], 
+                                    secondaries=False, 
+                                    no_losses=False
+                                   )
+            sec_out = Propagate(sec_particle, tracks[thetas[i]], body)
             if(not sec_out.survived):
-                output.append((sec_out.energy, 0.0, thetas[i], sec_out.nCC, sec_out.nNC, sec_out.ID, i))
+                output.append((sec_out.initial_energy, 0.0, thetas[i], sec_out.nCC, sec_out.nNC, sec_out.ID, i))
             else:
                 output.append((sec_out.initial_energy, sec_out.energy, thetas[i], 
     				                 sec_out.nCC, sec_out.nNC, sec_out.ID, i))
