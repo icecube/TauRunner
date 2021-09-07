@@ -31,7 +31,6 @@ def make_initial_e(nevents, energy, e_min=None, e_max=None, rand=None):
         else:
             eini = np.full(nevents, e)*units.GeV
     else:
-        # TODO figure out this part lol
         if not os.path.isfile(energy):
             raise RuntimeError(f"Spline file {energy} does not exist")
         # sample initial energies and incoming angles from GZK parameterization
