@@ -48,10 +48,10 @@ def make_propagator(ID, body, xs_model='dipole', granularity=0.5, **kwargs):
         tables_path = str(p).split('tables.txt')[0]
     
     #define interpolator
-    interpolation_def = pp.InterpolationDef()
-    interpolation_def.path_to_tables = tables_path
+    interpolation_def                         = pp.InterpolationDef()
+    interpolation_def.path_to_tables          = tables_path
     interpolation_def.path_to_tables_readonly = tables_path
-    interpolation_def.nodes_cross_section = 199
+    interpolation_def.nodes_cross_section     = 199
 
     #define propagator -- takes a particle definition - sector - detector - interpolator
     prop = pp.Propagator(particle_def=particle_def,
@@ -61,21 +61,8 @@ def make_propagator(ID, body, xs_model='dipole', granularity=0.5, **kwargs):
 
     return prop
 
-
 def make_sector(density, start, end, xs_model, **kwargs):
-    if 'ecut' in kwargs.keys():
-        ecut = kwargs['ecut']
-    else:
-        ecut = 1e4*1e3
-    if 'vcut' in kwargs.keys():
-        vcut = kwargs['vcut']
-    else:
-        vcut = 1e-3
-    if (vcut > 1e-2) or ecut > (1e11):
-        logging.warning(
-            'PROPOSAL settings exceed maximum TauRunner recommended ecut/vcut'
-            + '\n\tRecommended settings:  Ecut <= 1.00e+11 MeV vcut <= 1.00e-02'
-            + f'\n\tCurrent user settings: Ecut  = {ecut:.2e} MeV vcut  = {vcut:.2e}')
+    ecut, vcut = get_proposal_cuts(kwargs)
     sec_def = pp.SectorDefinition()
     sec_def.medium = pp.medium.Ice(density)
     sec_def.geometry = pp.geometry.Sphere(pp.Vector3D(), end, start)
@@ -83,8 +70,7 @@ def make_sector(density, start, end, xs_model, **kwargs):
     sec_def.scattering_model  = pp.scattering.ScatteringModel.Moliere
     sec_def.crosssection_defs.brems_def.lpm_effect = True
     sec_def.crosssection_defs.epair_def.lpm_effect = True
-    # change out epair_def.parametrization or photonuclear.parametrization 
-    
+    # change out epair_def.parametrization or photonuclear.parametrization     
     sec_def.cut_settings.ecut = ecut
     sec_def.cut_settings.vcut = vcut
     sec_def.do_continuous_randomization = True
@@ -95,3 +81,20 @@ def make_sector(density, start, end, xs_model, **kwargs):
         sec_def.crosssection_defs.photo_def.parametrization = pp.parametrization.photonuclear.PhotoParametrization.AbramowiczLevinLevyMaor97
 
     return sec_def
+
+  def get_proposal_cuts(adict):
+    if 'ecut' in adict.keys():
+        ecut = adict['ecut']
+    else:
+        ecut = 1e4*1e3
+    if 'vcut' in adict.keys():
+        vcut = adict['vcut']
+    else:
+        vcut = 1e-3
+    if (vcut > 1e-2) or ecut > (1e11):
+        logging.warning(
+            'PROPOSAL settings exceed maximum TauRunner recommended ecut/vcut'
+            + '\n\tRecommended settings:  Ecut <= 1.00e+11 MeV vcut <= 1.00e-02'
+            + f'\n\tCurrent user settings: Ecut  = {ecut:.2e} MeV vcut  = {vcut:.2e}')
+
+    return ecut, vcut
