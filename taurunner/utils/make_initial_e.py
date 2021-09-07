@@ -31,11 +31,17 @@ def make_initial_e(nevents, energy, e_min=None, e_max=None, rand=None):
         else:
             eini = np.full(nevents, e)*units.GeV
     else:
-        # TODO figure out this part lol
         if not os.path.isfile(energy):
             raise RuntimeError(f"GZK CDF Spline file {energy} does not exist")
+
         # sample initial energies and incoming angles from GZK parameterization
+        if energy[-3:]=='npy':
+            cdf = np.load(energy, allow_pickle=True, encoding='latin1').item()
+        elif energy[-3:]=='pkl':
+            import pickle as pkl
+            with open(energy, 'rb') as pkl_f:
+                cdf = pkl.load(pkl_f)
+
         cdf_indices = rand.uniform(low=0., high=1.,size=nevents)
-        cdf         = np.load(energy, allow_pickle=True, encoding='latin1').item()
         eini        = cdf(cdf_indices)*units.GeV
     return eini
