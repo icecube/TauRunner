@@ -22,13 +22,13 @@ def e_density_from_model(solar_model_file):
 
 class Sun(Body):
 
-    def __init__(self, density, radius, edensity, layer_boundaries=None, name='Sun'):
+    def __init__(self, density, radius, edensity, name='Sun'):
 
-        Body.__init__(self, density, radius, layer_boundaries=layer_boundaries, name=name)
-        if self._is_layered: # pragma: no cover
-            self._edensity = [1./units.cm**3*Callable(obj) for obj in density]
+        Body.__init__(self, density, radius, name=name)
+        if hasattr(density, '__iter__'):# pragma: no cover
+            self._edensity = [1./units.cm**3*Callable(obj) for obj in edensity]
         else:
-            self._edensity = [1./units.cm**3*Callable(density)]
+            self._edensity = [1./units.cm**3*Callable(edensity)]
 
     def get_edensity(self, r):
         if r==1:
