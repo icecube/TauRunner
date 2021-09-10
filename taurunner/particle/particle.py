@@ -14,7 +14,7 @@ proton_mass = ((0.9382720813+0.9395654133)/2.)*units.GeV
 
 ID_2_name = {13:'MuMinusDef', -13:'MuPlusDef', 
              15:'TauMinusDef', -15:'TauPlusDef'}
-
+EMIN = 1e9 # minimum energy allowed in the splines
 #Particle object. 
 class Particle(object):
     r'''
@@ -233,7 +233,7 @@ class Particle(object):
         if np.abs(self.ID) in [12, 14, 16]:
             #Sample energy lost from differential distributions
             NeutrinoInteractionWeights = self.xs.differential_cross_section(self.energy,
-                                                                            self.energy*NeutrinoDifferentialEnergyFractions,
+                                                                            NeutrinoDifferentialEnergyFractions,
                                                                             # TODO make this work with different neutrino types
                                                                             'nu',
                                                                             interaction,
@@ -241,8 +241,9 @@ class Particle(object):
                                                     )
             NeutrinoInteractionWeights = np.divide(NeutrinoInteractionWeights, 
                                                    np.sum(NeutrinoInteractionWeights))
-            self.energy = self.energy*self.rand.choice(NeutrinoDifferentialEnergyFractions,
+            z_choice = self.rand.choice(NeutrinoDifferentialEnergyFractions,
                                                        p=NeutrinoInteractionWeights)
+            self.energy = z_choice*(self.energy-EMIN)+EMIN
 
             if interaction == 'CC':
                 #make a charged particle
