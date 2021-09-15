@@ -9,6 +9,7 @@ from .utils import *
 
 from proposal import Propagator
 from numpy.random import RandomState
+import warnings
 
 proton_mass = ((0.9382720813+0.9395654133)/2.)*units.GeV
 
@@ -207,14 +208,16 @@ class Particle(object):
 
         lep_length  = []
         en_at_decay = []
-        #need to add support to propagate without decay here (fixed distance propagation)
+        # TODO add support to propagate without decay here (fixed distance propagation)
         lep.energy     = 1e3*self.energy/units.GeV
         pos_vec        = track.x_to_pp_pos(self.position, body.radius/units.km*1e5) # radius in cm
         dir_vec        = track.x_to_pp_dir(self.position)
         lep.position   = pos_vec
         lep.direction  = dir_vec
         #propagate
-        sec            = self.propagator.propagate(lep) #, dist_to_prop)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            sec            = self.propagator.propagate(lep) #, dist_to_prop)
         particles      = sec.particles
         #update particle info
         final_vec      = (sec.position[-1] - pos_vec)

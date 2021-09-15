@@ -26,9 +26,10 @@ class Body(object):
         self._name     = name
         # Check if body is segmented
         if hasattr(density, '__iter__'):
-            self._density         = [units.gr/units.cm**3*Callable(tup[0]) for tup in density]
-            self.layer_boundaries = [tup[1] for tup in density]
-            self.layer_boundaries.insert(0, 0) # the first laye boundqary always has to be 0
+            self._density    = [units.gr/units.cm**3*Callable(tup[0]) for tup in density]
+            layer_boundaries = [tup[1] for tup in density]
+            layer_boundaries.insert(0, 0) # the first layer boundary always has to be 0
+            self.layer_boundaries = np.array(layer_boundaries)
         else:
             self._density         = [units.gr/units.cm**3*Callable(density)]
             self.layer_boundaries = np.array([0.0, 1.0])
