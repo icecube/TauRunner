@@ -74,9 +74,9 @@ class TestBodyMethods(unittest.TestCase):
             5)
 
     def test_bad_body(self):
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(TypeError):
             tmp = body.Body([1., 2., 3.], 3.)
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(TypeError):
             tmp = body.Body([1., 2., 3.], 3., 
                 layer_boundaries=[0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6])
     

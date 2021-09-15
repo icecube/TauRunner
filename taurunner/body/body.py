@@ -7,7 +7,6 @@ class Body(object):
     def __init__(self,
                  density, 
                  radius: float, 
-                 layer_boundaries: list = None, 
                  name:str = None
                 ):
         r'''
@@ -19,10 +18,7 @@ class Body(object):
                            that takes a radius (0<=r<=1) and returns a float, or a list of such objects.
                            [gr/cm^3]
         radius           : Radius of the body [meters]
-        layer_boundaries : List which tells the boundaries of different denstiy regions.
-                           Must be provided if the density is given as a list, else will be ignored
         name             : Name to give your object
-        
         '''
 
         self.radius    = radius*units.km
@@ -30,16 +26,11 @@ class Body(object):
         self._name     = name
         # Check if body is segmented
         if hasattr(density, '__iter__'):
-            if layer_boundaries is None:
-                raise RuntimeError('You must specify layer boundaries')
-            elif len(layer_boundaries)!=len(density)+1:
-                raise RuntimeError('Density and layer_boundaries must have same length.')
-            else:
-                self._is_layered      = True
-                self._density         = [units.gr/units.cm**3*Callable(obj) for obj in density]
-                self.layer_boundaries = layer_boundaries
+            self._density    = [units.gr/units.cm**3*Callable(tup[0]) for tup in density]
+            layer_boundaries = [tup[1] for tup in density]
+            layer_boundaries.insert(0, 0) # the first layer boundary always has to be 0
+            self.layer_boundaries = np.array(layer_boundaries)
         else:
-            self._is_layered      = False
             self._density         = [units.gr/units.cm**3*Callable(density)]
             self.layer_boundaries = np.array([0.0, 1.0])
         self._average_densities()

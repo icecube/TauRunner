@@ -23,7 +23,12 @@ def Propagate(particle: Particle, track: Track, body: Body, condition=None) -> P
     total_distance     = track.x_to_d(1.-particle.position)*body.radius/units.km
     #keep iterating until final column depth is reached or a charged lepton is made
     if condition:
-        stopping_condition = lambda particle: (particle.position >= 1. or  particle.survived==False or condition(particle))
+        if hasattr(condition, '__call__'):
+            stopping_condition = lambda particle: (particle.position >= 1. or  particle.survived==False or condition(particle))
+        elif type(condition)==tuple:
+            stopping_condition = lambda particle: (particle.position >= 1. or  particle.survived==False or condition[0](particle, *condition[1]))
+        else:
+            raise TypeError('Not known how to handle condition argument')
     else:
         stopping_condition = lambda particle: (particle.position >= 1. or  particle.survived==False)
     while(not stopping_condition(particle)):

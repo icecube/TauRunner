@@ -29,13 +29,13 @@ class TestXSecMethods(unittest.TestCase):
             self.csms.differential_cross_section(10., [1., 2., 3.], 'nubar', 'BC')
 
     def test_differential(self):
-        self.assertEqual(self.dipole.differential_cross_section(0.1, [1.0], 'nu', 'CC'),
-            0.)
-        self.assertAlmostEqual(np.log10(self.dipole.differential_cross_section(1e15, np.asarray([1e14, 2e14, 3e14]), 'nu', 'CC')[1]),
+        #self.assertEqual(self.dipole.differential_cross_section(0.1, [1.0], 'nu', 'CC'),
+            #0.)
+        self.assertAlmostEqual(np.log10(self.dipole.differential_cross_section(1e15, np.asarray([0.1, 0.2, 0.3]), 'nu', 'CC')[1]),
             np.log10(2.776026967357417e-40), 3)
-        self.assertAlmostEqual(np.log10(self.csms.differential_cross_section(1e15, np.asarray([1e14, 2e14, 3e14]), 'nu', 'CC')[1]),
+        self.assertAlmostEqual(np.log10(self.csms.differential_cross_section(1e15, np.asarray([0.1, 0.2, 0.3]), 'nu', 'CC')[1]),
             np.log10(6.7270713004890386e-40), 3)
-        self.assertAlmostEqual(np.log10(self.csms.differential_cross_section(1e15, np.asarray([1e14, 2e14, 3e14]), 'nu', 'NC')[-1]),
+        self.assertAlmostEqual(np.log10(self.csms.differential_cross_section(1e15, np.asarray([0.1, 0.2, 0.3]), 'nu', 'NC')[-1]),
             np.log10(2.7432728976770823e-40), 3)
 
 if __name__ == '__main__':

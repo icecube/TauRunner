@@ -15,11 +15,9 @@ TOT_DIF      = ['dsde', 'sigma']
 def tot_xs(E, spl):
     return np.exp(spl(np.log(E)))
 
-def diff_xs(E_in, E_out, spl):
+def diff_xs(E_in, zz, spl):
     E_min = 1e9 # Lowest knot on spline in eV
-    E_in  = E_in
-    E_out = E_out
-    zz    = (E_out-E_min)/(E_in-E_min)
+    #zz    = (E_out-E_min)/(E_in-E_min)
     res   = np.exp(spl(np.log(E_in), zz)[0])/E_in
     return res
 
@@ -49,12 +47,12 @@ class XSModel(object):
               neutron_fraction*tot_xs(E, getattr(self, f'_{nutype}_n_sigma_{interaction}'))
         return val
 
-    def differential_cross_section(self, Ein, Eout, nutype, interaction, proton_fraction=0.5):
-        Eout = np.atleast_1d(Eout)
+    def differential_cross_section(self, Ein, zz, nutype, interaction, proton_fraction=0.5):
+        zz = np.atleast_1d(zz)
         neutron_fraction = 1.0-proton_fraction
-        val = proton_fraction *diff_xs(Ein, Eout, getattr(self, f'_{nutype}_p_dsde_{interaction}')) + \
-              neutron_fraction*diff_xs(Ein, Eout, getattr(self, f'_{nutype}_n_dsde_{interaction}'))
-        val[Eout > Ein] = 0.
+        val = proton_fraction *diff_xs(Ein, zz, getattr(self, f'_{nutype}_p_dsde_{interaction}')) + \
+              neutron_fraction*diff_xs(Ein, zz, getattr(self, f'_{nutype}_n_dsde_{interaction}'))
+        #val[Eout>Ein] = 0.
         if val.shape == (1,):
             val = val[0]
         return val
