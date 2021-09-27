@@ -82,5 +82,4 @@ class Chord(Track):
                                 0, 
                                 -self._c*rad*self._t*(1-x)+(1-self.depth)*rad
                                )
-        #print(pos_vec.x, pos_vec.y, pos_vec.z)
         return pos_vec

@@ -70,8 +70,8 @@ def TauDecayToAll(Etau, Enu, P):
     return decay_spectra
 
 proton_mass = ((0.9382720813+0.9395654133)/2.)*units.GeV
-NeutrinoDifferentialEnergyFractions = np.linspace(0.0,1.0,300)[1:-1]
-TauDecayFractions = np.linspace(0.0,1.0,500)[1:-1]
+NeutrinoDifferentialEnergyFractions = np.linspace(0.0,1.0,1000)[1:-1]
+TauDecayFractions = np.linspace(0.0,1.0,1000)[1:-1]
 Etau = 100.
 dNTaudz = lambda z: TauDecayToAll(Etau, Etau*z, -1.)
 TauDecayWeights = np.array(list(map(dNTaudz,TauDecayFractions)))
@@ -98,7 +98,7 @@ def SampleSecondariesEnergyFraction(u, cdf):
         return (iuvs(bins,cdf-u).roots())[0]
     except:
         if u <= np.min(spl_cdf(bins)): 
-            return 1e-3
+            return 1e-5
         elif u == np.max(spl_cdf(bins)):
             return 1
 
