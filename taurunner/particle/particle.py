@@ -209,8 +209,8 @@ class Particle(object):
         lep_length  = []
         en_at_decay = []
         # TODO add support to propagate without decay here (fixed distance propagation)
-        lep.energy     = 1e3*self.energy/units.GeV
-        pos_vec        = track.x_to_pp_pos(self.position, body.radius/units.km*1e5) # radius in cm
+        lep.energy     = self.energy/units.MeV
+        pos_vec        = track.x_to_pp_pos(self.position, body.radius/units.cm) # radius in cm
         dir_vec        = track.x_to_pp_dir(self.position)
         lep.position   = pos_vec
         lep.direction  = dir_vec
