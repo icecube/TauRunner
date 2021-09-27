@@ -71,8 +71,8 @@ def make_sector(density, start, end, xs_model):
     sec_def.crosssection_defs.epair_def.lpm_effect = True
 
     
-    sec_def.cut_settings.ecut = 1e9*1e3
-    sec_def.cut_settings.vcut = 1.0
+    sec_def.cut_settings.ecut = 1e12
+    sec_def.cut_settings.vcut = 1.
     sec_def.do_continuous_randomization = True
 
     if(xs_model=='dipole'):
