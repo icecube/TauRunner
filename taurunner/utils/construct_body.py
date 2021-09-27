@@ -5,9 +5,8 @@ def construct_body(TR_specs):
             body = lumen_sit([(TR_specs['water'], 1)])
         else:
             body = lumen_sit()
-    elif TR_specs['body']=='sun':
-        from taurunner.body import HZ_Sun
-        body = HZ_Sun
+    elif 'sun' in TR_specs['body'].lower():
+        body = getattr(taurunner.body, TR_specs['body'])
     else:
         try:
             density = float(TR_specs['body'])
