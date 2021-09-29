@@ -208,8 +208,8 @@ class Particle(object):
         lep_length  = []
         en_at_decay = []
         #need to add support to propagate without decay here (fixed distance propagation)
-        lep.energy     = 1e3*self.energy/units.GeV
-        pos_vec        = track.x_to_pp_pos(self.position, body.radius/units.km*1e5) # radius in cm
+        lep.energy     = self.energy/units.MeV
+        pos_vec        = track.x_to_pp_pos(self.position, body.radius/units.cm) # radius in cm
         dir_vec        = track.x_to_pp_dir(self.position)
         lep.position   = pos_vec
         lep.direction  = dir_vec
@@ -222,12 +222,12 @@ class Particle(object):
         decay_products = [p for i,p in zip(range(max(len(particles)-3,0),len(particles)), particles[-3:]) if int(p.type) <= 1000000001]
         en_at_decay    = np.sum([p.energy for p in decay_products])
         if(en_at_decay==0):    #particle reached the border before decaying
-            self.energy = particles[-1].parent_particle_energy*units.GeV/1e3
+            self.energy = particles[-1].parent_particle_energy*units.MeV
             self.chargedposition = float(np.ceil(lep_length))
         else:                  #particle decayed before reaching the border
-            self.energy    = en_at_decay*units.GeV/1e3
+            self.energy    = en_at_decay*units.MeV
             self.chargedposition  = lep_length
-        return
+        return sec
 
     def Interact(self, interaction, body=None, track=None): #  dist_to_prop=None, current_density=None):
         if np.abs(self.ID) in [12, 14, 16]:

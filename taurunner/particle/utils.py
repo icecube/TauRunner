@@ -73,10 +73,9 @@ proton_mass = ((0.9382720813+0.9395654133)/2.)*units.GeV
 NeutrinoDifferentialEnergyFractions = np.linspace(0.0,1.0,300)[1:-1]
 TauDecayFractions = np.linspace(0.0,1.0,500)[1:-1]
 Etau = 100.
-dNTaudz = lambda z: TauDecayToAll(Etau, Etau*z, 0.)
+dNTaudz = lambda z: TauDecayToAll(Etau, Etau*z, -1.)
 TauDecayWeights = np.array(list(map(dNTaudz,TauDecayFractions)))
 TauDecayWeights = np.divide(TauDecayWeights, np.sum(TauDecayWeights))
-
 
 #########################################################
 #### SECONDARIES ########################################
