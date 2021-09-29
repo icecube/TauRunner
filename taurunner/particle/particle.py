@@ -9,12 +9,13 @@ from .utils import *
 
 from proposal import Propagator
 from numpy.random import RandomState
+import warnings
 
 proton_mass = ((0.9382720813+0.9395654133)/2.)*units.GeV
 
 ID_2_name = {13:'MuMinusDef', -13:'MuPlusDef', 
              15:'TauMinusDef', -15:'TauPlusDef'}
-
+EMIN = 1e9 # minimum energy allowed in the splines
 #Particle object. 
 class Particle(object):
     r'''
@@ -207,14 +208,15 @@ class Particle(object):
 
         lep_length  = []
         en_at_decay = []
-        #need to add support to propagate without decay here (fixed distance propagation)
         lep.energy     = self.energy/units.MeV
         pos_vec        = track.x_to_pp_pos(self.position, body.radius/units.cm) # radius in cm
         dir_vec        = track.x_to_pp_dir(self.position)
         lep.position   = pos_vec
         lep.direction  = dir_vec
         #propagate
-        sec            = self.propagator.propagate(lep) #, dist_to_prop)
+        with warnings.catch_warnings():
+            warnings.simplefilter("ignore")
+            sec            = self.propagator.propagate(lep) #, dist_to_prop)
         particles      = sec.particles
         #update particle info
         final_vec      = (sec.position[-1] - pos_vec)
@@ -233,7 +235,7 @@ class Particle(object):
         if np.abs(self.ID) in [12, 14, 16]:
             #Sample energy lost from differential distributions
             NeutrinoInteractionWeights = self.xs.differential_cross_section(self.energy,
-                                                                            self.energy*NeutrinoDifferentialEnergyFractions,
+                                                                            NeutrinoDifferentialEnergyFractions,
                                                                             # TODO make this work with different neutrino types
                                                                             'nu',
                                                                             interaction,
@@ -241,8 +243,9 @@ class Particle(object):
                                                     )
             NeutrinoInteractionWeights = np.divide(NeutrinoInteractionWeights, 
                                                    np.sum(NeutrinoInteractionWeights))
-            self.energy = self.energy*self.rand.choice(NeutrinoDifferentialEnergyFractions,
+            z_choice = self.rand.choice(NeutrinoDifferentialEnergyFractions,
                                                        p=NeutrinoInteractionWeights)
+            self.energy = z_choice*(self.energy-EMIN)+EMIN
 
             if interaction == 'CC':
                 #make a charged particle

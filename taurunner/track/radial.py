@@ -40,6 +40,6 @@ class Radial(Track):
         phi       = 2.*self.theta
         pos_vec   = pp.Vector3D(0,
                                 0, 
-                                rad*(1-self.depth)
+                                x*rad*(1-self.depth)
                                )
         return pos_vec
