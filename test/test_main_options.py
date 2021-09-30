@@ -18,7 +18,7 @@ class TestMainMethods(unittest.TestCase):
 
         num_sim = 30
         rand = np.random.RandomState(5)
-        body = lumen_sit(layers=[])
+        body = construct_earth(layers=[])
         xs = CrossSections('dipole')
         prop = make_propagator(16, body, xs_model=xs.model)
 
