@@ -67,6 +67,10 @@ class Particle(object):
         self.xs_model        = xs.model
         self.propagator      = proposal_propagator
         self.losses          = not no_losses
+        if ID > 0:
+            self.nutype = 'nu'
+        elif ID < 0:
+            self.nutype = 'nubar'
         
     def SetParticleProperties(self):
         r'''
@@ -133,7 +137,7 @@ class Particle(object):
         return(1./(1./self.GetInteractionDepth(interaction='NC')
                + 1./self.GetInteractionDepth(interaction='CC')))
 
-    def GetInteractionDepth(self, interaction):
+    def GetInteractionDepth(self, interaction, proton_fraction=0.5):
         r'''
         Calculates the mean column depth to interaction.
 
@@ -149,8 +153,9 @@ class Particle(object):
         if np.abs(self.ID) in [12, 14, 16]:
             return proton_mass/(self.xs.total_cross_section(
                                                             self.energy, 
-                                                            'nu', 
-                                                            interaction
+                                                            self.nutype, 
+                                                            interaction,
+                                                            proton_fraction=proton_fraction
                                                            )
                                )
         if np.abs(self.ID) == 15:
@@ -232,15 +237,14 @@ class Particle(object):
             self.chargedposition  = lep_length
         return
 
-    def Interact(self, interaction, body=None, track=None): #  dist_to_prop=None, current_density=None):
+    def Interact(self, interaction, body=None, track=None, proton_fraction=0.5): #  dist_to_prop=None, current_density=None):
         if np.abs(self.ID) in [12, 14, 16]:
             #Sample energy lost from differential distributions
             NeutrinoInteractionWeights = self.xs.differential_cross_section(self.energy,
                                                                             NeutrinoDifferentialEnergyFractions,
-                                                                            # TODO make this work with different neutrino types
-                                                                            'nu',
+                                                                            self.nutype,
                                                                             interaction,
-                                                                            # TODO make this work with different proton fractions
+                                                                            proton_fraction=proton_fraction
                                                     )
             NeutrinoInteractionWeights = np.divide(NeutrinoInteractionWeights, 
                                                    np.sum(NeutrinoInteractionWeights))
