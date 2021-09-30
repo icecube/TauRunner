@@ -32,7 +32,7 @@ def construct_earth(layers: list=[]) -> Body:
     earth : TauRunner Earth object
     '''
     r_tot            =  6368.
-    layer_boundaries = [1221, 3480, 5701, 5771, 5971, 6151, 6346.6, 6356, 6368]
+    layer_boundaries = [1221.5, 3480, 5701, 5771, 5971, 6151, 6346.6, 6356, 6368]
     pparams          = [_ for _ in prem_params] # hacky fix sorry
     for layer in layers:
         r, density = layer

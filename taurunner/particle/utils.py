@@ -77,7 +77,6 @@ dNTaudz = lambda z: TauDecayToAll(Etau, Etau*z, -1.)
 TauDecayWeights = np.array(list(map(dNTaudz,TauDecayFractions)))
 TauDecayWeights = np.divide(TauDecayWeights, np.sum(TauDecayWeights))
 
-
 #########################################################
 #### SECONDARIES ########################################
 #########################################################
