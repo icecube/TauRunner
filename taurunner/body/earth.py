@@ -18,7 +18,7 @@ def helper(param):
     func = lambda x: prem_density(x, param)
     return func
 
-def lumen_sit(layers: list=[]) -> Body:
+def construct_earth(layers: list=[]) -> Body:
     r'''
     Function for making the PREM Earth
 
