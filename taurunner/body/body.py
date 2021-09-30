@@ -7,6 +7,7 @@ class Body(object):
     def __init__(self,
                  density, 
                  radius: float, 
+                 proton_fraction=0.5,
                  name:str = None
                 ):
         r'''
@@ -33,6 +34,14 @@ class Body(object):
         else:
             self._density         = [units.gr/units.cm**3*Callable(density)]
             self.layer_boundaries = np.array([0.0, 1.0])
+        if hasattr(proton_fraction, '__iter__'):
+            self._pfract      = [Callable(tup[0]) for tup in proton_fraction]
+            player_boundaries = [tup[1] for tup in proton_fraction]
+            player_boundaries.insert(0, 0) # the first layer boundary always has to be 0
+            self.player_boundaries = np.array(player_boundaries)
+        else:
+            self._pfract          = [Callable(proton_fraction)]
+            self.player_boundaries = np.array([0.0, 1.0])
         self._average_densities()
 
     def get_density(self, r: float, right: bool=False) -> float:
@@ -84,3 +93,25 @@ class Body(object):
             average_density.append(I[0]/(xf-xi))
 
         self._average_density = average_density
+
+    def get_proton_fraction(self, r: float, right: bool=False) -> float:
+        r'''
+        Function to get density at an input radius (0<=r<=1)
+
+        Params
+        ______
+        r : Radius in units of radius of the body, i.e. center is r=0 and edge is r=1
+
+        Returns
+        _______
+        current_pfraction : Proton fraction of the body at the input radius in natural units [eV^4]
+        '''
+        if r==1:
+            layer_index = -1
+        elif r==0:
+            layer_index = 0
+	
+        else:
+            layer_index = np.digitize(r, self.player_boundaries, right=right)-1
+        current_density = self._pfract[layer_index]
+        return current_density(r)

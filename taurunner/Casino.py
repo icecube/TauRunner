@@ -48,10 +48,10 @@ def Propagate(particle: Particle, track: Track, body: Body, condition=None) -> P
             p_int_CC = particle.GetTotalInteractionDepth() / CC_lint
             if(p2 <= p_int_CC):
                 #make and propagate charged lepton
-                particle.Interact('CC', body, track)
+                particle.Interact('CC', body, track, proton_fraction=body.get_proton_fraction(track.x_to_r(particle.position)))
                 particle.PropagateChargedLepton(body, track)
             else:
-                particle.Interact('NC')
+                particle.Interact('NC', proton_fraction=body.get_proton_fraction(track.x_to_r(particle.position)))
         elif(np.abs(particle.ID) in [11, 13, 15]):
             current_distance = track.x_to_d(particle.position)*body.radius
             charged_distance = particle.chargedposition*units.km
