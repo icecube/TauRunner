@@ -88,7 +88,7 @@ with path(secondaries_splines, 'antinumu_cdf.npy') as p:
 
 antinue_cdf = np.load(nue_path)
 antinumu_cdf = np.load(numu_path)
-bins = list(np.logspace(-5,0,101))[:-1] # bins for the secondary splines
+bins = list(np.logspace(-3,0,101))[:-1] # bins for the secondary splines
 
 def SampleSecondariesEnergyFraction(u, cdf):
     spl_cdf = iuvs(bins, cdf)
@@ -97,7 +97,7 @@ def SampleSecondariesEnergyFraction(u, cdf):
         return (iuvs(bins,cdf-u).roots())[0]
     except:
         if u <= np.min(spl_cdf(bins)): 
-            return 1e-5
+            return 1e-3
         elif u == np.max(spl_cdf(bins)):
             return 1
 
