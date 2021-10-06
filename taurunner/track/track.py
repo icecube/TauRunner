@@ -4,55 +4,14 @@ from scipy.integrate import quad
 from scipy.interpolate import splrep, splev, interp1d
 from taurunner.utils import units
 from taurunner.body import Body
+from taurunner.track.utils import get_hash, set_spline
 
 class Track(object):
 
     def __init__(self, depth=0.0, theta=None):
-        self.depth                   = depth
-        self._column_depth_functions = {}
+        self.depth                = depth
+        self._column_depth_lookup = {}
       
-    def _column_depth(self,
-                      body: Body,
-                      xi: float,
-                      xf: float,
-                      safe_mode=True
-                     ) -> float:
-        '''
-        params
-        ______
-        body      : TauRunner Body object for which you want the column depth
-        xi        : Affine track parameter at which to start the integeration.
-        xf        : Affine track parameter at which to end the integeration.
-        safe_mode : If True make sure the error on the integral is small
-
-        returns
-        _______
-        column_depth : column depth on the portion of the track from xi to xf [natural units]
-        '''
-        if not (xi<=xf):
-            raise RuntimeError('xi must be less than or equal to xf')
-        integrand = lambda x: body.get_density(self.x_to_r(x))*self.x_to_d_prime(x)*body.radius
-        # find where the path intersects layer boundaries
-        xx        = []
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            for r in body.layer_boundaries:
-                xx = np.append(xx, self.r_to_x(r))
-        # NaNs means it does not intersect the layer
-        xx        = xx[np.where(~np.isnan(xx))[0]] # non-nanize
-        # Remove xs before and after the integration limits
-        mask      = np.where(np.logical_and(xi<xx, xx<xf))[0]
-        xx        = np.hstack([[xi], xx[mask], [xf]])
-        II        = []
-        for xi, xf in zip(xx[:-1], xx[1:]):
-            I = quad(integrand, xi, xf, full_output=1)
-            if safe_mode:
-                if I[0]!=0:
-                    if I[1]/I[0]>1e-3:
-                        raise RuntimeError('Error too large')
-            II.append(I[0])
-        return np.sum(II)
-
     def d_to_x(self, d: float) -> float:
         '''
         Convert from distance traveled to track parameter
@@ -66,25 +25,6 @@ class Track(object):
         x : Affine parameter between 0 and 1 which parametrizes the track
         '''
         pass 
-
-    # Precompute column depths when the object is initialized so that we are computing integrals
-    # every time
-    def _initialize_column_depth_functions(self, body: Body):
-        xx            = np.linspace(0, 1, 101)
-        column_depths = np.append(0, np.cumsum([self._column_depth(body, x[0], x[1]) for x in zip(xx[:-1], xx[1:])]))
-        # Pad arrays to help spline stability
-        npad          = 5
-        xpad          = np.linspace(0.01, 0.05, npad)
-        padded_xx     = np.hstack([-xpad[::-1], xx, 1+xpad])
-        padded_cds    = np.hstack([np.full(npad, column_depths[0]), column_depths, np.full(npad, column_depths[-1])])
-        x_to_X_tck    = splrep(padded_xx, padded_cds)
-        X_to_x_tck    = splrep(column_depths, xx)
-        x_to_X        = lambda x: splev(x, x_to_X_tck)
-        X_to_x        = lambda X: splev(X, X_to_x_tck)
-        
-        self._column_depth_functions[body._name] = (column_depths[-1], x_to_X, X_to_x)
-        
-
 
     def r_to_x(self, r: float) -> float:
         '''
@@ -111,9 +51,10 @@ class Track(object):
         _______
         column_depth : total column depth for the entire track [natural units]
         '''
-        if body._name not in self._column_depth_functions.keys():
-            self._initialize_column_depth_functions(body)
-        return self._column_depth_functions[body._name][0]
+        hash_s = get_hash(self, body)
+        if hash_s not in self._column_depth_lookup.keys():
+            set_spline(self, body)
+        return self._column_depth_lookup[hash_s][0]
 
     def x_to_cartesian_direction(x):
         '''
@@ -187,11 +128,12 @@ class Track(object):
         _______
         x : Affine track parameter
         '''
-        if body._name not in self._column_depth_functions.keys():
-            self._initialize_column_depth_functions(body)
-        max_X = self._column_depth_functions[body._name][0]
+        hash_s = get_hash(self, body)
+        if hash_s not in self._column_depth_lookup.keys():
+            set_spline(self, body)
+        max_X = self._column_depth_lookup[hash_s][0]
         if X<=max_X:
-            return self._column_depth_functions[body._name][2](X)
+            return self._column_depth_lookup[hash_s][2](X)
         else:
             raise ValueError('Column depth was greater than total')
 
@@ -209,9 +151,10 @@ class Track(object):
         _______
         X : Column depth [natural units]
         '''
-        if body._name not in self._column_depth_functions.keys():
-            self._initialize_column_depth_functions(body)
-        return self._column_depth_functions[body._name][1](x)
+        hash_s = get_hash(self, body)
+        if hash_s not in self._column_depth_lookup.keys():
+            set_spline(self, body)
+        return self._column_depth_lookup[hash_s][1](x)
 
     def x_to_pp_dir(self, x):
         pass
