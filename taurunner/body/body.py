@@ -110,7 +110,6 @@ class Body(object):
             layer_index = -1
         elif r==0:
             layer_index = 0
-	
         else:
             layer_index = np.digitize(r, self.player_boundaries, right=right)-1
         current_density = self._pfract[layer_index]
