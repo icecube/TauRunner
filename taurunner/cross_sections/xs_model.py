@@ -16,7 +16,7 @@ def tot_xs(E, spl):
     return np.exp(spl(np.log(E)))
 
 def diff_xs(E_in, zz, spl):
-    E_min = 1e9 # Lowest knot on spline in eV
+    #E_min = 1e9 # Lowest knot on spline in eV
     #zz    = (E_out-E_min)/(E_in-E_min)
     res   = np.exp(spl(np.log(E_in), zz)[0])/E_in
     return res
