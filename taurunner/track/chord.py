@@ -18,6 +18,7 @@ class Chord(Track):
         '''
         Track.__init__(self, depth=depth)
         self.theta = theta
+        self.desc  = 'chord'
         self._c    = np.cos(theta)
         self._s    = np.sin(theta)
         self._l1   = np.sqrt(self._c**2+2*depth*self._s**2-depth**2*self._s**2)

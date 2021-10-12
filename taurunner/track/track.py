@@ -1,8 +1,4 @@
 import numpy as np
-import warnings
-from scipy.integrate import quad
-from scipy.interpolate import splrep, splev, interp1d
-from taurunner.utils import units
 from taurunner.body import Body
 from taurunner.track.utils import get_hash, set_spline
 
@@ -11,6 +7,7 @@ class Track(object):
     def __init__(self, depth=0.0, theta=None):
         self.depth                = depth
         self._column_depth_lookup = {}
+        self.desc                 = 'generic_track'
       
     def d_to_x(self, d: float) -> float:
         '''
