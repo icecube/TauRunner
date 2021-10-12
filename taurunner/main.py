@@ -3,8 +3,8 @@
 import os, sys, json
 import proposal as pp
 
-from taurunner.utils import units, sample_powerlaw, is_floatable, make_propagator
-import taurunner.track as track
+from taurunner.utils import units, make_propagator
+from taurunner import track
 from taurunner.body import *
 from taurunner.cross_sections import CrossSections
 from taurunner.Casino import *
@@ -185,15 +185,24 @@ def run_MC(eini: np.ndarray,
     secondary_basket = []
     idxx             = []
 
+    prv_theta = np.nan
     # Run the algorithm
     # All neutrinos are propagated until exiting as tau neutrino or taus.
     # If secondaries are on, then each event has a corresponding secondaries basket
     # which are propagated all at once in the end.
     for i in range(nevents):
-        particle = Particle(particleIDs[i], energies[i], thetas[i], 0.0, rand, xs,
-                            propagator, not no_secondaries, no_losses)
-        
-        my_track = tracks[thetas[i]]
+        cur_theta = thetas[i]
+        if cur_theta!=prv_theta: # We need to make a new track
+            my_track = getattr(track, TR_specs['track'].lower())(theta=cur_theta, depth=TR_specs['depth'])
+        particle = Particle(particleIDs[i], 
+                            energies[i], 
+                            0.0 ,
+                            rand, 
+                            xs,
+                            propagator, 
+                            not no_secondaries, 
+                            no_losses
+        )
         out      = Propagate(particle, my_track, body, condition=condition)
     
         if (out.survived==False):
@@ -204,6 +213,7 @@ def run_MC(eini: np.ndarray,
         if not no_secondaries:
             secondary_basket.append(np.asarray(out.basket))
             idxx = np.hstack([idxx, [i for _ in out.basket]])
+        prv_theta = cur_theta
         del out
         del particle
     idxx = np.asarray(idxx).astype(np.int32)
@@ -211,14 +221,15 @@ def run_MC(eini: np.ndarray,
         #make muon propagator
         secondary_basket = np.concatenate(secondary_basket)
         sec_prop         = {ID:make_propagator(ID, body, xs_model) for ID in [-12, -14]}
-
         for sec, i in zip(secondary_basket, idxx):
-            my_track = tracks[thetas[i]]
+            cur_theta = thetas[i]
+            if cur_theta!=prv_theta: # Make a new track
+                my_track = getattr(track, TR_specs['track'].lower())(theta=cur_theta, depth=TR_specs['depth'])
+            #my_track = tracks[thetas[i]]
             sec_particle = Particle(
                                     sec['ID'], 
                                     sec['energy'],
-                                    thetas[i], 
-                                    sec['position'], 
+                                    sec['position'],
                                     rand,
                                     xs=xs, 
                                     proposal_propagator=sec_prop[sec['ID']], 
@@ -231,6 +242,7 @@ def run_MC(eini: np.ndarray,
             else:
                 output.append((sec_out.initial_energy, sec_out.energy, thetas[i], 
     				                 sec_out.nCC, sec_out.nNC, sec_out.ID, i, sec_out.position))
+            prv_theta = cur_theta
             del sec_particle
             del sec_out     
         

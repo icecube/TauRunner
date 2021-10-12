@@ -25,7 +25,6 @@ class Particle(object):
     def __init__(self, 
                  ID:                  int, 
                  energy:              float, 
-                 incoming_angle:      float, 
                  position:            float, 
                  rand:                RandomState,
                  xs:                  CrossSections, 
@@ -41,7 +40,6 @@ class Particle(object):
         ------
         ID                  : PDG particle identifier
         energy              : Initial energy of the particle [eV]
-        incoming_angle      : Incoming_angle [radians]
         position            : Affine paramter describing the distance along the track of the particle (0<x<1)
         rand                : numpy random number generator
         xs                  : TauRunner CrossSections object
