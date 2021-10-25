@@ -40,7 +40,7 @@ class Body(object):
             player_boundaries.insert(0, 0) # the first layer boundary always has to be 0
             self.player_boundaries = np.array(player_boundaries)
         else:
-            self._pfract          = [Callable(proton_fraction)]
+            self._pfract           = [Callable(proton_fraction)]
             self.player_boundaries = np.array([0.0, 1.0])
         self._average_densities()
 

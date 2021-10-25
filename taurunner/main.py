@@ -9,6 +9,7 @@ from taurunner.body import *
 from taurunner.cross_sections import CrossSections
 from taurunner.Casino import *
 from taurunner.particle import Particle
+from taurunner.utils.make_track import make_track
 
 def initialize_parser(): # pragma: no cover
     r'''
@@ -166,7 +167,6 @@ def run_MC(eini: np.ndarray,
     thetas     : array containing the incoming angles of particles to simulate
     body       : taurunner Body object in which to propagate the particles
     xs         : taurunner CrossSections object for interactions
-    tracks     : dictionary whose keys are angles and whose values are taurunner Track objects
     propagator : PROPOSAL propagator object for charged lepton propagation
     Returns
     _______
@@ -180,24 +180,27 @@ def run_MC(eini: np.ndarray,
     energies    = list(eini)
     particleIDs = np.ones(nevents, dtype=int)*flavor
     xs_model    = xs.model
-
+    prev_th     = thetas[0]
+    prev_track  = make_track(prev_th)
     if rand is None:
         rand = np.random.RandomState()
     secondary_basket = []
-    idxx             = []
-    
+    idxx             = []    
     my_track  = None
     prv_theta = np.nan
     # Run the algorithm
+
     # All neutrinos are propagated until exiting as tau neutrino or taus.
     # If secondaries are on, then each event has a corresponding secondaries basket
     # which are propagated all at once in the end.
     for i in range(nevents):
         cur_theta = thetas[i]
+        cur_e     = energies[i]
+
         if (cur_theta!=prv_theta and track_type=='chord') or my_track is None: # We need to make a new track
             my_track = getattr(track, track_type)(theta=cur_theta, depth=depth)
         particle = Particle(particleIDs[i], 
-                            energies[i], 
+                            cur_e, 
                             0.0 ,
                             rand, 
                             xs,
@@ -205,15 +208,19 @@ def run_MC(eini: np.ndarray,
                             not no_secondaries, 
                             no_losses
         )
+        
         out      = Propagate(particle, my_track, body, condition=condition)
     
         if (out.survived==False):
-            #these muons/electrons were absorbed. we record them in the output with outgoing energy 0
-            output.append((energies[i], 0., thetas[i], out.nCC, out.nNC, out.ID, i, out.position))
+            #this muon/electron was absorbed. we record it in the output with outgoing energy 0
+            output.append((cur_e, 0., cur_th, out.nCC, out.nNC, out.ID, i, out.position))
         else:
-            output.append((energies[i], float(out.energy), thetas[i], out.nCC, out.nNC, out.ID, i, out.position))
+            #this particle escaped
+            output.append((cur_e, float(out.energy), cur_th, out.nCC, out.nNC, out.ID, i, out.position))
         if not no_secondaries:
+            #store secondaries to propagate later
             secondary_basket.append(np.asarray(out.basket))
+            #keep track of parent
             idxx = np.hstack([idxx, [i for _ in out.basket]])
         prv_theta = cur_theta
         del out
@@ -239,17 +246,15 @@ def run_MC(eini: np.ndarray,
                                    )
             sec_out = Propagate(sec_particle, my_track, body, condition=condition)
             if(not sec_out.survived):
-                output.append((sec_out.initial_energy, 0.0, thetas[i], sec_out.nCC, sec_out.nNC, sec_out.ID, i, sec_out.position))
+                output.append((sec_out.initial_energy, 0.0, cur_th, sec_out.nCC, sec_out.nNC, sec_out.ID, i, sec_out.position))
             else:
-                output.append((sec_out.initial_energy, sec_out.energy, thetas[i], 
+                output.append((sec_out.initial_energy, sec_out.energy, cur_th, 
     	    		                 sec_out.nCC, sec_out.nNC, sec_out.ID, i, sec_out.position))
             prv_theta = cur_theta
             del sec_particle
-            del sec_out     
-        
+            del sec_out
     output = np.array(output, dtype = [('Eini', float), ('Eout',float), ('Theta', float), ('nCC', int), ('nNC', int), ('PDG_Encoding', int), ('primary_tau', int), ('final_position', float)])
     output['Theta'] = np.degrees(output['Theta'])
-                       
     return output
 
 if __name__ == "__main__": # pragma: no cover
@@ -304,15 +309,13 @@ if __name__ == "__main__": # pragma: no cover
         theta = (TR_specs['th_min'], TR_specs['th_max'])
     else:
         theta = TR_specs['theta']
-    thetas = make_initial_thetas(TR_specs['nevents'], theta, rand=rand, track_type=TR_specs['track'])
-
-    #from taurunner.utils.make_tracks import make_tracks
-    #tracks = make_tracks(thetas, depth=TR_specs['depth']*units.km/body.radius, track_type=TR_specs['track'])
-
+    thetas = make_initial_thetas(TR_specs['nevents'], theta, rand=rand, track_type=TR_specs['track']
+    sorter = np.argsort(thetas)
+    thetas = thetas[sorter]
+    
     xs = CrossSections(TR_specs['xs_model'])
 
     prop = make_propagator(TR_specs['flavor'], body, TR_specs['xs_model'])
-
     if args.e_cut:
         condition = lambda particle: (particle.energy <= args.e_cut*units.GeV and abs(particle.ID) in [12,14,16])
     else:

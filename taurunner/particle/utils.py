@@ -81,24 +81,17 @@ TauDecayWeights = np.divide(TauDecayWeights, np.sum(TauDecayWeights))
 #### SECONDARIES ########################################
 #########################################################
 
-with path(secondaries_splines, 'antinue_cdf.npy') as p:
+with path(secondaries_splines, 'secondaries_nuebar_spline.npy') as p:
         nue_path = str(p)
-with path(secondaries_splines, 'antinumu_cdf.npy') as p:
+with path(secondaries_splines, 'secondaries_numubar_spline.npy') as p:
         numu_path = str(p)
 
-antinue_cdf = np.load(nue_path)
-antinumu_cdf = np.load(numu_path)
-bins = list(np.logspace(-3,0,101))[:-1] # bins for the secondary splines
+antinue_cdf = np.load(nue_path, allow_pickle=True).item()
+antinumu_cdf = np.load(numu_path, allow_pickle=True).item()
 
 def SampleSecondariesEnergyFraction(u, cdf):
-    spl_cdf = iuvs(bins, cdf)
     # check if random sample u is in the range where the spline is defined
-    try:
-        return (iuvs(bins,cdf-u).roots())[0]
-    except:
-        if u <= np.min(spl_cdf(bins)): 
-            return 1e-3
-        elif u == np.max(spl_cdf(bins)):
-            return 1
-
-
+    if(u<1e-3):
+        return 10**cdf(-3)
+    else:
+        return 10**cdf(np.log10(u))

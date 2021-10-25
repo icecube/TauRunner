@@ -1,0 +1,665 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.9.2" />
+<title>taurunner.main API documentation</title>
+<meta name="description" content="" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS_CHTML" integrity="sha256-kZafAc6mZvK3W3v1pHOcUix30OHQN6pU/NO2oFkqZVw=" crossorigin></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>taurunner.main</code></h1>
+</header>
+<section id="section-intro">
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">#!/usr/bin/env python
+
+import os, sys, json
+import proposal as pp
+
+from taurunner.utils import units, sample_powerlaw, is_floatable, make_propagator
+import taurunner.track as track
+from taurunner.body import *
+from taurunner.cross_sections import CrossSections
+from taurunner.Casino import *
+from taurunner.particle import Particle
+
+def initialize_parser(): # pragma: no cover
+    r&#39;&#39;&#39;
+    Helper function to parse command-line arguments
+    &#39;&#39;&#39;
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument(&#39;-s&#39;,
+                        dest=&#39;seed&#39;,
+                        type=int, 
+                        default=None,
+                        help=&#39;just an integer seed to help with output file names&#39;
+                       )
+    parser.add_argument(&#39;-n&#39;, 
+                        dest=&#39;nevents&#39;, 
+                        type=int, 
+                        default=0,
+                        help=&#39;how many events do you want?&#39;
+                       )
+    parser.add_argument(&#39;-flavor&#39;, 
+                        dest=&#39;flavor&#39;, 
+                        type=int, default=16,
+                        help=&#39;neutrino flavor (default is nutau): 12 for nue 14 for numu 16 for nutau&#39;
+                       )
+    parser.add_argument(&#39;--track&#39;,
+                        dest=&#39;track&#39;,
+                        type=str,
+                        default=&#39;Chord&#39;,
+                        help=&#39;Track type to use. curently only radial and chord trajectories supported.&#39;
+                       )
+    # Energy arguments
+    parser.add_argument(&#39;-e&#39;, 
+                        dest=&#39;energy&#39;,
+                        default=&#39;&#39;,
+                        help=&#39;Energy in GeV if numerical value greater than 0 passed.\n\
+                              Sprectral index if numerical value less than or equal to 0 passed.\n\
+                              Else path to CDF to sample from.&#39;
+                       )
+    parser.add_argument(&#39;--e_min&#39;,
+                        type=float,
+                        default=1e6,
+                        help=&#39;Minimum energy to sample from if doing powerlaw sampling&#39;
+                       )
+    parser.add_argument(&#39;--e_max&#39;,
+                        type=float,
+                        default=1e9,
+                        help=&#39;Minimum energy to sample from if doing powerlaw sampling&#39;
+                       )
+    
+    # Angular arguments
+    parser.add_argument(&#39;-t&#39;, 
+                        dest=&#39;theta&#39;,
+                        default=&#39;&#39;,
+                        help=&#39;nadir angle in degrees if numerical value(0 is through the core).\n\
+                              &#34;range&#34; if you want to sample from a range of thetas. Use --th_min and --th_max to specify lims.&#39;
+                       )
+    parser.add_argument(&#39;--th_max&#39;,
+                        dest=&#39;th_max&#39;,
+                        type=float, 
+                        default=90,
+                        help=&#39;If doing a theta range, maximum theta value. Default 90, i.e. skimming&#39;
+                       )
+    parser.add_argument(&#39;--th_min&#39;, 
+                        type=float,
+                        default=0,
+                        help=&#39;If doing a theta range, minimum theta value. Default 0, i.e. through the core&#39;
+                       )
+    
+    # Saving arguments
+    parser.add_argument(&#39;--save&#39;, 
+                        dest=&#39;save&#39;, 
+                        type=str, 
+                        default=&#39;&#39;, 
+                        help=&#34;If saving output, provide a path here, if not specified, output will be printed&#34;
+                       )
+
+    # cross section args
+    parser.add_argument(&#39;--xs&#39;,
+                        dest=&#39;xs_model&#39;,
+                        type=str,
+                        default=&#39;dipole&#39;,
+                        help=&#34;Enter &#39;CSMS&#39; if you would like to run the simulation with a pQCD xs model&#34;
+                       )
+
+    # Body specification args
+    parser.add_argument(&#39;--body&#39;,
+                        dest=&#39;body&#39;,
+                        default=&#39;earth&#39;,
+                        help=&#34;body to use&#34;
+                       )
+    parser.add_argument(&#39;--water&#39;,
+                        dest=&#39;water&#39;,
+                        type=float, default=0,
+                        help=&#34;If you you would like to add a water layer to the Earth model, enter it here in km.&#34;
+                       )
+    parser.add_argument(&#39;--radius&#39;,
+                        dest=&#39;radius&#39;,
+                        type=float,
+                        default=0,
+                        help=&#34;Raise this flag if you want to turn off tau losses. In this case, taus will decay at rest.&#34;
+                       )
+    parser.add_argument(&#39;--depth&#39;,
+                        dest=&#39;depth&#39;,
+                        type=float,
+                        default=0,
+                        help=&#34;Depth of the detector in km.&#34;
+                       )
+    
+    # Options
+    parser.add_argument(&#39;--no_losses&#39;,
+                        dest=&#39;no_losses&#39;, 
+                        default=False,
+                        action=&#39;store_true&#39;,
+                        help=&#34;Raise this flag if you want to turn off tau losses. In this case, taus will decay at rest.&#34;
+                       )
+    parser.add_argument(&#39;--no_secondaries&#39;,
+                        default=False,
+                        action=&#39;store_true&#39;,
+                        help=&#34;Raise this flag to turn off secondaries&#34;
+                       )
+    parser.add_argument(&#39;-d&#39;, 
+                        dest=&#39;debug&#39;, 
+                        default=False, 
+                        action=&#39;store_true&#39;, 
+                        help=&#39;Do you want to print out debug statments? If so, raise this flag&#39;
+                       ) 
+    parser.add_argument(&#39;--e_cut&#39;,
+                        dest=&#39;e_cut&#39;,
+                        default=0.0,
+                        type=float,
+                        help=&#39;Energy at which to stop the propagation.&#39;
+                       )
+
+    args = parser.parse_args()
+    return args
+
+def run_MC(eini: np.ndarray, 
+           thetas: np.ndarray,
+           body: Body, 
+           xs: CrossSections, 
+           tracks: dict, 
+           propagator: pp.Propagator,
+           rand: np.random.RandomState = None,
+           no_secondaries: bool = False,
+           flavor: int = 16,
+           no_losses: bool = False,
+           condition=None
+          ) -&gt; np.ndarray:
+    r&#39;&#39;&#39;
+    Main simulation code. Propagates an ensemble of initial states and returns the output
+    Params
+    ______
+    eini       : array containing the initial energies of particles to simulate
+    thetas     : array containing the incoming angles of particles to simulate
+    body       : taurunner Body object in which to propagate the particles
+    xs         : taurunner CrossSections object for interactions
+    tracks     : dictionary whose keys are angles and whose values are taurunner Track objects
+    propagator : PROPOSAL propagator object for charged lepton propagation
+    Returns
+    _______
+    output : Array containing the output information of the MC. This includes 
+             initial and final energies, incident incoming angles, number of CC and NC interactions,
+             and particle type (PDG convention)
+             
+    &#39;&#39;&#39;
+    nevents     = len(eini)
+    output      = []
+    energies    = list(eini)
+    particleIDs = np.ones(nevents, dtype=int)*flavor
+    xs_model    = xs.model
+
+    if rand is None:
+        rand = np.random.RandomState()
+    secondary_basket = []
+    idxx             = []
+
+    # Run the algorithm
+    # All neutrinos are propagated until exiting as tau neutrino or taus.
+    # If secondaries are on, then each event has a corresponding secondaries basket
+    # which are propagated all at once in the end.
+    for i in range(nevents):
+        particle = Particle(particleIDs[i], energies[i], thetas[i], 0.0, rand, xs,
+                            propagator, not no_secondaries, no_losses)
+        
+        my_track = tracks[thetas[i]]
+        out      = Propagate(particle, my_track, body, condition=condition)
+    
+        if (out.survived==False):
+            #these muons/electrons were absorbed. we record them in the output with outgoing energy 0
+            output.append((energies[i], 0., thetas[i], out.nCC, out.nNC, out.ID, i, out.position))
+        else:
+            output.append((energies[i], float(out.energy), thetas[i], out.nCC, out.nNC, out.ID, i, out.position))
+        if not no_secondaries:
+            secondary_basket.append(np.asarray(out.basket))
+            idxx = np.hstack([idxx, [i for _ in out.basket]])
+        del out
+        del particle
+    idxx = np.asarray(idxx).astype(np.int32)
+    if not no_secondaries:    
+        #make muon propagator
+        secondary_basket = np.concatenate(secondary_basket)
+        sec_prop         = {ID:make_propagator(ID, body, xs_model) for ID in [-12, -14]}
+
+        for sec, i in zip(secondary_basket, idxx):
+            my_track = tracks[thetas[i]]
+            sec_particle = Particle(
+                                    sec[&#39;ID&#39;], 
+                                    sec[&#39;energy&#39;],
+                                    thetas[i], 
+                                    sec[&#39;position&#39;], 
+                                    rand,
+                                    xs=xs, 
+                                    proposal_propagator=sec_prop[sec[&#39;ID&#39;]], 
+                                    secondaries=False, 
+                                    no_losses=False
+                                   )
+            sec_out = Propagate(sec_particle, my_track, body, condition=condition)
+            if(not sec_out.survived):
+                output.append((sec_out.initial_energy, 0.0, thetas[i], sec_out.nCC, sec_out.nNC, sec_out.ID, i, sec_out.position))
+            else:
+                output.append((sec_out.initial_energy, sec_out.energy, thetas[i], 
+                                                 sec_out.nCC, sec_out.nNC, sec_out.ID, i, sec_out.position))
+            del sec_particle
+            del sec_out     
+        
+    output = np.array(output, dtype = [(&#39;Eini&#39;, float), (&#39;Eout&#39;,float), (&#39;Theta&#39;, float), (&#39;nCC&#39;, int), (&#39;nNC&#39;, int), (&#39;PDG_Encoding&#39;, int), (&#39;primary_tau&#39;, int), (&#39;final_position&#39;, float)])
+    output[&#39;Theta&#39;] = np.degrees(output[&#39;Theta&#39;])
+                       
+    return output
+
+if __name__ == &#34;__main__&#34;: # pragma: no cover
+
+    args = initialize_parser()
+    TR_specs = {}
+    TR_specs[&#39;seed&#39;]           = args.seed
+    TR_specs[&#39;nevents&#39;]        = args.nevents
+    TR_specs[&#39;flavor&#39;]         = args.flavor
+    TR_specs[&#39;track&#39;]          = args.track
+    TR_specs[&#39;energy&#39;]         = args.energy
+    TR_specs[&#39;e_min&#39;]          = args.e_min
+    TR_specs[&#39;e_max&#39;]          = args.e_max
+    TR_specs[&#39;theta&#39;]          = args.theta
+    TR_specs[&#39;th_min&#39;]         = args.th_min
+    TR_specs[&#39;th_max&#39;]         = args.th_max
+    TR_specs[&#39;save&#39;]           = args.save
+    TR_specs[&#39;water&#39;]          = args.water
+    TR_specs[&#39;xs_model&#39;]       = args.xs_model
+    TR_specs[&#39;no_losses&#39;]      = args.no_losses
+    TR_specs[&#39;body&#39;]           = args.body
+    TR_specs[&#39;radius&#39;]         = args.radius
+    TR_specs[&#39;depth&#39;]          = args.depth
+    TR_specs[&#39;no_secondaries&#39;] = args.no_secondaries
+    TR_specs[&#39;debug&#39;]          = &#39;&#39;
+
+    if TR_specs[&#39;nevents&#39;]&lt;=0:
+        raise ValueError(&#34;We need to simulate at least one event, c&#39;mon y&#39;all&#34;)
+
+    # Set up outdir and make seed if not provided
+    if TR_specs[&#39;save&#39;]:
+        savedir = &#39;/&#39;.join(TR_specs[&#39;save&#39;].split(&#39;/&#39;)[:-1])
+        if not os.path.isdir(savedir):
+            raise ValueError(&#39;Savedir %s does not exist&#39; % TR_specs[&#39;save&#39;])
+    
+    # Set up a random state
+    rand = np.random.RandomState(TR_specs[&#39;seed&#39;])
+
+    # Make body
+    # TODO Make this not suck. i.e. make construct body more comprehensive
+    from taurunner.utils import construct_body
+    body = construct_body(TR_specs)
+
+    # Make an array of injected energies
+    from taurunner.utils.make_initial_e import make_initial_e
+    eini = make_initial_e(TR_specs[&#39;nevents&#39;], TR_specs[&#39;energy&#39;],
+                          e_min=TR_specs[&#39;e_min&#39;], e_max=TR_specs[&#39;e_max&#39;], rand=rand)
+
+    # Make an array of injected incident angles
+    from taurunner.utils.make_initial_thetas import make_initial_thetas
+    if(TR_specs[&#39;theta&#39;]==&#39;range&#39;):
+        theta = (TR_specs[&#39;th_min&#39;], TR_specs[&#39;th_max&#39;])
+    else:
+        theta = TR_specs[&#39;theta&#39;]
+    thetas = make_initial_thetas(TR_specs[&#39;nevents&#39;], theta, rand=rand, track_type=TR_specs[&#39;track&#39;])
+
+    from taurunner.utils.make_tracks import make_tracks
+    tracks = make_tracks(thetas, depth=TR_specs[&#39;depth&#39;]*units.km/body.radius, track_type=TR_specs[&#39;track&#39;])
+
+    xs = CrossSections(TR_specs[&#39;xs_model&#39;])
+
+    prop = make_propagator(TR_specs[&#39;flavor&#39;], body, TR_specs[&#39;xs_model&#39;])
+
+    if args.e_cut:
+        condition = lambda particle: (particle.energy &lt;= args.e_cut*units.GeV and abs(particle.ID) in [12,14,16])
+    else:
+        condition = None
+
+    result = run_MC(eini, thetas, body, xs, tracks, prop, rand=rand,
+                    no_secondaries=TR_specs[&#39;no_secondaries&#39;], no_losses=TR_specs[&#39;no_losses&#39;],
+                    flavor=TR_specs[&#39;flavor&#39;], condition=condition)
+
+    if TR_specs[&#39;save&#39;]:
+        if &#39;.npy&#39; not in TR_specs[&#39;save&#39;]:
+            TR_specs[&#39;save&#39;] += &#39;.npy&#39;
+        np.save(TR_specs[&#39;save&#39;], result)
+        with open(TR_specs[&#39;save&#39;].replace(&#39;npy&#39;, &#39;json&#39;), &#39;w&#39;) as f:
+            json.dump(TR_specs, f)
+        if TR_specs[&#39;debug&#39;]:
+            print(message)
+    else:
+        if TR_specs[&#39;debug&#39;]:
+            print(message)
+        try:
+            from tabulate import tabulate
+            headers = list(result.dtype.names)
+            out_table = tabulate(result, headers, tablefmt=&#34;fancy_grid&#34;)
+            print(out_table)
+        except ImportError:
+            print(&#34;Outgoing Particles: &#34;)
+            print(result)</code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-functions">Functions</h2>
+<dl>
+<dt id="taurunner.main.initialize_parser"><code class="name flex">
+<span>def <span class="ident">initialize_parser</span></span>(<span>)</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Helper function to parse command-line arguments</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def initialize_parser(): # pragma: no cover
+    r&#39;&#39;&#39;
+    Helper function to parse command-line arguments
+    &#39;&#39;&#39;
+    import argparse
+    parser = argparse.ArgumentParser()
+    parser.add_argument(&#39;-s&#39;,
+                        dest=&#39;seed&#39;,
+                        type=int, 
+                        default=None,
+                        help=&#39;just an integer seed to help with output file names&#39;
+                       )
+    parser.add_argument(&#39;-n&#39;, 
+                        dest=&#39;nevents&#39;, 
+                        type=int, 
+                        default=0,
+                        help=&#39;how many events do you want?&#39;
+                       )
+    parser.add_argument(&#39;-flavor&#39;, 
+                        dest=&#39;flavor&#39;, 
+                        type=int, default=16,
+                        help=&#39;neutrino flavor (default is nutau): 12 for nue 14 for numu 16 for nutau&#39;
+                       )
+    parser.add_argument(&#39;--track&#39;,
+                        dest=&#39;track&#39;,
+                        type=str,
+                        default=&#39;Chord&#39;,
+                        help=&#39;Track type to use. curently only radial and chord trajectories supported.&#39;
+                       )
+    # Energy arguments
+    parser.add_argument(&#39;-e&#39;, 
+                        dest=&#39;energy&#39;,
+                        default=&#39;&#39;,
+                        help=&#39;Energy in GeV if numerical value greater than 0 passed.\n\
+                              Sprectral index if numerical value less than or equal to 0 passed.\n\
+                              Else path to CDF to sample from.&#39;
+                       )
+    parser.add_argument(&#39;--e_min&#39;,
+                        type=float,
+                        default=1e6,
+                        help=&#39;Minimum energy to sample from if doing powerlaw sampling&#39;
+                       )
+    parser.add_argument(&#39;--e_max&#39;,
+                        type=float,
+                        default=1e9,
+                        help=&#39;Minimum energy to sample from if doing powerlaw sampling&#39;
+                       )
+    
+    # Angular arguments
+    parser.add_argument(&#39;-t&#39;, 
+                        dest=&#39;theta&#39;,
+                        default=&#39;&#39;,
+                        help=&#39;nadir angle in degrees if numerical value(0 is through the core).\n\
+                              &#34;range&#34; if you want to sample from a range of thetas. Use --th_min and --th_max to specify lims.&#39;
+                       )
+    parser.add_argument(&#39;--th_max&#39;,
+                        dest=&#39;th_max&#39;,
+                        type=float, 
+                        default=90,
+                        help=&#39;If doing a theta range, maximum theta value. Default 90, i.e. skimming&#39;
+                       )
+    parser.add_argument(&#39;--th_min&#39;, 
+                        type=float,
+                        default=0,
+                        help=&#39;If doing a theta range, minimum theta value. Default 0, i.e. through the core&#39;
+                       )
+    
+    # Saving arguments
+    parser.add_argument(&#39;--save&#39;, 
+                        dest=&#39;save&#39;, 
+                        type=str, 
+                        default=&#39;&#39;, 
+                        help=&#34;If saving output, provide a path here, if not specified, output will be printed&#34;
+                       )
+
+    # cross section args
+    parser.add_argument(&#39;--xs&#39;,
+                        dest=&#39;xs_model&#39;,
+                        type=str,
+                        default=&#39;dipole&#39;,
+                        help=&#34;Enter &#39;CSMS&#39; if you would like to run the simulation with a pQCD xs model&#34;
+                       )
+
+    # Body specification args
+    parser.add_argument(&#39;--body&#39;,
+                        dest=&#39;body&#39;,
+                        default=&#39;earth&#39;,
+                        help=&#34;body to use&#34;
+                       )
+    parser.add_argument(&#39;--water&#39;,
+                        dest=&#39;water&#39;,
+                        type=float, default=0,
+                        help=&#34;If you you would like to add a water layer to the Earth model, enter it here in km.&#34;
+                       )
+    parser.add_argument(&#39;--radius&#39;,
+                        dest=&#39;radius&#39;,
+                        type=float,
+                        default=0,
+                        help=&#34;Raise this flag if you want to turn off tau losses. In this case, taus will decay at rest.&#34;
+                       )
+    parser.add_argument(&#39;--depth&#39;,
+                        dest=&#39;depth&#39;,
+                        type=float,
+                        default=0,
+                        help=&#34;Depth of the detector in km.&#34;
+                       )
+    
+    # Options
+    parser.add_argument(&#39;--no_losses&#39;,
+                        dest=&#39;no_losses&#39;, 
+                        default=False,
+                        action=&#39;store_true&#39;,
+                        help=&#34;Raise this flag if you want to turn off tau losses. In this case, taus will decay at rest.&#34;
+                       )
+    parser.add_argument(&#39;--no_secondaries&#39;,
+                        default=False,
+                        action=&#39;store_true&#39;,
+                        help=&#34;Raise this flag to turn off secondaries&#34;
+                       )
+    parser.add_argument(&#39;-d&#39;, 
+                        dest=&#39;debug&#39;, 
+                        default=False, 
+                        action=&#39;store_true&#39;, 
+                        help=&#39;Do you want to print out debug statments? If so, raise this flag&#39;
+                       ) 
+    parser.add_argument(&#39;--e_cut&#39;,
+                        dest=&#39;e_cut&#39;,
+                        default=0.0,
+                        type=float,
+                        help=&#39;Energy at which to stop the propagation.&#39;
+                       )
+
+    args = parser.parse_args()
+    return args</code></pre>
+</details>
+</dd>
+<dt id="taurunner.main.run_MC"><code class="name flex">
+<span>def <span class="ident">run_MC</span></span>(<span>eini: numpy.ndarray, thetas: numpy.ndarray, body: <a title="taurunner.body.body.Body" href="body/body.html#taurunner.body.body.Body">Body</a>, xs: <a title="taurunner.cross_sections.xs_model.XSModel" href="cross_sections/xs_model.html#taurunner.cross_sections.xs_model.XSModel">XSModel</a>, tracks: dict, propagator: proposal.Propagator, rand: mtrand.RandomState = None, no_secondaries: bool = False, flavor: int = 16, no_losses: bool = False, condition=None) ‑> numpy.ndarray</span>
+</code></dt>
+<dd>
+<div class="desc"><p>Main simulation code. Propagates an ensemble of initial states and returns the output
+Params</p>
+<hr>
+<p>eini
+: array containing the initial energies of particles to simulate
+thetas
+: array containing the incoming angles of particles to simulate
+body
+: taurunner Body object in which to propagate the particles
+xs
+: taurunner CrossSections object for interactions
+tracks
+: dictionary whose keys are angles and whose values are taurunner Track objects
+propagator : PROPOSAL propagator object for charged lepton propagation
+Returns</p>
+<hr>
+<p>output : Array containing the output information of the MC. This includes
+initial and final energies, incident incoming angles, number of CC and NC interactions,
+and particle type (PDG convention)</p></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def run_MC(eini: np.ndarray, 
+           thetas: np.ndarray,
+           body: Body, 
+           xs: CrossSections, 
+           tracks: dict, 
+           propagator: pp.Propagator,
+           rand: np.random.RandomState = None,
+           no_secondaries: bool = False,
+           flavor: int = 16,
+           no_losses: bool = False,
+           condition=None
+          ) -&gt; np.ndarray:
+    r&#39;&#39;&#39;
+    Main simulation code. Propagates an ensemble of initial states and returns the output
+    Params
+    ______
+    eini       : array containing the initial energies of particles to simulate
+    thetas     : array containing the incoming angles of particles to simulate
+    body       : taurunner Body object in which to propagate the particles
+    xs         : taurunner CrossSections object for interactions
+    tracks     : dictionary whose keys are angles and whose values are taurunner Track objects
+    propagator : PROPOSAL propagator object for charged lepton propagation
+    Returns
+    _______
+    output : Array containing the output information of the MC. This includes 
+             initial and final energies, incident incoming angles, number of CC and NC interactions,
+             and particle type (PDG convention)
+             
+    &#39;&#39;&#39;
+    nevents     = len(eini)
+    output      = []
+    energies    = list(eini)
+    particleIDs = np.ones(nevents, dtype=int)*flavor
+    xs_model    = xs.model
+
+    if rand is None:
+        rand = np.random.RandomState()
+    secondary_basket = []
+    idxx             = []
+
+    # Run the algorithm
+    # All neutrinos are propagated until exiting as tau neutrino or taus.
+    # If secondaries are on, then each event has a corresponding secondaries basket
+    # which are propagated all at once in the end.
+    for i in range(nevents):
+        particle = Particle(particleIDs[i], energies[i], thetas[i], 0.0, rand, xs,
+                            propagator, not no_secondaries, no_losses)
+        
+        my_track = tracks[thetas[i]]
+        out      = Propagate(particle, my_track, body, condition=condition)
+    
+        if (out.survived==False):
+            #these muons/electrons were absorbed. we record them in the output with outgoing energy 0
+            output.append((energies[i], 0., thetas[i], out.nCC, out.nNC, out.ID, i, out.position))
+        else:
+            output.append((energies[i], float(out.energy), thetas[i], out.nCC, out.nNC, out.ID, i, out.position))
+        if not no_secondaries:
+            secondary_basket.append(np.asarray(out.basket))
+            idxx = np.hstack([idxx, [i for _ in out.basket]])
+        del out
+        del particle
+    idxx = np.asarray(idxx).astype(np.int32)
+    if not no_secondaries:    
+        #make muon propagator
+        secondary_basket = np.concatenate(secondary_basket)
+        sec_prop         = {ID:make_propagator(ID, body, xs_model) for ID in [-12, -14]}
+
+        for sec, i in zip(secondary_basket, idxx):
+            my_track = tracks[thetas[i]]
+            sec_particle = Particle(
+                                    sec[&#39;ID&#39;], 
+                                    sec[&#39;energy&#39;],
+                                    thetas[i], 
+                                    sec[&#39;position&#39;], 
+                                    rand,
+                                    xs=xs, 
+                                    proposal_propagator=sec_prop[sec[&#39;ID&#39;]], 
+                                    secondaries=False, 
+                                    no_losses=False
+                                   )
+            sec_out = Propagate(sec_particle, my_track, body, condition=condition)
+            if(not sec_out.survived):
+                output.append((sec_out.initial_energy, 0.0, thetas[i], sec_out.nCC, sec_out.nNC, sec_out.ID, i, sec_out.position))
+            else:
+                output.append((sec_out.initial_energy, sec_out.energy, thetas[i], 
+                                                 sec_out.nCC, sec_out.nNC, sec_out.ID, i, sec_out.position))
+            del sec_particle
+            del sec_out     
+        
+    output = np.array(output, dtype = [(&#39;Eini&#39;, float), (&#39;Eout&#39;,float), (&#39;Theta&#39;, float), (&#39;nCC&#39;, int), (&#39;nNC&#39;, int), (&#39;PDG_Encoding&#39;, int), (&#39;primary_tau&#39;, int), (&#39;final_position&#39;, float)])
+    output[&#39;Theta&#39;] = np.degrees(output[&#39;Theta&#39;])
+                       
+    return output</code></pre>
+</details>
+</dd>
+</dl>
+</section>
+<section>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="taurunner" href="index.html">taurunner</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-functions">Functions</a></h3>
+<ul class="">
+<li><code><a title="taurunner.main.initialize_parser" href="#taurunner.main.initialize_parser">initialize_parser</a></code></li>
+<li><code><a title="taurunner.main.run_MC" href="#taurunner.main.run_MC">run_MC</a></code></li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.2</a>.</p>
+</footer>
+</body>
+</html>

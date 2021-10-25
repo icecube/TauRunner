@@ -60,7 +60,6 @@ class Chord(Track):
     def x_to_r(self, x: float):
         return np.sqrt(1-2*x*self._l1*(self._l1+self._l2)+x**2*(self._l1+self._l2)**2)
     
-    @doc_inherit
     def x_to_r_prime(self, x: float):
         r   = self.x_to_r(x)
         num = -self._l1*self._t + x*self._t**2

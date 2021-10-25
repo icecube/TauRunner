@@ -37,11 +37,14 @@ def make_propagator(ID, body, xs_model='dipole', granularity=0.5):
         return None
     
     particle_def              = getattr(pp.particle, ID_2_name[ID])()
-
+    print(particle_def)
     #define how many layers of constant density we need for the tau
     descs = segment_body(body, granularity)
+    comp_inds = np.digitize([s*body.radius/units.km for s, e, d in descs], body.elayer_boundaries)-1
+    segmented_composition = [body.elements[ind] for ind in comp_inds]
+    descs = list(map(lambda a, b: a +(b, ), descs, segmented_composition))
     #make the sectors
-    sec_defs = [make_sector(d/units.gr*units.cm**3, s*body.radius/units.meter, e*body.radius/units.meter, xs_model) for s, e, d in descs]
+    sec_defs = [make_sector(d/units.gr*units.cm**3, s*body.radius/units.meter, e*body.radius/units.meter, comp, xs_model) for s, e, d, comp in descs]
 
     with path('taurunner.resources.proposal_tables', 'tables.txt') as p:
         tables_path = str(p).split('tables.txt')[0]
@@ -60,10 +63,14 @@ def make_propagator(ID, body, xs_model='dipole', granularity=0.5):
 
     return prop
 
-
-def make_sector(density, start, end, xs_model):
+def make_sector(density, start, end, composition, xs_model):
+    #Define a sector
     sec_def                                        = pp.SectorDefinition()
-    sec_def.medium                                 = pp.medium.Ice(density)
+    components                                     = [pp.component.Hydrogen(2),
+                                                     pp.component.Oxygen()]
+    sec_def.medium                                 = pp.medium.Medium('Ice_{}'.format(density), 1, 75.0, -3.5017, 
+                                                                       0.09116, 3.4773, 0.2400, 
+                                                                       2.8004,0, density, components) 
     sec_def.geometry                               = pp.geometry.Sphere(pp.Vector3D(), end, start)
     sec_def.particle_location                      = pp.ParticleLocation.inside_detector        
     sec_def.scattering_model                       = pp.scattering.ScatteringModel.Moliere

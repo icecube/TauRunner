@@ -88,8 +88,7 @@ def get_hash(track, body):
     hash_s = s
     return hash_s
 
-def spline_fname(hash_s):
-    
+def spline_fname(hash_s):    
     x2X_fname = f'{SPLINE_PATH}/{hash_s}_x_to_X.pkl'
     spline_exists = os.path.isfile(x2X_fname)
     return x2X_fname, spline_exists

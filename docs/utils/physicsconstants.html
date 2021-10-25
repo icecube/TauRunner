@@ -1,0 +1,1059 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1" />
+<meta name="generator" content="pdoc 0.9.2" />
+<title>taurunner.utils.physicsconstants API documentation</title>
+<meta name="description" content="Author
+: C.A. Arguelles
+Date
+: 10/MAY/2011 …" />
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/sanitize.min.css" integrity="sha256-PK9q560IAAa6WVRRh76LtCaI8pjTJ2z11v0miyNNjrs=" crossorigin>
+<link rel="preload stylesheet" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/10up-sanitize.css/11.0.1/typography.min.css" integrity="sha256-7l/o7C8jubJiy74VsKTidCy1yBkRtiUGbVkYBylBqUg=" crossorigin>
+<link rel="stylesheet preload" as="style" href="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/styles/github.min.css" crossorigin>
+<style>:root{--highlight-color:#fe9}.flex{display:flex !important}body{line-height:1.5em}#content{padding:20px}#sidebar{padding:30px;overflow:hidden}#sidebar > *:last-child{margin-bottom:2cm}.http-server-breadcrumbs{font-size:130%;margin:0 0 15px 0}#footer{font-size:.75em;padding:5px 30px;border-top:1px solid #ddd;text-align:right}#footer p{margin:0 0 0 1em;display:inline-block}#footer p:last-child{margin-right:30px}h1,h2,h3,h4,h5{font-weight:300}h1{font-size:2.5em;line-height:1.1em}h2{font-size:1.75em;margin:1em 0 .50em 0}h3{font-size:1.4em;margin:25px 0 10px 0}h4{margin:0;font-size:105%}h1:target,h2:target,h3:target,h4:target,h5:target,h6:target{background:var(--highlight-color);padding:.2em 0}a{color:#058;text-decoration:none;transition:color .3s ease-in-out}a:hover{color:#e82}.title code{font-weight:bold}h2[id^="header-"]{margin-top:2em}.ident{color:#900}pre code{background:#f8f8f8;font-size:.8em;line-height:1.4em}code{background:#f2f2f1;padding:1px 4px;overflow-wrap:break-word}h1 code{background:transparent}pre{background:#f8f8f8;border:0;border-top:1px solid #ccc;border-bottom:1px solid #ccc;margin:1em 0;padding:1ex}#http-server-module-list{display:flex;flex-flow:column}#http-server-module-list div{display:flex}#http-server-module-list dt{min-width:10%}#http-server-module-list p{margin-top:0}.toc ul,#index{list-style-type:none;margin:0;padding:0}#index code{background:transparent}#index h3{border-bottom:1px solid #ddd}#index ul{padding:0}#index h4{margin-top:.6em;font-weight:bold}@media (min-width:200ex){#index .two-column{column-count:2}}@media (min-width:300ex){#index .two-column{column-count:3}}dl{margin-bottom:2em}dl dl:last-child{margin-bottom:4em}dd{margin:0 0 1em 3em}#header-classes + dl > dd{margin-bottom:3em}dd dd{margin-left:2em}dd p{margin:10px 0}.name{background:#eee;font-weight:bold;font-size:.85em;padding:5px 10px;display:inline-block;min-width:40%}.name:hover{background:#e0e0e0}dt:target .name{background:var(--highlight-color)}.name > span:first-child{white-space:nowrap}.name.class > span:nth-child(2){margin-left:.4em}.inherited{color:#999;border-left:5px solid #eee;padding-left:1em}.inheritance em{font-style:normal;font-weight:bold}.desc h2{font-weight:400;font-size:1.25em}.desc h3{font-size:1em}.desc dt code{background:inherit}.source summary,.git-link-div{color:#666;text-align:right;font-weight:400;font-size:.8em;text-transform:uppercase}.source summary > *{white-space:nowrap;cursor:pointer}.git-link{color:inherit;margin-left:1em}.source pre{max-height:500px;overflow:auto;margin:0}.source pre code{font-size:12px;overflow:visible}.hlist{list-style:none}.hlist li{display:inline}.hlist li:after{content:',\2002'}.hlist li:last-child:after{content:none}.hlist .hlist{display:inline;padding-left:1em}img{max-width:100%}td{padding:0 .5em}.admonition{padding:.1em .5em;margin-bottom:1em}.admonition-title{font-weight:bold}.admonition.note,.admonition.info,.admonition.important{background:#aef}.admonition.todo,.admonition.versionadded,.admonition.tip,.admonition.hint{background:#dfd}.admonition.warning,.admonition.versionchanged,.admonition.deprecated{background:#fd4}.admonition.error,.admonition.danger,.admonition.caution{background:lightpink}</style>
+<style media="screen and (min-width: 700px)">@media screen and (min-width:700px){#sidebar{width:30%;height:100vh;overflow:auto;position:sticky;top:0}#content{width:70%;max-width:100ch;padding:3em 4em;border-left:1px solid #ddd}pre code{font-size:1em}.item .name{font-size:1em}main{display:flex;flex-direction:row-reverse;justify-content:flex-end}.toc ul ul,#index ul{padding-left:1.5em}.toc > ul > li{margin-top:.5em}}</style>
+<style media="print">@media print{#sidebar h1{page-break-before:always}.source{display:none}}@media print{*{background:transparent !important;color:#000 !important;box-shadow:none !important;text-shadow:none !important}a[href]:after{content:" (" attr(href) ")";font-size:90%}a[href][title]:after{content:none}abbr[title]:after{content:" (" attr(title) ")"}.ir a:after,a[href^="javascript:"]:after,a[href^="#"]:after{content:""}pre,blockquote{border:1px solid #999;page-break-inside:avoid}thead{display:table-header-group}tr,img{page-break-inside:avoid}img{max-width:100% !important}@page{margin:0.5cm}p,h2,h3{orphans:3;widows:3}h1,h2,h3,h4,h5,h6{page-break-after:avoid}}</style>
+<script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.7/latest.js?config=TeX-AMS_CHTML" integrity="sha256-kZafAc6mZvK3W3v1pHOcUix30OHQN6pU/NO2oFkqZVw=" crossorigin></script>
+<script defer src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/10.1.1/highlight.min.js" integrity="sha256-Uv3H6lx7dJmRfRvH8TH6kJD1TSK1aFcwgx+mdg3epi8=" crossorigin></script>
+<script>window.addEventListener('DOMContentLoaded', () => hljs.initHighlighting())</script>
+</head>
+<body>
+<main>
+<article id="content">
+<header>
+<h1 class="title">Module <code>taurunner.utils.physicsconstants</code></h1>
+</header>
+<section id="section-intro">
+<p>Author
+: C.A. Arguelles
+Date
+: 10/MAY/2011</p>
+<p>Contains Physics constants and global variables.</p>
+<p>Log :
+- Modified on 23/ABR/2012 by C.Arguelles
++ Changed the definition of PhysicsConstants to
+include an <strong>init</strong> to separate the class global
+properties from its instances.</p>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">&#34;&#34;&#34;
+Author  : C.A. Arguelles
+Date    : 10/MAY/2011
+
+Contains Physics constants and global variables.
+
+Log :
+- Modified on 23/ABR/2012 by C.Arguelles
+    + Changed the definition of PhysicsConstants to
+    include an __init__ to separate the class global
+    properties from its instances.
+&#34;&#34;&#34;
+
+# python standard modules
+import numpy as np
+
+class PhysicsConstants():
+    
+    def __init__(self):
+        ## PHYSICS CONSTANTS
+        #===========================================================================
+        # NAME
+        #===========================================================================
+        
+        self.name = &#34;STD&#34;                    # Default values
+        self.linestyle = &#34;solid&#34;             # Default linestyle in plots
+        self.markerstyle = &#34;*&#34;               # Default marker style
+        self.colorstyle = &#34;red&#34;              # Default color style
+        self.savefilename = &#34;output.dat&#34;     # Default color style
+        
+        #===============================================================================
+        # ## MATH
+        #===============================================================================
+        self.PI=3.14159265                          # Pi
+        self.PIby2=1.5707963268             # Pi/2
+        self.sqr2=1.4142135624              # Sqrt[2]
+        self.ln2 = np.log(2.0)
+        
+        #===============================================================================
+        # ## EARTH 
+        #===============================================================================
+        self.EARTHRADIUS = 6371.0               # [km] Earth radius
+        #===============================================================================
+        # ## SUN 
+        #===============================================================================
+        self.SUNRADIUS = 109*self.EARTHRADIUS     # [km] Sun radius 
+        
+        #===============================================================================
+        # # PHYSICAL CONSTANTS
+        #===============================================================================
+        self.GF = 1.16639e-23               # [eV^-2] Fermi Constant 
+        self.Na = 6.0221415e+23                         # [mol cm^-3] Avogadro Number
+        self.sw_sq = 0.2312                  # [dimensionless] sin(th_weinberg) ^2
+        self.G  = 6.67300e-11                # [m^3 kg^-1 s^-2]
+        self.alpha = 1.0/137.0               # [dimensionless] fine-structure constant 
+        
+        #===============================================================================
+        # ## UNIT CONVERSION FACTORS
+        #===============================================================================
+        # Energy
+        self.TeV = 1.0e12                    # [eV/TeV]
+        self.GeV = 1.0e9                     # [eV/GeV]
+        self.MeV = 1.0e6                     # [eV/MeV]
+        self.keV = 1.0e3                     # [eV/keV]
+        self.Joule = 1/1.60225e-19           # [eV/J]
+        # Mass
+        self.kg = 5.62e35                    # [eV/kg]
+        self.gr = 1e-3*self.kg               # [eV/g] 
+        # Time
+        self.sec = 1.523e15                  # [eV^-1/s]
+        self.hour = 3600.0*self.sec          # [eV^-1/h]
+        self.day = 24.0*self.hour            # [eV^-1/d]
+        self.year = 365.0*self.day           # [eV^-1/yr]
+        self.yearstosec = self.sec/self.year # [s/yr]
+        # Distance
+        self.meter = 5.06773093741e6         # [eV^-1/m]
+        self.cm = 1.0e-2*self.meter          # [eV^-1/cm]
+        self.km = 1.0e3*self.meter           # [eV^-1/km]
+        self.fermi = 1.0e-15*self.meter      # [eV^-1/fm]
+        self.angstrom = 1.0e-10*self.meter   # [eV^-1/A]
+        self.AU = 149.60e9*self.meter        # [eV^-1/AU]
+        self.parsec = 3.08568025e16*self.meter# [eV^-1/parsec]
+        # Integrated Luminocity # review
+        self.picobarn = 1.0e-36*self.cm**2   # [eV^-2/pb]
+        self.femtobarn = 1.0e-39*self.cm**2  # [eV^-2/fb]
+        # Presure
+        self.Pascal = self.Joule/self.meter**3 # [eV^4/Pa]
+        self.hPascal = 100.0*self.Pascal     # [eV^4/hPa]
+        self.atm = 101325.0*self.Pascal      # [eV^4/atm]
+        self.psi = 6893.0*self.Pascal        # [eV^4/psi]
+        # Temperature
+        self.kelvin = 1/1.1604505e4          # [eV/K]
+        # Angle
+        self.degree = self.PI/180.0          # [rad/degree]
+        # magnetic field
+        self.T = 0.000692445                 # [eV^2/T]
+        
+        # old notation
+        self.cm3toev3 = 7.68351405e-15       # cm^3-&gt; ev^3
+        self.KmtoEv =5.0677288532e+9         # km -&gt; eV
+        self.yearstosec = 31536.0e3          # years -&gt; sec
+        
+        #===============================================================================
+        # ## NEUTRINO OSCILLATION PARAMETERS ##
+        #===============================================================================
+        
+        self.numneu = 3                      # number of neutrinos
+        self.numneumax = 6                   # maximum neutrino number
+        self.neutype = &#39;neutrino&#39;
+        #neutype = &#39;antineutrino&#39;
+        
+        # values updated according to 1209.3023 Table 1 FreeFluxes + RSBL
+        
+        # MIXING ANGLES
+       
+        self.th12 = 0.579639
+        self.th13 = 0.150098
+        self.th23 = self.PIby2/2.0
+        self.th14 = 0.0
+        self.th24 = 0.0
+        self.th34 = 0.0
+        self.th15 = 0.0
+        self.th25 = 0.0
+        self.th35 = 0.0
+        self.th45 = 0.0
+        self.th16 = 0.0
+        self.th26 = 0.0
+        self.th36 = 0.0
+        self.th46 = 0.0
+        self.th56 = 0.0
+        
+        # mixing angles matrix array
+        self.th = np.zeros([self.numneumax+1,self.numneumax+1],float)
+        self.th[1,2] = self.th12
+        self.th[1,3] = self.th13
+        self.th[2,3] = self.th23
+        self.th[1,4] = self.th14
+        self.th[2,4] = self.th24
+        self.th[3,4] = self.th34
+        self.th[1,5] = self.th15
+        self.th[2,5] = self.th25
+        self.th[3,5] = self.th35
+        self.th[4,5] = self.th45
+        self.th[1,6] = self.th16
+        self.th[2,6] = self.th26
+        self.th[3,6] = self.th36
+        self.th[4,6] = self.th46
+        self.th[5,6] = self.th56
+        
+        self.s12 = np.sin(self.th12)
+        self.c12 = np.cos(self.th12)
+        self.s13 = np.sin(self.th13)
+        self.c13 = np.cos(self.th13)
+        self.s23 = np.sin(self.th23)
+        self.c23 = np.cos(self.th23)
+        self.s14 = np.sin(self.th14)
+        self.c14 = np.cos(self.th14)
+        self.s24 = np.sin(self.th24)
+        self.c24 = np.cos(self.th24)
+        self.s34 = np.sin(self.th34)
+        self.c34 = np.cos(self.th34)
+        self.s15 = np.sin(self.th15)
+        self.c15 = np.cos(self.th15)
+        self.s25 = np.sin(self.th25)
+        self.c25 = np.cos(self.th25)
+        self.s35 = np.sin(self.th35)
+        self.c35 = np.cos(self.th35)
+        self.s45 = np.sin(self.th45)
+        self.c45 = np.cos(self.th45)
+        self.s16 = np.sin(self.th16)
+        self.c16 = np.cos(self.th16)
+        self.s26 = np.sin(self.th26)
+        self.c26 = np.cos(self.th26)
+        self.s36 = np.sin(self.th36)
+        self.c36 = np.cos(self.th36)
+        self.s46 = np.sin(self.th46)
+        self.c46 = np.cos(self.th46)
+        self.s56 = np.sin(self.th56)
+        self.c56 = np.cos(self.th56)    
+        
+        # cos(th_ij) matrix array
+        self.c = np.zeros([self.numneumax+1,self.numneumax+1],float)
+        self.c[1,2] = self.c12
+        self.c[1,3] = self.c13
+        self.c[1,4] = self.c14
+        self.c[2,3] = self.c23
+        self.c[2,4] = self.c24
+        self.c[3,4] = self.c34
+        self.c[1,5] = self.c15
+        self.c[2,5] = self.c25
+        self.c[3,5] = self.c35
+        self.c[4,5] = self.c45
+        self.c[1,6] = self.c16
+        self.c[2,6] = self.c26
+        self.c[3,6] = self.c36
+        self.c[4,6] = self.c46
+        self.c[5,6] = self.c56    
+        
+        # sin(th_ij) matrix array
+        self.s = np.zeros([self.numneumax+1,self.numneumax+1],float)
+        self.s[1,2] = self.s12
+        self.s[1,3] = self.s13
+        self.s[1,4] = self.s14
+        self.s[2,3] = self.s23
+        self.s[2,4] = self.s24
+        self.s[3,4] = self.s34
+        self.s[1,5] = self.s15
+        self.s[2,5] = self.s25
+        self.s[3,5] = self.s35
+        self.s[4,5] = self.s45
+        self.s[1,6] = self.s16
+        self.s[2,6] = self.s26
+        self.s[3,6] = self.s36
+        self.s[4,6] = self.s46
+        self.s[5,6] = self.s56    
+        
+        # CP PHASES
+        #self.delta21=3.3e-5
+        #self.delta32=3.1e-3
+        #self.delta31=self.delta32+self.delta21
+        #self.deltaCP=self.PIby2
+        
+        # CP Phases
+        self.deltaCP = 5.235987
+        self.delta1 = self.deltaCP
+        self.delta2 = 0.0
+        self.delta3 = 0.0
+        
+        # d-CP phases
+        self.dcp = np.zeros([self.numneumax-2+1],complex)
+        self.dcp[0] = 1.0
+        self.dcp[1] = self.delta1
+        self.dcp[2] = self.delta2
+        self.dcp[3] = self.delta3
+        
+        # SQUARED MASS DIFFERENCE
+        self.dm21sq = 7.50e-5                # [eV^2]
+        self.dm31sq = 2.47e-3                # [eV^2]
+        self.dm32sq = -2.43e-3               # [eV^2]
+        # STERILE 
+        self.dm41sq = 0.0                    # [eV^2]
+        self.dm51sq = 0.0                    # [eV^2]
+        self.dm61sq = 0.0                    # [eV^2]
+        # SQUARED MASS DIFFERENCE MATRIX
+        self.dmsq = np.zeros([self.numneumax+2],float)
+        self.dmsq[2] = self.dm21sq
+        self.dmsq[3] = self.dm31sq
+        self.dmsq[4] = self.dm41sq
+        self.dmsq[5] = self.dm51sq
+        self.dmsq[6] = self.dm61sq    
+        
+        self.dm2 = np.zeros([self.numneumax+1,self.numneumax+1],float)
+        self.dm2[1,2] = self.dm21sq
+        self.dm2[1,3] = self.dm31sq
+        self.dm2[2,3] = self.dm32sq
+        self.dm2[1,4] = self.dm41sq
+        self.dm2[1,5] = self.dm51sq
+        self.dm2[1,6] = self.dm61sq    
+        
+        # MIXING MATRIX
+        self.U = None
+        
+        #===============================================================================
+        # # PARTICLE MASSES
+        #===============================================================================
+        self.muon_mass = 0.10565             # [GeV]
+        self.neutron_mass = 0.939565         # [GeV]
+        self.proton_mass = 0.938272          # [GeV]
+        self.electron_mass = 0.510998910e-3  # [GeV]
+        
+        self.atomic_mass_unit = 1.660538e-24 # [g]
+        
+        ## names
+        self.electron = 0
+        self.muon = 1
+        self.tau = 2
+        self.sterile1 = 3
+        self.sterile2 = 4
+        self.sterile3 = 5
+    
+    #===============================================================================
+    # REFRESH
+    #===============================================================================
+    
+    def Refresh(self):
+        # Refresh angles
+        self.s12 = np.sin(self.th12)
+        self.c12 = np.cos(self.th12)
+        self.s13 = np.sin(self.th13)
+        self.c13 = np.cos(self.th13)
+        self.s23 = np.sin(self.th23)
+        self.c23 = np.cos(self.th23)
+        self.s14 = np.sin(self.th14)
+        self.c14 = np.cos(self.th14)
+        self.s24 = np.sin(self.th24)
+        self.c24 = np.cos(self.th24)
+        self.s34 = np.sin(self.th34)
+        self.c34 = np.cos(self.th34)
+        self.s15 = np.sin(self.th15)
+        self.c15 = np.cos(self.th15)
+        self.s25 = np.sin(self.th25)
+        self.c25 = np.cos(self.th25)
+        self.s35 = np.sin(self.th35)
+        self.c35 = np.cos(self.th35)
+        self.s45 = np.sin(self.th45)
+        self.c45 = np.cos(self.th45)
+        self.s16 = np.sin(self.th16)
+        self.c16 = np.cos(self.th16)
+        self.s26 = np.sin(self.th26)
+        self.c26 = np.cos(self.th26)
+        self.s36 = np.sin(self.th36)
+        self.c36 = np.cos(self.th36)
+        self.s46 = np.sin(self.th46)
+        self.c46 = np.cos(self.th46)
+        self.s56 = np.sin(self.th56)
+        self.c56 = np.cos(self.th56)                
+        
+        th = self.th
+        th[1,2] = self.th12
+        th[1,3] = self.th13
+        th[2,3] = self.th23
+        th[1,4] = self.th14
+        th[2,4] = self.th24
+        th[3,4] = self.th34
+        th[1,5] = self.th15
+        th[2,5] = self.th25
+        th[3,5] = self.th35
+        th[4,5] = self.th45
+        th[1,6] = self.th16
+        th[2,6] = self.th26
+        th[3,6] = self.th36
+        th[4,6] = self.th46
+        th[5,6] = self.th56        
+        # Refresh cos(th_ij)
+        c = self.c
+        c[1,2] = self.c12
+        c[1,3] = self.c13
+        c[1,4] = self.c14
+        c[2,3] = self.c23
+        c[2,4] = self.c24
+        c[3,4] = self.c34
+        c[1,5] = self.c15
+        c[2,5] = self.c25
+        c[3,5] = self.c35
+        c[4,5] = self.c45
+        c[1,6] = self.c16
+        c[2,6] = self.c26
+        c[3,6] = self.c36
+        c[4,6] = self.c46
+        c[5,6] = self.c56        
+        # Refresh sin(th_ij)
+        s = self.s
+        self.s[1,2] = self.s12
+        self.s[1,3] = self.s13
+        self.s[1,4] = self.s14
+        self.s[2,3] = self.s23
+        self.s[2,4] = self.s24
+        self.s[3,4] = self.s34
+        self.s[1,5] = self.s15
+        self.s[2,5] = self.s25
+        self.s[3,5] = self.s35
+        self.s[4,5] = self.s45
+        self.s[1,6] = self.s16
+        self.s[2,6] = self.s26
+        self.s[3,6] = self.s36
+        self.s[4,6] = self.s46
+        self.s[5,6] = self.s56                
+        # Refresh CP-Phases
+        dcp = self.dcp
+        dcp[0] = 1.0
+        dcp[1] = self.delta1
+        dcp[2] = self.delta2
+        dcp[3] = self.delta3
+        #dcp[4] = self.delta2        
+        # Refresh Square mass differences
+        dmsq = self.dmsq
+        dmsq[2] = self.dm21sq
+        dmsq[3] = self.dm31sq
+        dmsq[4] = self.dm41sq
+        dmsq[5] = self.dm51sq
+        dmsq[6] = self.dm61sq        
+        
+        dm2 = self.dm2
+        dm2[1,2] = self.dm21sq
+        dm2[1,3] = self.dm31sq
+        dm2[2,3] = self.dm32sq
+        dm2[1,4] = self.dm41sq
+        dm2[1,5] = self.dm51sq
+        dm2[1,6] = self.dm61sq
+        
+    class MemoryLoadObjects():
+        &#34;&#34;&#34; Stores : variables, arrays, etc, on memory for faster use.
+        &#34;&#34;&#34;
+        body_name     = &#34;&#34;
+        body_rdensity = []
+        body_ry       = []
+        body_rnc      = []
+        
+#B temporary memory variables #
+# USED IN DM.py
+act_channel     = 0.0
+act_DM_mass     = 0.0
+act_neuflavor   = 0.0
+act_inter       = 0.0
+flag_inter      = False
+intershadow_neu  = 0.0
+intershadow_aneu = 0.0
+# USED IN XSECTIONS.py
+E_act           = 0.0
+E_NC_act           = 0.0
+E_CC_act           = 0.0
+act_dsde_NC_inter  = 0.0
+act_dsde_NC_n_inter  = 0.0
+act_dsde_NC_a_inter  = 0.0
+act_sig_NC_n_inter  = 0.0
+act_sig_NC_a_inter  = 0.0
+act_dsde_CC_inter  = 0.0
+
+act_dsde_CCe_inter  = 0.0
+act_dsde_CCm_inter  = 0.0
+act_dsde_CCt_inter  = 0.0
+
+#neutrino
+act_dsde_CCe_n_inter  = 0.0
+act_dsde_CCm_n_inter  = 0.0
+act_dsde_CCt_n_inter  = 0.0
+#antineutrino
+act_dsde_CCe_a_inter  = 0.0
+act_dsde_CCm_a_inter  = 0.0
+act_dsde_CCt_a_inter  = 0.0
+
+#neutrino
+act_sig_CCe_n_inter  = 0.0
+act_sig_CCm_n_inter  = 0.0
+act_sig_CCt_n_inter  = 0.0
+#antineutrino
+act_sig_CCe_a_inter  = 0.0
+act_sig_CCm_a_inter  = 0.0
+act_sig_CCt_a_inter  = 0.0
+
+# USED IN NEUOSC
+tauola_init = False
+pabs_n_inter = 0.0
+pabs_a_inter = 0.0
+# neutrino
+p_sur_inter_array_en = 0.0
+p_sur_inter_array_mn = 0.0
+p_sur_inter_array_tn = 0.0
+# antineutrino
+p_sur_inter_array_ea = 0.0
+p_sur_inter_array_ma = 0.0
+p_sur_inter_array_ta = 0.0
+#E temporary memory variables # 
+        
+        </code></pre>
+</details>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+</section>
+<section>
+<h2 class="section-title" id="header-classes">Classes</h2>
+<dl>
+<dt id="taurunner.utils.physicsconstants.PhysicsConstants"><code class="flex name class">
+<span>class <span class="ident">PhysicsConstants</span></span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">class PhysicsConstants():
+    
+    def __init__(self):
+        ## PHYSICS CONSTANTS
+        #===========================================================================
+        # NAME
+        #===========================================================================
+        
+        self.name = &#34;STD&#34;                    # Default values
+        self.linestyle = &#34;solid&#34;             # Default linestyle in plots
+        self.markerstyle = &#34;*&#34;               # Default marker style
+        self.colorstyle = &#34;red&#34;              # Default color style
+        self.savefilename = &#34;output.dat&#34;     # Default color style
+        
+        #===============================================================================
+        # ## MATH
+        #===============================================================================
+        self.PI=3.14159265                          # Pi
+        self.PIby2=1.5707963268             # Pi/2
+        self.sqr2=1.4142135624              # Sqrt[2]
+        self.ln2 = np.log(2.0)
+        
+        #===============================================================================
+        # ## EARTH 
+        #===============================================================================
+        self.EARTHRADIUS = 6371.0               # [km] Earth radius
+        #===============================================================================
+        # ## SUN 
+        #===============================================================================
+        self.SUNRADIUS = 109*self.EARTHRADIUS     # [km] Sun radius 
+        
+        #===============================================================================
+        # # PHYSICAL CONSTANTS
+        #===============================================================================
+        self.GF = 1.16639e-23               # [eV^-2] Fermi Constant 
+        self.Na = 6.0221415e+23                         # [mol cm^-3] Avogadro Number
+        self.sw_sq = 0.2312                  # [dimensionless] sin(th_weinberg) ^2
+        self.G  = 6.67300e-11                # [m^3 kg^-1 s^-2]
+        self.alpha = 1.0/137.0               # [dimensionless] fine-structure constant 
+        
+        #===============================================================================
+        # ## UNIT CONVERSION FACTORS
+        #===============================================================================
+        # Energy
+        self.TeV = 1.0e12                    # [eV/TeV]
+        self.GeV = 1.0e9                     # [eV/GeV]
+        self.MeV = 1.0e6                     # [eV/MeV]
+        self.keV = 1.0e3                     # [eV/keV]
+        self.Joule = 1/1.60225e-19           # [eV/J]
+        # Mass
+        self.kg = 5.62e35                    # [eV/kg]
+        self.gr = 1e-3*self.kg               # [eV/g] 
+        # Time
+        self.sec = 1.523e15                  # [eV^-1/s]
+        self.hour = 3600.0*self.sec          # [eV^-1/h]
+        self.day = 24.0*self.hour            # [eV^-1/d]
+        self.year = 365.0*self.day           # [eV^-1/yr]
+        self.yearstosec = self.sec/self.year # [s/yr]
+        # Distance
+        self.meter = 5.06773093741e6         # [eV^-1/m]
+        self.cm = 1.0e-2*self.meter          # [eV^-1/cm]
+        self.km = 1.0e3*self.meter           # [eV^-1/km]
+        self.fermi = 1.0e-15*self.meter      # [eV^-1/fm]
+        self.angstrom = 1.0e-10*self.meter   # [eV^-1/A]
+        self.AU = 149.60e9*self.meter        # [eV^-1/AU]
+        self.parsec = 3.08568025e16*self.meter# [eV^-1/parsec]
+        # Integrated Luminocity # review
+        self.picobarn = 1.0e-36*self.cm**2   # [eV^-2/pb]
+        self.femtobarn = 1.0e-39*self.cm**2  # [eV^-2/fb]
+        # Presure
+        self.Pascal = self.Joule/self.meter**3 # [eV^4/Pa]
+        self.hPascal = 100.0*self.Pascal     # [eV^4/hPa]
+        self.atm = 101325.0*self.Pascal      # [eV^4/atm]
+        self.psi = 6893.0*self.Pascal        # [eV^4/psi]
+        # Temperature
+        self.kelvin = 1/1.1604505e4          # [eV/K]
+        # Angle
+        self.degree = self.PI/180.0          # [rad/degree]
+        # magnetic field
+        self.T = 0.000692445                 # [eV^2/T]
+        
+        # old notation
+        self.cm3toev3 = 7.68351405e-15       # cm^3-&gt; ev^3
+        self.KmtoEv =5.0677288532e+9         # km -&gt; eV
+        self.yearstosec = 31536.0e3          # years -&gt; sec
+        
+        #===============================================================================
+        # ## NEUTRINO OSCILLATION PARAMETERS ##
+        #===============================================================================
+        
+        self.numneu = 3                      # number of neutrinos
+        self.numneumax = 6                   # maximum neutrino number
+        self.neutype = &#39;neutrino&#39;
+        #neutype = &#39;antineutrino&#39;
+        
+        # values updated according to 1209.3023 Table 1 FreeFluxes + RSBL
+        
+        # MIXING ANGLES
+       
+        self.th12 = 0.579639
+        self.th13 = 0.150098
+        self.th23 = self.PIby2/2.0
+        self.th14 = 0.0
+        self.th24 = 0.0
+        self.th34 = 0.0
+        self.th15 = 0.0
+        self.th25 = 0.0
+        self.th35 = 0.0
+        self.th45 = 0.0
+        self.th16 = 0.0
+        self.th26 = 0.0
+        self.th36 = 0.0
+        self.th46 = 0.0
+        self.th56 = 0.0
+        
+        # mixing angles matrix array
+        self.th = np.zeros([self.numneumax+1,self.numneumax+1],float)
+        self.th[1,2] = self.th12
+        self.th[1,3] = self.th13
+        self.th[2,3] = self.th23
+        self.th[1,4] = self.th14
+        self.th[2,4] = self.th24
+        self.th[3,4] = self.th34
+        self.th[1,5] = self.th15
+        self.th[2,5] = self.th25
+        self.th[3,5] = self.th35
+        self.th[4,5] = self.th45
+        self.th[1,6] = self.th16
+        self.th[2,6] = self.th26
+        self.th[3,6] = self.th36
+        self.th[4,6] = self.th46
+        self.th[5,6] = self.th56
+        
+        self.s12 = np.sin(self.th12)
+        self.c12 = np.cos(self.th12)
+        self.s13 = np.sin(self.th13)
+        self.c13 = np.cos(self.th13)
+        self.s23 = np.sin(self.th23)
+        self.c23 = np.cos(self.th23)
+        self.s14 = np.sin(self.th14)
+        self.c14 = np.cos(self.th14)
+        self.s24 = np.sin(self.th24)
+        self.c24 = np.cos(self.th24)
+        self.s34 = np.sin(self.th34)
+        self.c34 = np.cos(self.th34)
+        self.s15 = np.sin(self.th15)
+        self.c15 = np.cos(self.th15)
+        self.s25 = np.sin(self.th25)
+        self.c25 = np.cos(self.th25)
+        self.s35 = np.sin(self.th35)
+        self.c35 = np.cos(self.th35)
+        self.s45 = np.sin(self.th45)
+        self.c45 = np.cos(self.th45)
+        self.s16 = np.sin(self.th16)
+        self.c16 = np.cos(self.th16)
+        self.s26 = np.sin(self.th26)
+        self.c26 = np.cos(self.th26)
+        self.s36 = np.sin(self.th36)
+        self.c36 = np.cos(self.th36)
+        self.s46 = np.sin(self.th46)
+        self.c46 = np.cos(self.th46)
+        self.s56 = np.sin(self.th56)
+        self.c56 = np.cos(self.th56)    
+        
+        # cos(th_ij) matrix array
+        self.c = np.zeros([self.numneumax+1,self.numneumax+1],float)
+        self.c[1,2] = self.c12
+        self.c[1,3] = self.c13
+        self.c[1,4] = self.c14
+        self.c[2,3] = self.c23
+        self.c[2,4] = self.c24
+        self.c[3,4] = self.c34
+        self.c[1,5] = self.c15
+        self.c[2,5] = self.c25
+        self.c[3,5] = self.c35
+        self.c[4,5] = self.c45
+        self.c[1,6] = self.c16
+        self.c[2,6] = self.c26
+        self.c[3,6] = self.c36
+        self.c[4,6] = self.c46
+        self.c[5,6] = self.c56    
+        
+        # sin(th_ij) matrix array
+        self.s = np.zeros([self.numneumax+1,self.numneumax+1],float)
+        self.s[1,2] = self.s12
+        self.s[1,3] = self.s13
+        self.s[1,4] = self.s14
+        self.s[2,3] = self.s23
+        self.s[2,4] = self.s24
+        self.s[3,4] = self.s34
+        self.s[1,5] = self.s15
+        self.s[2,5] = self.s25
+        self.s[3,5] = self.s35
+        self.s[4,5] = self.s45
+        self.s[1,6] = self.s16
+        self.s[2,6] = self.s26
+        self.s[3,6] = self.s36
+        self.s[4,6] = self.s46
+        self.s[5,6] = self.s56    
+        
+        # CP PHASES
+        #self.delta21=3.3e-5
+        #self.delta32=3.1e-3
+        #self.delta31=self.delta32+self.delta21
+        #self.deltaCP=self.PIby2
+        
+        # CP Phases
+        self.deltaCP = 5.235987
+        self.delta1 = self.deltaCP
+        self.delta2 = 0.0
+        self.delta3 = 0.0
+        
+        # d-CP phases
+        self.dcp = np.zeros([self.numneumax-2+1],complex)
+        self.dcp[0] = 1.0
+        self.dcp[1] = self.delta1
+        self.dcp[2] = self.delta2
+        self.dcp[3] = self.delta3
+        
+        # SQUARED MASS DIFFERENCE
+        self.dm21sq = 7.50e-5                # [eV^2]
+        self.dm31sq = 2.47e-3                # [eV^2]
+        self.dm32sq = -2.43e-3               # [eV^2]
+        # STERILE 
+        self.dm41sq = 0.0                    # [eV^2]
+        self.dm51sq = 0.0                    # [eV^2]
+        self.dm61sq = 0.0                    # [eV^2]
+        # SQUARED MASS DIFFERENCE MATRIX
+        self.dmsq = np.zeros([self.numneumax+2],float)
+        self.dmsq[2] = self.dm21sq
+        self.dmsq[3] = self.dm31sq
+        self.dmsq[4] = self.dm41sq
+        self.dmsq[5] = self.dm51sq
+        self.dmsq[6] = self.dm61sq    
+        
+        self.dm2 = np.zeros([self.numneumax+1,self.numneumax+1],float)
+        self.dm2[1,2] = self.dm21sq
+        self.dm2[1,3] = self.dm31sq
+        self.dm2[2,3] = self.dm32sq
+        self.dm2[1,4] = self.dm41sq
+        self.dm2[1,5] = self.dm51sq
+        self.dm2[1,6] = self.dm61sq    
+        
+        # MIXING MATRIX
+        self.U = None
+        
+        #===============================================================================
+        # # PARTICLE MASSES
+        #===============================================================================
+        self.muon_mass = 0.10565             # [GeV]
+        self.neutron_mass = 0.939565         # [GeV]
+        self.proton_mass = 0.938272          # [GeV]
+        self.electron_mass = 0.510998910e-3  # [GeV]
+        
+        self.atomic_mass_unit = 1.660538e-24 # [g]
+        
+        ## names
+        self.electron = 0
+        self.muon = 1
+        self.tau = 2
+        self.sterile1 = 3
+        self.sterile2 = 4
+        self.sterile3 = 5
+    
+    #===============================================================================
+    # REFRESH
+    #===============================================================================
+    
+    def Refresh(self):
+        # Refresh angles
+        self.s12 = np.sin(self.th12)
+        self.c12 = np.cos(self.th12)
+        self.s13 = np.sin(self.th13)
+        self.c13 = np.cos(self.th13)
+        self.s23 = np.sin(self.th23)
+        self.c23 = np.cos(self.th23)
+        self.s14 = np.sin(self.th14)
+        self.c14 = np.cos(self.th14)
+        self.s24 = np.sin(self.th24)
+        self.c24 = np.cos(self.th24)
+        self.s34 = np.sin(self.th34)
+        self.c34 = np.cos(self.th34)
+        self.s15 = np.sin(self.th15)
+        self.c15 = np.cos(self.th15)
+        self.s25 = np.sin(self.th25)
+        self.c25 = np.cos(self.th25)
+        self.s35 = np.sin(self.th35)
+        self.c35 = np.cos(self.th35)
+        self.s45 = np.sin(self.th45)
+        self.c45 = np.cos(self.th45)
+        self.s16 = np.sin(self.th16)
+        self.c16 = np.cos(self.th16)
+        self.s26 = np.sin(self.th26)
+        self.c26 = np.cos(self.th26)
+        self.s36 = np.sin(self.th36)
+        self.c36 = np.cos(self.th36)
+        self.s46 = np.sin(self.th46)
+        self.c46 = np.cos(self.th46)
+        self.s56 = np.sin(self.th56)
+        self.c56 = np.cos(self.th56)                
+        
+        th = self.th
+        th[1,2] = self.th12
+        th[1,3] = self.th13
+        th[2,3] = self.th23
+        th[1,4] = self.th14
+        th[2,4] = self.th24
+        th[3,4] = self.th34
+        th[1,5] = self.th15
+        th[2,5] = self.th25
+        th[3,5] = self.th35
+        th[4,5] = self.th45
+        th[1,6] = self.th16
+        th[2,6] = self.th26
+        th[3,6] = self.th36
+        th[4,6] = self.th46
+        th[5,6] = self.th56        
+        # Refresh cos(th_ij)
+        c = self.c
+        c[1,2] = self.c12
+        c[1,3] = self.c13
+        c[1,4] = self.c14
+        c[2,3] = self.c23
+        c[2,4] = self.c24
+        c[3,4] = self.c34
+        c[1,5] = self.c15
+        c[2,5] = self.c25
+        c[3,5] = self.c35
+        c[4,5] = self.c45
+        c[1,6] = self.c16
+        c[2,6] = self.c26
+        c[3,6] = self.c36
+        c[4,6] = self.c46
+        c[5,6] = self.c56        
+        # Refresh sin(th_ij)
+        s = self.s
+        self.s[1,2] = self.s12
+        self.s[1,3] = self.s13
+        self.s[1,4] = self.s14
+        self.s[2,3] = self.s23
+        self.s[2,4] = self.s24
+        self.s[3,4] = self.s34
+        self.s[1,5] = self.s15
+        self.s[2,5] = self.s25
+        self.s[3,5] = self.s35
+        self.s[4,5] = self.s45
+        self.s[1,6] = self.s16
+        self.s[2,6] = self.s26
+        self.s[3,6] = self.s36
+        self.s[4,6] = self.s46
+        self.s[5,6] = self.s56                
+        # Refresh CP-Phases
+        dcp = self.dcp
+        dcp[0] = 1.0
+        dcp[1] = self.delta1
+        dcp[2] = self.delta2
+        dcp[3] = self.delta3
+        #dcp[4] = self.delta2        
+        # Refresh Square mass differences
+        dmsq = self.dmsq
+        dmsq[2] = self.dm21sq
+        dmsq[3] = self.dm31sq
+        dmsq[4] = self.dm41sq
+        dmsq[5] = self.dm51sq
+        dmsq[6] = self.dm61sq        
+        
+        dm2 = self.dm2
+        dm2[1,2] = self.dm21sq
+        dm2[1,3] = self.dm31sq
+        dm2[2,3] = self.dm32sq
+        dm2[1,4] = self.dm41sq
+        dm2[1,5] = self.dm51sq
+        dm2[1,6] = self.dm61sq
+        
+    class MemoryLoadObjects():
+        &#34;&#34;&#34; Stores : variables, arrays, etc, on memory for faster use.
+        &#34;&#34;&#34;
+        body_name     = &#34;&#34;
+        body_rdensity = []
+        body_ry       = []
+        body_rnc      = []</code></pre>
+</details>
+<h3>Class variables</h3>
+<dl>
+<dt id="taurunner.utils.physicsconstants.PhysicsConstants.MemoryLoadObjects"><code class="name">var <span class="ident">MemoryLoadObjects</span></code></dt>
+<dd>
+<div class="desc"><p>Stores : variables, arrays, etc, on memory for faster use.</p></div>
+</dd>
+</dl>
+<h3>Methods</h3>
+<dl>
+<dt id="taurunner.utils.physicsconstants.PhysicsConstants.Refresh"><code class="name flex">
+<span>def <span class="ident">Refresh</span></span>(<span>self)</span>
+</code></dt>
+<dd>
+<div class="desc"></div>
+<details class="source">
+<summary>
+<span>Expand source code</span>
+</summary>
+<pre><code class="python">def Refresh(self):
+    # Refresh angles
+    self.s12 = np.sin(self.th12)
+    self.c12 = np.cos(self.th12)
+    self.s13 = np.sin(self.th13)
+    self.c13 = np.cos(self.th13)
+    self.s23 = np.sin(self.th23)
+    self.c23 = np.cos(self.th23)
+    self.s14 = np.sin(self.th14)
+    self.c14 = np.cos(self.th14)
+    self.s24 = np.sin(self.th24)
+    self.c24 = np.cos(self.th24)
+    self.s34 = np.sin(self.th34)
+    self.c34 = np.cos(self.th34)
+    self.s15 = np.sin(self.th15)
+    self.c15 = np.cos(self.th15)
+    self.s25 = np.sin(self.th25)
+    self.c25 = np.cos(self.th25)
+    self.s35 = np.sin(self.th35)
+    self.c35 = np.cos(self.th35)
+    self.s45 = np.sin(self.th45)
+    self.c45 = np.cos(self.th45)
+    self.s16 = np.sin(self.th16)
+    self.c16 = np.cos(self.th16)
+    self.s26 = np.sin(self.th26)
+    self.c26 = np.cos(self.th26)
+    self.s36 = np.sin(self.th36)
+    self.c36 = np.cos(self.th36)
+    self.s46 = np.sin(self.th46)
+    self.c46 = np.cos(self.th46)
+    self.s56 = np.sin(self.th56)
+    self.c56 = np.cos(self.th56)                
+    
+    th = self.th
+    th[1,2] = self.th12
+    th[1,3] = self.th13
+    th[2,3] = self.th23
+    th[1,4] = self.th14
+    th[2,4] = self.th24
+    th[3,4] = self.th34
+    th[1,5] = self.th15
+    th[2,5] = self.th25
+    th[3,5] = self.th35
+    th[4,5] = self.th45
+    th[1,6] = self.th16
+    th[2,6] = self.th26
+    th[3,6] = self.th36
+    th[4,6] = self.th46
+    th[5,6] = self.th56        
+    # Refresh cos(th_ij)
+    c = self.c
+    c[1,2] = self.c12
+    c[1,3] = self.c13
+    c[1,4] = self.c14
+    c[2,3] = self.c23
+    c[2,4] = self.c24
+    c[3,4] = self.c34
+    c[1,5] = self.c15
+    c[2,5] = self.c25
+    c[3,5] = self.c35
+    c[4,5] = self.c45
+    c[1,6] = self.c16
+    c[2,6] = self.c26
+    c[3,6] = self.c36
+    c[4,6] = self.c46
+    c[5,6] = self.c56        
+    # Refresh sin(th_ij)
+    s = self.s
+    self.s[1,2] = self.s12
+    self.s[1,3] = self.s13
+    self.s[1,4] = self.s14
+    self.s[2,3] = self.s23
+    self.s[2,4] = self.s24
+    self.s[3,4] = self.s34
+    self.s[1,5] = self.s15
+    self.s[2,5] = self.s25
+    self.s[3,5] = self.s35
+    self.s[4,5] = self.s45
+    self.s[1,6] = self.s16
+    self.s[2,6] = self.s26
+    self.s[3,6] = self.s36
+    self.s[4,6] = self.s46
+    self.s[5,6] = self.s56                
+    # Refresh CP-Phases
+    dcp = self.dcp
+    dcp[0] = 1.0
+    dcp[1] = self.delta1
+    dcp[2] = self.delta2
+    dcp[3] = self.delta3
+    #dcp[4] = self.delta2        
+    # Refresh Square mass differences
+    dmsq = self.dmsq
+    dmsq[2] = self.dm21sq
+    dmsq[3] = self.dm31sq
+    dmsq[4] = self.dm41sq
+    dmsq[5] = self.dm51sq
+    dmsq[6] = self.dm61sq        
+    
+    dm2 = self.dm2
+    dm2[1,2] = self.dm21sq
+    dm2[1,3] = self.dm31sq
+    dm2[2,3] = self.dm32sq
+    dm2[1,4] = self.dm41sq
+    dm2[1,5] = self.dm51sq
+    dm2[1,6] = self.dm61sq</code></pre>
+</details>
+</dd>
+</dl>
+</dd>
+</dl>
+</section>
+</article>
+<nav id="sidebar">
+<h1>Index</h1>
+<div class="toc">
+<ul></ul>
+</div>
+<ul id="index">
+<li><h3>Super-module</h3>
+<ul>
+<li><code><a title="taurunner.utils" href="index.html">taurunner.utils</a></code></li>
+</ul>
+</li>
+<li><h3><a href="#header-classes">Classes</a></h3>
+<ul>
+<li>
+<h4><code><a title="taurunner.utils.physicsconstants.PhysicsConstants" href="#taurunner.utils.physicsconstants.PhysicsConstants">PhysicsConstants</a></code></h4>
+<ul class="">
+<li><code><a title="taurunner.utils.physicsconstants.PhysicsConstants.MemoryLoadObjects" href="#taurunner.utils.physicsconstants.PhysicsConstants.MemoryLoadObjects">MemoryLoadObjects</a></code></li>
+<li><code><a title="taurunner.utils.physicsconstants.PhysicsConstants.Refresh" href="#taurunner.utils.physicsconstants.PhysicsConstants.Refresh">Refresh</a></code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+</nav>
+</main>
+<footer id="footer">
+<p>Generated by <a href="https://pdoc3.github.io/pdoc"><cite>pdoc</cite> 0.9.2</a>.</p>
+</footer>
+</body>
+</html>
