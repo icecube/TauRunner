@@ -3,8 +3,8 @@
 import os, sys, json
 import proposal as pp
 
-from taurunner.utils import units, sample_powerlaw, is_floatable, make_propagator
-import taurunner.track as track
+from taurunner.utils import units, make_propagator
+from taurunner import track
 from taurunner.body import *
 from taurunner.cross_sections import CrossSections
 from taurunner.Casino import *
@@ -155,7 +155,9 @@ def run_MC(eini: np.ndarray,
            no_secondaries: bool = False,
            flavor: int = 16,
            no_losses: bool = False,
-           condition=None
+           condition=None,
+           depth=0.0,
+           track_type='chord'
           ) -> np.ndarray:
     r'''
     Main simulation code. Propagates an ensemble of initial states and returns the output
@@ -183,35 +185,44 @@ def run_MC(eini: np.ndarray,
     if rand is None:
         rand = np.random.RandomState()
     secondary_basket = []
-    idxx             = []
+    idxx             = []    
+    my_track  = None
+    prv_theta = np.nan
+    # Run the algorithm
 
     # All neutrinos are propagated until exiting as tau neutrino or taus.
     # If secondaries are on, then each event has a corresponding secondaries basket
     # which are propagated all at once in the end.
     for i in range(nevents):
-        my_e     = energies[i]
-        my_th    = thetas[i]
+        cur_theta = thetas[i]
+        cur_e     = energies[i]
 
-        particle = Particle(particleIDs[i], my_e, my_th, 0.0, rand, xs,
-                            propagator, not no_secondaries, no_losses)
+        if (cur_theta!=prv_theta and track_type=='chord') or my_track is None: # We need to make a new track
+            my_track = getattr(track, track_type)(theta=cur_theta, depth=depth)
+        particle = Particle(particleIDs[i], 
+                            cur_e, 
+                            0.0 ,
+                            rand, 
+                            xs,
+                            propagator, 
+                            not no_secondaries, 
+                            no_losses
+        )
         
-        my_track = prev_track if my_th==prev_th else make_track(my_th)
-
         out      = Propagate(particle, my_track, body, condition=condition)
     
         if (out.survived==False):
             #this muon/electron was absorbed. we record it in the output with outgoing energy 0
-            output.append((my_e, 0., my_th, out.nCC, out.nNC, out.ID, i, out.position))
+            output.append((cur_e, 0., cur_th, out.nCC, out.nNC, out.ID, i, out.position))
         else:
             #this particle escaped
-            output.append((my_e, float(out.energy), my_th, out.nCC, out.nNC, out.ID, i, out.position))
+            output.append((cur_e, float(out.energy), cur_th, out.nCC, out.nNC, out.ID, i, out.position))
         if not no_secondaries:
             #store secondaries to propagate later
             secondary_basket.append(np.asarray(out.basket))
             #keep track of parent
             idxx = np.hstack([idxx, [i for _ in out.basket]])
-        prev_th    = my_th
-        prev_track = my_track
+        prv_theta = cur_theta
         del out
         del particle
     idxx = np.asarray(idxx).astype(np.int32)
@@ -219,15 +230,14 @@ def run_MC(eini: np.ndarray,
         #make muon propagator
         secondary_basket = np.concatenate(secondary_basket)
         sec_prop         = {ID:make_propagator(ID, body, xs_model) for ID in [-12, -14]}
-
         for sec, i in zip(secondary_basket, idxx):
-            my_th    = thetas[i]
-            my_track = prev_track if my_th==prev_th else make_track(my_th) 
+            cur_theta = thetas[i]
+            if cur_theta!=prv_theta and track_type=='chord': # We need to make a new track
+                my_track = getattr(track, 'chord')(theta=cur_theta, depth=depth)
             sec_particle = Particle(
                                     sec['ID'], 
                                     sec['energy'],
-                                    my_th, 
-                                    sec['position'], 
+                                    sec['position'],
                                     rand,
                                     xs=xs, 
                                     proposal_propagator=sec_prop[sec['ID']], 
@@ -236,16 +246,15 @@ def run_MC(eini: np.ndarray,
                                    )
             sec_out = Propagate(sec_particle, my_track, body, condition=condition)
             if(not sec_out.survived):
-                output.append((sec_out.initial_energy, 0.0, my_th, sec_out.nCC, sec_out.nNC, sec_out.ID, i, sec_out.position))
+                output.append((sec_out.initial_energy, 0.0, cur_th, sec_out.nCC, sec_out.nNC, sec_out.ID, i, sec_out.position))
             else:
-                output.append((sec_out.initial_energy, sec_out.energy, my_th, 
-    				                 sec_out.nCC, sec_out.nNC, sec_out.ID, i, sec_out.position))
+                output.append((sec_out.initial_energy, sec_out.energy, cur_th, 
+    	    		                 sec_out.nCC, sec_out.nNC, sec_out.ID, i, sec_out.position))
+            prv_theta = cur_theta
             del sec_particle
-            del sec_out     
-        
+            del sec_out
     output = np.array(output, dtype = [('Eini', float), ('Eout',float), ('Theta', float), ('nCC', int), ('nNC', int), ('PDG_Encoding', int), ('primary_tau', int), ('final_position', float)])
     output['Theta'] = np.degrees(output['Theta'])
-    print(len(output[output['PDG_Encoding']==15]))                  
     return output
 
 if __name__ == "__main__": # pragma: no cover
@@ -300,10 +309,10 @@ if __name__ == "__main__": # pragma: no cover
         theta = (TR_specs['th_min'], TR_specs['th_max'])
     else:
         theta = TR_specs['theta']
-    thetas = make_initial_thetas(TR_specs['nevents'], theta, rand=rand, track_type=TR_specs['track'])
-    
+    thetas = make_initial_thetas(TR_specs['nevents'], theta, rand=rand, track_type=TR_specs['track']
     sorter = np.argsort(thetas)
     thetas = thetas[sorter]
+    
     xs = CrossSections(TR_specs['xs_model'])
 
     prop = make_propagator(TR_specs['flavor'], body, TR_specs['xs_model'])
@@ -314,7 +323,7 @@ if __name__ == "__main__": # pragma: no cover
 
     result = run_MC(eini, thetas, body, xs, prop, rand=rand,
                     no_secondaries=TR_specs['no_secondaries'], no_losses=TR_specs['no_losses'],
-                    flavor=TR_specs['flavor'], condition=condition)
+                    flavor=TR_specs['flavor'], condition=condition, depth=TR_specs['depth'], track_type=TR_specs['track'])
 
     if TR_specs['save']:
         if '.npy' not in TR_specs['save']:

@@ -10,6 +10,7 @@ class Radial(Track):
         
         Track.__init__(self, depth=depth)
         self.theta = 0.0
+        self.desc  = 'radial'
 
     @doc_inherit
     def d_to_x(self, d: float):
