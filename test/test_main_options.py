@@ -29,13 +29,11 @@ class TestMainMethods(unittest.TestCase):
             path + '/../taurunner/resources/gzk_cdf_phi_spline.npy', 
             rand=rand
         )
-        gzk_tracks  = make_tracks(gzk_thetas)
         gzk = run_MC(
             gzk_eini, 
             gzk_thetas, 
             body, 
             xs, 
-            gzk_tracks, 
             prop,
             no_losses=True,
             no_secondaries=True
@@ -45,13 +43,11 @@ class TestMainMethods(unittest.TestCase):
         # spec_1
         spec_1_eini = make_initial_e(num_sim, -1., e_min=1e5, e_max=1e8, rand=rand)
         spec_1_thetas = make_initial_thetas(num_sim, (0., 90.), rand=rand)
-        spec_1_tracks  = make_tracks(spec_1_thetas)
         spec_1 = run_MC(
             spec_1_eini, 
             spec_1_thetas, 
             body, 
             xs, 
-            spec_1_tracks,
             prop,
             no_losses=True,
             no_secondaries=True
@@ -61,13 +57,11 @@ class TestMainMethods(unittest.TestCase):
         # spec 2
         spec_2_eini = make_initial_e(num_sim, -2., e_min=1e5, e_max=1e8, rand=rand)
         spec_2_thetas = make_initial_thetas(num_sim, 30., rand=rand)
-        spec_2_tracks  = make_tracks(spec_2_thetas)
         spec_2 = run_MC(
             spec_2_eini, 
             spec_2_thetas, 
             body, 
-            xs, 
-            spec_2_tracks,
+            xs,
             prop,
             no_losses=True,
             no_secondaries=False
@@ -77,13 +71,11 @@ class TestMainMethods(unittest.TestCase):
         # mono
         mono_eini = make_initial_e(num_sim, 1e8, rand=rand)
         mono_thetas = make_initial_thetas(num_sim, (0., 90.), rand=rand)
-        mono_tracks  = make_tracks(mono_thetas)
         mono = run_MC(
             mono_eini, 
             mono_thetas, 
             body, 
-            xs, 
-            mono_tracks,
+            xs,
             prop,
             no_losses=True,
             no_secondaries=True
