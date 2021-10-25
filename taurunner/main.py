@@ -149,13 +149,14 @@ def run_MC(eini: np.ndarray,
            thetas: np.ndarray,
            body: Body, 
            xs: CrossSections, 
-           tracks: dict, 
            propagator: pp.Propagator,
            rand: np.random.RandomState = None,
            no_secondaries: bool = False,
            flavor: int = 16,
            no_losses: bool = False,
-           condition=None
+           condition=None,
+           depth=0.0,
+           track_type='chord'
           ) -> np.ndarray:
     r'''
     Main simulation code. Propagates an ensemble of initial states and returns the output
@@ -184,7 +185,8 @@ def run_MC(eini: np.ndarray,
         rand = np.random.RandomState()
     secondary_basket = []
     idxx             = []
-
+    
+    my_track  = None
     prv_theta = np.nan
     # Run the algorithm
     # All neutrinos are propagated until exiting as tau neutrino or taus.
@@ -192,8 +194,8 @@ def run_MC(eini: np.ndarray,
     # which are propagated all at once in the end.
     for i in range(nevents):
         cur_theta = thetas[i]
-        if cur_theta!=prv_theta: # We need to make a new track
-            my_track = getattr(track, TR_specs['track'].lower())(theta=cur_theta, depth=TR_specs['depth'])
+        if (cur_theta!=prv_theta and track_type=='chord') or my_track is None: # We need to make a new track
+            my_track = getattr(track, track_type)(theta=cur_theta, depth=depth)
         particle = Particle(particleIDs[i], 
                             energies[i], 
                             0.0 ,
@@ -223,9 +225,8 @@ def run_MC(eini: np.ndarray,
         sec_prop         = {ID:make_propagator(ID, body, xs_model) for ID in [-12, -14]}
         for sec, i in zip(secondary_basket, idxx):
             cur_theta = thetas[i]
-            if cur_theta!=prv_theta: # Make a new track
-                my_track = getattr(track, TR_specs['track'].lower())(theta=cur_theta, depth=TR_specs['depth'])
-            #my_track = tracks[thetas[i]]
+            if cur_theta!=prv_theta and track_type=='chord': # We need to make a new track
+                my_track = getattr(track, 'chord')(theta=cur_theta, depth=depth)
             sec_particle = Particle(
                                     sec['ID'], 
                                     sec['energy'],
@@ -241,7 +242,7 @@ def run_MC(eini: np.ndarray,
                 output.append((sec_out.initial_energy, 0.0, thetas[i], sec_out.nCC, sec_out.nNC, sec_out.ID, i, sec_out.position))
             else:
                 output.append((sec_out.initial_energy, sec_out.energy, thetas[i], 
-    				                 sec_out.nCC, sec_out.nNC, sec_out.ID, i, sec_out.position))
+    	    		                 sec_out.nCC, sec_out.nNC, sec_out.ID, i, sec_out.position))
             prv_theta = cur_theta
             del sec_particle
             del sec_out     
@@ -305,8 +306,8 @@ if __name__ == "__main__": # pragma: no cover
         theta = TR_specs['theta']
     thetas = make_initial_thetas(TR_specs['nevents'], theta, rand=rand, track_type=TR_specs['track'])
 
-    from taurunner.utils.make_tracks import make_tracks
-    tracks = make_tracks(thetas, depth=TR_specs['depth']*units.km/body.radius, track_type=TR_specs['track'])
+    #from taurunner.utils.make_tracks import make_tracks
+    #tracks = make_tracks(thetas, depth=TR_specs['depth']*units.km/body.radius, track_type=TR_specs['track'])
 
     xs = CrossSections(TR_specs['xs_model'])
 
@@ -317,9 +318,9 @@ if __name__ == "__main__": # pragma: no cover
     else:
         condition = None
 
-    result = run_MC(eini, thetas, body, xs, tracks, prop, rand=rand,
+    result = run_MC(eini, thetas, body, xs, prop, rand=rand,
                     no_secondaries=TR_specs['no_secondaries'], no_losses=TR_specs['no_losses'],
-                    flavor=TR_specs['flavor'], condition=condition)
+                    flavor=TR_specs['flavor'], condition=condition, depth=TR_specs['depth'], track_type=TR_specs['track'])
 
     if TR_specs['save']:
         if '.npy' not in TR_specs['save']:
