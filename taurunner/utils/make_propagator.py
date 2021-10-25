@@ -29,7 +29,6 @@ def segment_body(body, granularity=0.5):
                 descs.append((start, end, avg_density))
                 start = end
                 s_density = body.get_density(start)
-    print(len(descs))
     return descs
 
 def make_propagator(ID, body, xs_model='dipole', granularity=0.5):
