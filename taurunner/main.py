@@ -9,6 +9,7 @@ from taurunner.body import *
 from taurunner.cross_sections import CrossSections
 from taurunner.Casino import *
 from taurunner.particle import Particle
+from taurunner.utils.make_track import make_track
 
 def initialize_parser(): # pragma: no cover
     r'''
@@ -149,7 +150,6 @@ def run_MC(eini: np.ndarray,
            thetas: np.ndarray,
            body: Body, 
            xs: CrossSections, 
-           tracks: dict, 
            propagator: pp.Propagator,
            rand: np.random.RandomState = None,
            no_secondaries: bool = False,
@@ -165,7 +165,6 @@ def run_MC(eini: np.ndarray,
     thetas     : array containing the incoming angles of particles to simulate
     body       : taurunner Body object in which to propagate the particles
     xs         : taurunner CrossSections object for interactions
-    tracks     : dictionary whose keys are angles and whose values are taurunner Track objects
     propagator : PROPOSAL propagator object for charged lepton propagation
     Returns
     _______
@@ -179,31 +178,40 @@ def run_MC(eini: np.ndarray,
     energies    = list(eini)
     particleIDs = np.ones(nevents, dtype=int)*flavor
     xs_model    = xs.model
-
+    prev_th     = thetas[0]
+    prev_track  = make_track(prev_th)
     if rand is None:
         rand = np.random.RandomState()
     secondary_basket = []
     idxx             = []
 
-    # Run the algorithm
     # All neutrinos are propagated until exiting as tau neutrino or taus.
     # If secondaries are on, then each event has a corresponding secondaries basket
     # which are propagated all at once in the end.
     for i in range(nevents):
-        particle = Particle(particleIDs[i], energies[i], thetas[i], 0.0, rand, xs,
+        my_e     = energies[i]
+        my_th    = thetas[i]
+
+        particle = Particle(particleIDs[i], my_e, my_th, 0.0, rand, xs,
                             propagator, not no_secondaries, no_losses)
         
-        my_track = tracks[thetas[i]]
+        my_track = prev_track if my_th==prev_th else make_track(my_th)
+
         out      = Propagate(particle, my_track, body, condition=condition)
     
         if (out.survived==False):
-            #these muons/electrons were absorbed. we record them in the output with outgoing energy 0
-            output.append((energies[i], 0., thetas[i], out.nCC, out.nNC, out.ID, i, out.position))
+            #this muon/electron was absorbed. we record it in the output with outgoing energy 0
+            output.append((my_e, 0., my_th, out.nCC, out.nNC, out.ID, i, out.position))
         else:
-            output.append((energies[i], float(out.energy), thetas[i], out.nCC, out.nNC, out.ID, i, out.position))
+            #this particle escaped
+            output.append((my_e, float(out.energy), my_th, out.nCC, out.nNC, out.ID, i, out.position))
         if not no_secondaries:
+            #store secondaries to propagate later
             secondary_basket.append(np.asarray(out.basket))
+            #keep track of parent
             idxx = np.hstack([idxx, [i for _ in out.basket]])
+        prev_th    = my_th
+        prev_track = my_track
         del out
         del particle
     idxx = np.asarray(idxx).astype(np.int32)
@@ -213,11 +221,12 @@ def run_MC(eini: np.ndarray,
         sec_prop         = {ID:make_propagator(ID, body, xs_model) for ID in [-12, -14]}
 
         for sec, i in zip(secondary_basket, idxx):
-            my_track = tracks[thetas[i]]
+            my_th    = thetas[i]
+            my_track = prev_track if my_th==prev_th else make_track(my_th) 
             sec_particle = Particle(
                                     sec['ID'], 
                                     sec['energy'],
-                                    thetas[i], 
+                                    my_th, 
                                     sec['position'], 
                                     rand,
                                     xs=xs, 
@@ -227,16 +236,16 @@ def run_MC(eini: np.ndarray,
                                    )
             sec_out = Propagate(sec_particle, my_track, body, condition=condition)
             if(not sec_out.survived):
-                output.append((sec_out.initial_energy, 0.0, thetas[i], sec_out.nCC, sec_out.nNC, sec_out.ID, i, sec_out.position))
+                output.append((sec_out.initial_energy, 0.0, my_th, sec_out.nCC, sec_out.nNC, sec_out.ID, i, sec_out.position))
             else:
-                output.append((sec_out.initial_energy, sec_out.energy, thetas[i], 
+                output.append((sec_out.initial_energy, sec_out.energy, my_th, 
     				                 sec_out.nCC, sec_out.nNC, sec_out.ID, i, sec_out.position))
             del sec_particle
             del sec_out     
         
     output = np.array(output, dtype = [('Eini', float), ('Eout',float), ('Theta', float), ('nCC', int), ('nNC', int), ('PDG_Encoding', int), ('primary_tau', int), ('final_position', float)])
     output['Theta'] = np.degrees(output['Theta'])
-                       
+    print(len(output[output['PDG_Encoding']==15]))                  
     return output
 
 if __name__ == "__main__": # pragma: no cover
@@ -292,20 +301,18 @@ if __name__ == "__main__": # pragma: no cover
     else:
         theta = TR_specs['theta']
     thetas = make_initial_thetas(TR_specs['nevents'], theta, rand=rand, track_type=TR_specs['track'])
-
-    from taurunner.utils.make_tracks import make_tracks
-    tracks = make_tracks(thetas, depth=TR_specs['depth']*units.km/body.radius, track_type=TR_specs['track'])
-
+    
+    sorter = np.argsort(thetas)
+    thetas = thetas[sorter]
     xs = CrossSections(TR_specs['xs_model'])
 
     prop = make_propagator(TR_specs['flavor'], body, TR_specs['xs_model'])
-
     if args.e_cut:
         condition = lambda particle: (particle.energy <= args.e_cut*units.GeV and abs(particle.ID) in [12,14,16])
     else:
         condition = None
 
-    result = run_MC(eini, thetas, body, xs, tracks, prop, rand=rand,
+    result = run_MC(eini, thetas, body, xs, prop, rand=rand,
                     no_secondaries=TR_specs['no_secondaries'], no_losses=TR_specs['no_losses'],
                     flavor=TR_specs['flavor'], condition=condition)
 

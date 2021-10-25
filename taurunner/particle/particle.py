@@ -203,12 +203,8 @@ class Particle(object):
         if(np.logical_or(not self.losses, np.abs(self.ID) in [11, 12])):
             return
         lep              = pp.particle.DynamicData(getattr(pp.particle, ID_2_name[self.ID])().particle_type)
-        current_km_dist  = track.x_to_d(self.position)*body.radius/units.km
         total_dist       = track.x_to_d(1.-self.position)*body.radius/units.km
-        current_density  = body.get_average_density(track.x_to_r(self.position))
-        km_dist_to_prop  = total_dist - current_km_dist
-
-        if(np.logical_and(np.abs(self.ID) in [13, 14], km_dist_to_prop > 100.)):
+        if(np.logical_and(np.abs(self.ID) in [13, 14], total_dist > 100.)):  #muons farther than 100km will not make it
              return
 
         lep_length  = []
@@ -219,20 +215,18 @@ class Particle(object):
         lep.position   = pos_vec
         lep.direction  = dir_vec
         #propagate
-        with warnings.catch_warnings():
-            warnings.simplefilter("ignore")
-            sec            = self.propagator.propagate(lep) #, dist_to_prop)
+        sec            = self.propagator.propagate(lep, total_dist*1e5) #, dist_to_prop)
         particles      = sec.particles
         #update particle info
         final_vec      = (sec.position[-1] - pos_vec)
         lep_length     = final_vec.magnitude() / 1e5
         decay_products = [p for i,p in zip(range(max(len(particles)-3,0),len(particles)), particles[-3:]) if int(p.type) <= 1000000001]
         en_at_decay    = np.sum([p.energy for p in decay_products])
-        if(en_at_decay==0):    #particle reached the border before decaying
-            self.energy = particles[-1].parent_particle_energy*units.MeV
-            self.chargedposition = float(np.ceil(lep_length))
-        else:                  #particle decayed before reaching the border
-            self.energy    = en_at_decay*units.MeV
+        if(en_at_decay==0):       #particle reached the border before decaying
+            self.energy           = particles[-1].parent_particle_energy*units.MeV
+            self.chargedposition  = float(np.ceil(lep_length))
+        else:                     #particle decayed before reaching the border
+            self.energy           = en_at_decay*units.MeV
             self.chargedposition  = lep_length
         return sec
 
