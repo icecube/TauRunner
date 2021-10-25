@@ -19,7 +19,7 @@ def segment_body(body, granularity=0.5):
             descs.append((xi, xf, body.get_average_density(0.5*(xi+xf))))
         else:
             start     = xi
-            s_density = body.get_density(start)
+            s_density = body.get_density(start, right=True)
             while np.abs(f_density-s_density)/s_density-granularity>0:
                 func         = lambda x: np.abs(body.get_density(x, right=True)-s_density)/s_density-granularity
                 end          = ridder(func, start, xf)
@@ -29,6 +29,7 @@ def segment_body(body, granularity=0.5):
                 descs.append((start, end, avg_density))
                 start = end
                 s_density = body.get_density(start)
+    print(len(descs))
     return descs
 
 def make_propagator(ID, body, xs_model='dipole', granularity=0.5):
