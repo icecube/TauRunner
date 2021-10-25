@@ -37,7 +37,7 @@ def initialize_parser(): # pragma: no cover
     parser.add_argument('--track',
                         dest='track',
                         type=str,
-                        default='Chord',
+                        default='chord',
                         help='Track type to use. curently only radial and chord trajectories supported.'
                        )
     # Energy arguments
@@ -213,10 +213,10 @@ def run_MC(eini: np.ndarray,
     
         if (out.survived==False):
             #this muon/electron was absorbed. we record it in the output with outgoing energy 0
-            output.append((cur_e, 0., cur_th, out.nCC, out.nNC, out.ID, i, out.position))
+            output.append((cur_e, 0., cur_theta, out.nCC, out.nNC, out.ID, i, out.position))
         else:
             #this particle escaped
-            output.append((cur_e, float(out.energy), cur_th, out.nCC, out.nNC, out.ID, i, out.position))
+            output.append((cur_e, float(out.energy), cur_theta, out.nCC, out.nNC, out.ID, i, out.position))
         if not no_secondaries:
             #store secondaries to propagate later
             secondary_basket.append(np.asarray(out.basket))
@@ -246,9 +246,9 @@ def run_MC(eini: np.ndarray,
                                    )
             sec_out = Propagate(sec_particle, my_track, body, condition=condition)
             if(not sec_out.survived):
-                output.append((sec_out.initial_energy, 0.0, cur_th, sec_out.nCC, sec_out.nNC, sec_out.ID, i, sec_out.position))
+                output.append((sec_out.initial_energy, 0.0, cur_theta, sec_out.nCC, sec_out.nNC, sec_out.ID, i, sec_out.position))
             else:
-                output.append((sec_out.initial_energy, sec_out.energy, cur_th, 
+                output.append((sec_out.initial_energy, sec_out.energy, cur_theta, 
     	    		                 sec_out.nCC, sec_out.nNC, sec_out.ID, i, sec_out.position))
             prv_theta = cur_theta
             del sec_particle
@@ -309,7 +309,7 @@ if __name__ == "__main__": # pragma: no cover
         theta = (TR_specs['th_min'], TR_specs['th_max'])
     else:
         theta = TR_specs['theta']
-    thetas = make_initial_thetas(TR_specs['nevents'], theta, rand=rand, track_type=TR_specs['track']
+    thetas = make_initial_thetas(TR_specs['nevents'], theta, rand=rand, track_type=TR_specs['track'])
     sorter = np.argsort(thetas)
     thetas = thetas[sorter]
     
