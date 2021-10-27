@@ -253,7 +253,7 @@ def run_MC(eini: np.ndarray,
             prv_theta = cur_theta
             del sec_particle
             del sec_out
-    output = np.array(output, dtype = [('Eini', float), ('Eout',float), ('Theta', float), ('nCC', int), ('nNC', int), ('PDG_Encoding', int), ('primary_tau', int), ('final_position', float)])
+    output = np.array(output, dtype = [('Eini', float), ('Eout',float), ('Theta', float), ('nCC', int), ('nNC', int), ('PDG_Encoding', int), ('event_ID', int), ('final_position', float)])
     output['Theta'] = np.degrees(output['Theta'])
     return output
 
