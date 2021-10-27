@@ -29,7 +29,7 @@ def initialize_parser(): # pragma: no cover
                         default=0,
                         help='how many events do you want?'
                        )
-    parser.add_argument('-flavor', 
+    parser.add_argument('--flavor', 
                         dest='flavor', 
                         type=int, default=16,
                         help='neutrino flavor (default is nutau): 12 for nue 14 for numu 16 for nutau'
@@ -50,13 +50,13 @@ def initialize_parser(): # pragma: no cover
                        )
     parser.add_argument('--e_min',
                         type=float,
-                        default=1e6,
-                        help='Minimum energy to sample from if doing powerlaw sampling'
+                        default=1e15,
+                        help='Minimum energy to sample from if doing powerlaw sampling (eV)'
                        )
     parser.add_argument('--e_max',
                         type=float,
-                        default=1e9,
-                        help='Minimum energy to sample from if doing powerlaw sampling'
+                        default=1e18,
+                        help='Maximum energy to sample from if doing powerlaw sampling (eV)'
                        )
     
     # Angular arguments
