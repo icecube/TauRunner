@@ -25,7 +25,7 @@ pip install taurunner
 If you find any problems with the code or have any feature requests, please open an issue on [Github](https://github.com/icecube/TauRunner/issues).
 
 ## Examples
-Below are three prototypical use cases for this project. For more examples, see `notebooks/TauRunner_examples.ipynb`
+Below are three prototypical command-line use cases for this project. For more examples, see `notebooks/TauRunner_examples.ipynb`. Please note that while we use natural units for anything written in code, we consider the command line interface to be human-readable and use units of GeV and degrees for energies and angles respectively.
 
 ### Injecting a beam of monoenergetic tau-neutrinos
 We can simulate 500 tau neutrinos with an energy of 1 EeV that travel directly through the core. At the point of emergence from the Earth, we receive the resultant particle ID and energy.
