@@ -2,7 +2,12 @@ import warnings
 import numpy as np
 from scipy.interpolate import RectBivariateSpline, splev, splrep
 from scipy.integrate import quad
-from importlib.resources import path as imppath
+import sys
+# In Python 3.6 and before importlib.resources is importlib_resources
+if sys.version_info.major==3 and sys.version_info.minor<=6:
+    from importlib_resources import path
+else:
+    from importlib.resources import path
 import os
 import pickle as pkl
 
@@ -10,7 +15,7 @@ from taurunner.utils import FileLock
 import taurunner as tr
 
 
-with imppath('taurunner.resources.column_depth_splines', '__init__.py') as p:
+with path('taurunner.resources.column_depth_splines', '__init__.py') as p:
     SPLINE_PATH = str(p).split('__init__.py')[0]
 
 

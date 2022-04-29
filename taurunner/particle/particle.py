@@ -1,6 +1,11 @@
 import numpy as np
 import proposal as pp
-from importlib.resources import path
+import sys
+# In Python 3.6 and before importlib.resources is importlib_resources
+if sys.version_info.major==3 and sys.version_info.minor<=6:
+    from importlib_resources import path
+else:
+    from importlib.resources import path
 
 import taurunner
 from taurunner.utils import units

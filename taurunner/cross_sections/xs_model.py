@@ -1,6 +1,11 @@
 import numpy as np
 import pickle as pkl
-from importlib.resources import path as imppath
+import sys
+# In Python 3.6 and before importlib.resources is importlib_resources
+if sys.version_info.major==3 and sys.version_info.minor<=6:
+    from importlib_resources import path as imppath
+else:
+    from importlib.resources import path as imppath
 
 import taurunner as tr
 from taurunner.utils import units
