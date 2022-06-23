@@ -17,6 +17,11 @@ class Chord(Track):
                 0 is through the core and \pi/2-\epsilon is skimming
         '''
         Track.__init__(self, depth=depth)
+        if theta < 0 or theta > np.pi:
+            from warnings import warn
+            warn(
+                "TauRunner takes angle input in radians. Your input doesn't lie between 0 and np.pi. Please make sure you're in the right units."
+            )
         self.theta = theta
         self.desc  = 'chord'
         self._c    = np.cos(theta)
