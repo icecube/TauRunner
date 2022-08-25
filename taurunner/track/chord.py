@@ -73,13 +73,14 @@ class Chord(Track):
                      0, 
                      self._c
                     ]
-        dir_vec   = pp.Vector3D(direction[0], 0., direction[2])
+        dir_vec   = pp.Cartesian3D(direction[0], 0., direction[2])
         return dir_vec
 
     def x_to_pp_pos(self, x:float, rad: float):
-        #compute direction and position in proposal body
-        pos_vec   = pp.Vector3D(self._s*rad*self._t * (1 - x), 
-                                0, 
-                                -self._c*rad*self._t*(1-x)+(1-self.depth)*rad
-                               )
+        ##compute direction and position in proposal body
+        pos_vec = pp.Cartesian3D(
+            self._s*rad*self._t * (1 - x), 
+            0, 
+            -self._c * rad * self._t * (1-x) + (1-self.depth) * rad
+        )
         return pos_vec

@@ -27,16 +27,17 @@ class Particle(object):
     This is the class that contains all relevant 
     particle information stored in an object.
     '''
-    def __init__(self, 
-                 ID:                  int, 
-                 energy:              float, 
-                 position:            float, 
-                 rand:                RandomState,
-                 xs:                  CrossSections, 
-                 proposal_propagator: Propagator,
-                 secondaries:         bool, 
-                 no_losses:           bool
-                ):
+    def __init__(
+        self, 
+        ID:                  int, 
+        energy:              float, 
+        position:            float, 
+        rand:                RandomState,
+        xs:                  CrossSections, 
+        proposal_propagator: Propagator,
+        secondaries:         bool, 
+        no_losses:           bool
+    ):
         r'''
         Class initializer. This function sets all initial conditions based 
         on the particle's incoming angle, energy, ID, and position.
@@ -205,43 +206,55 @@ class Particle(object):
         '''
         if(np.logical_or(not self.losses, np.abs(self.ID) in [11, 12])):
             return
-        lep              = pp.particle.DynamicData(getattr(pp.particle, ID_2_name[self.ID])().particle_type)
-        total_dist       = track.x_to_d(1.-self.position)*body.radius/units.km
+        lep = pp.particle.ParticleState()
+        #lep = pp.particle.DynamicData(getattr(pp.particle, ID_2_name[self.ID])().particle_type)
+        total_dist = track.x_to_d(1.-self.position)*body.radius/units.km
         if(np.logical_and(np.abs(self.ID) in [13, 14], total_dist > 100.)):  #muons farther than 100km will not make it
              return
 
         lep_length  = []
         en_at_decay = []
-        lep.energy     = self.energy/units.MeV
-        pos_vec        = track.x_to_pp_pos(self.position, body.radius/units.cm) # radius in cm
-        dir_vec        = track.x_to_pp_dir(self.position)
-        lep.position   = pos_vec
-        lep.direction  = dir_vec
+        lep.energy = self.energy/units.MeV
+        pos_vec = track.x_to_pp_pos(self.position, body.radius/units.cm) # radius in cm
+        dir_vec = track.x_to_pp_dir(self.position)
+        lep.position = pos_vec
+        lep.direction = dir_vec
         #propagate
-        sec            = self.propagator.propagate(lep, total_dist*1e5) #, dist_to_prop)
-        particles      = sec.particles
+        sec = self.propagator.propagate(
+            lep,
+            max_distance=total_dist*1e5
+        )
+        #particles = sec.particles
         #update particle info
-        final_vec      = (sec.position[-1] - pos_vec)
-        lep_length     = final_vec.magnitude() / 1e5
-        decay_products = [p for i,p in zip(range(max(len(particles)-3,0),len(particles)), particles[-3:]) if int(p.type) <= 1000000001]
-        en_at_decay    = np.sum([p.energy for p in decay_products])
+        final_vec = (sec.track_positions()[-1] - pos_vec)
+        lep_length = final_vec.magnitude / 1e5
+        #decay_products = [p for i, p in zip(range(max(len(particles)-3,0),len(particles)), particles[-3:]) if int(p.type) <= 1000000001]
+        en_at_decay = np.sum([p.energy for p in sec.decay_products()])
         if(en_at_decay==0):       #particle reached the border before decaying
-            self.energy           = particles[-1].parent_particle_energy*units.MeV
+            stochastic = sec.stochastic_losses()[-1]
+            continuous = sec.continuous_losses()[-1]
+            self.energy = (
+                min(
+                    stochastic.parent_particle_energy*units.MeV,
+                    continuous.parent_particle_energy*units.MeV
+                )
+            )
             self.chargedposition  = float(np.ceil(lep_length))
         else:                     #particle decayed before reaching the border
-            self.energy           = en_at_decay*units.MeV
+            self.energy = en_at_decay*units.MeV
             self.chargedposition  = lep_length
         return sec
 
     def Interact(self, interaction, body=None, track=None, proton_fraction=0.5): #  dist_to_prop=None, current_density=None):
         if np.abs(self.ID) in [12, 14, 16]:
             #Sample energy lost from differential distributions
-            NeutrinoInteractionWeights = self.xs.differential_cross_section(self.energy,
-                                                                            NeutrinoDifferentialEnergyFractions,
-                                                                            self.nutype,
-                                                                            interaction,
-                                                                            proton_fraction=proton_fraction
-                                                    )
+            NeutrinoInteractionWeights = self.xs.differential_cross_section(
+                self.energy,
+                NeutrinoDifferentialEnergyFractions,
+                self.nutype,
+                interaction,
+                proton_fraction=proton_fraction
+            )
             NeutrinoInteractionWeights = np.divide(NeutrinoInteractionWeights, 
                                                    np.sum(NeutrinoInteractionWeights))
             z_choice = self.rand.choice(NeutrinoDifferentialEnergyFractions,

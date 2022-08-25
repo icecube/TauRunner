@@ -42,4 +42,5 @@ def make_initial_e(nevents, energy, e_min=None, e_max=None, rand=None):
                 cdf = pkl.load(pkl_f)
         cdf_indices = rand.uniform(low=0., high=1.,size=nevents)
         eini        = cdf(cdf_indices)
+    print(eini)
     return eini
