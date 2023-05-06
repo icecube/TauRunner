@@ -7,7 +7,7 @@ Authors: Ibrahim Safa, Carlos A. Argüelles, Jeff Lazar, Alex Pizzuto
 
 ## Introduction
 
-`TauRunner` is a tool that propagates ultra-high-energy neutrinos, with a focus on tau neutrinos. Although it was developed for extremely high energy (EeV+) applications, it is able to propagate neutrinos from 1 to 10^16 GeV. Note that oscillations are not taken into account at the lowest energies, but they become negligible above 1 TeV.   
+`TauRunner` is a tool that propagates ultra-high-energy neutrinos, with a focus on tau neutrinos. Although it was developed for extremely high energy (EeV+) applications, it is able to propagate neutrinos from 1 to 10^16 GeV. Note that oscillations are not taken into account at the lowest energies, but they become negligible above 1 TeV for propagation distances equivalent to Earth's diameter.   
 
 ## Installation
 
