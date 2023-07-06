@@ -1,4 +1,4 @@
 coverage==5.4
 numpy==1.16.6
-scipy==1.2.3
+scipy==1.10.0
 proposal==6.1.6
