@@ -44,6 +44,7 @@ taurunner.egg-info/
 */__pycache__/*
 taurunner/__pycache__/
 
+# PROPOSAL tables
 *ipynb_checkpoints/
 taurunner/resources/proposal_tables/dE*
 taurunner/resources/proposal_tables/dN*
@@ -55,3 +56,6 @@ taurunner/resources/proposal_tables/contrand*
 taurunner/resources/proposal_tables/decay*
 taurunner/resources/proposal_tables/interaction*
 taurunner/resources/proposal_tables/*
+
+# Column depths splines
+taurunner/resources/column_depth_splines/*
