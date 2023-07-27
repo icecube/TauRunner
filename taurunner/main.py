@@ -3,10 +3,11 @@
 import os, sys, json
 import proposal as pp
 
-from taurunner.utils import units, make_propagator
+from taurunner.utils import units
 from taurunner import track
 from taurunner.body import *
-from taurunner.cross_sections import CrossSections
+from taurunner.cross_sections import CrossSections, XSModel
+from taurunner.proposal_interface import make_propagator
 from taurunner.Casino import *
 from taurunner.particle import Particle
 from taurunner.utils.make_track import make_track
@@ -161,26 +162,27 @@ def run_MC(eini: np.ndarray,
           ) -> np.ndarray:
     r'''
     Main simulation code. Propagates an ensemble of initial states and returns the output
-    Params
+
+    params
     ______
-    eini       : array containing the initial energies of particles to simulate
-    thetas     : array containing the incoming angles of particles to simulate
-    body       : taurunner Body object in which to propagate the particles
-    xs         : taurunner CrossSections object for interactions
-    propagator : PROPOSAL propagator object for charged lepton propagation
-    Returns
+    eini: array containing the initial energies of particles to simulate
+    thetas: array containing the incoming angles of particles to simulate
+    body: taurunner Body object in which to propagate the particles
+    xs: taurunner CrossSections object for interactions
+    propagator: PROPOSAL propagator object for charged lepton propagation
+
+    returns
     _______
-    output : Array containing the output information of the MC. This includes 
-             initial and final energies, incident incoming angles, number of CC and NC interactions,
-             and particle type (PDG convention)
-             
+    output: Array containing the output information of the MC. This includes 
+        initial and final energies, incident incoming angles, number of CC and NC interactions,
+        and particle type (PDG convention)
     '''
-    nevents     = len(eini)
-    output      = []
-    energies    = list(eini)
-    particleIDs = np.ones(nevents, dtype=int)*flavor
-    xs_model    = xs.model
-    prev_th     = thetas[0]
+    nevents = len(eini)
+    output = []
+    energies = list(eini)
+    particleIDs = np.full(nevents, flavor, dtype=int)
+    xs_model = xs.model
+    prev_th = thetas[0]
     prev_track  = make_track(prev_th)
     if rand is None:
         rand = np.random.RandomState()
@@ -199,17 +201,18 @@ def run_MC(eini: np.ndarray,
 
         if (cur_theta!=prv_theta and track_type=='chord') or my_track is None: # We need to make a new track
             my_track = getattr(track, track_type)(theta=cur_theta, depth=depth)
-        particle = Particle(particleIDs[i], 
-                            cur_e, 
-                            0.0 ,
-                            rand, 
-                            xs,
-                            propagator, 
-                            not no_secondaries, 
-                            no_losses
+        particle = Particle(
+            particleIDs[i], 
+            cur_e, 
+            0.0 ,
+            rand, 
+            xs,
+            propagator, 
+            not no_secondaries, 
+            no_losses
         )
         
-        out      = Propagate(particle, my_track, body, condition=condition)
+        out = Propagate(particle, my_track, body, condition=condition)
     
         if (out.survived==False):
             #this muon/electron was absorbed. we record it in the output with outgoing energy 0
@@ -229,21 +232,21 @@ def run_MC(eini: np.ndarray,
     if not no_secondaries:    
         #make muon propagator
         secondary_basket = np.concatenate(secondary_basket)
-        sec_prop         = {ID:make_propagator(ID, body, xs_model) for ID in [-12, -14]}
+        sec_prop         = {ID:make_propagator(ID, body, xs_model) for ID in [-11, -13]}
         for sec, i in zip(secondary_basket, idxx):
             cur_theta = thetas[i]
             if cur_theta!=prv_theta and track_type=='chord': # We need to make a new track
                 my_track = getattr(track, 'chord')(theta=cur_theta, depth=depth)
             sec_particle = Particle(
-                                    sec['ID'], 
-                                    sec['energy'],
-                                    sec['position'],
-                                    rand,
-                                    xs=xs, 
-                                    proposal_propagator=sec_prop[sec['ID']], 
-                                    secondaries=False, 
-                                    no_losses=False
-                                   )
+                sec['ID'], 
+                sec['energy'],
+                sec['position'],
+                rand,
+                xs=xs, 
+                proposal_propagator=sec_prop[sec['ID']], 
+                secondaries=False, 
+                no_losses=False
+            )
             sec_out = Propagate(sec_particle, my_track, body, condition=condition)
             if(not sec_out.survived):
                 output.append((sec_out.initial_energy, 0.0, cur_theta, sec_out.nCC, sec_out.nNC, sec_out.ID, i, sec_out.position))
@@ -253,7 +256,20 @@ def run_MC(eini: np.ndarray,
             prv_theta = cur_theta
             del sec_particle
             del sec_out
-    output = np.array(output, dtype = [('Eini', float), ('Eout',float), ('Theta', float), ('nCC', int), ('nNC', int), ('PDG_Encoding', int), ('event_ID', int), ('final_position', float)])
+
+    output = np.array(
+        output,
+        dtype=[
+            ('Eini', float),
+            ('Eout',float),
+            ('Theta', float),
+            ('nCC', int),
+            ('nNC', int),
+            ('PDG_Encoding', int),
+            ('event_ID', int),
+            ('final_position', float)
+        ]
+    )
     output['Theta'] = np.degrees(output['Theta'])
     return output
 
@@ -313,9 +329,9 @@ if __name__ == "__main__": # pragma: no cover
     sorter = np.argsort(thetas)
     thetas = thetas[sorter]
     
-    xs = CrossSections(TR_specs['xs_model'])
+    xs = CrossSections(getattr(XSModel, TR_specs['xs_model'].upper()))
 
-    prop = make_propagator(TR_specs['flavor'], body, TR_specs['xs_model'])
+    prop = make_propagator(TR_specs['flavor'] - np.sign(TR_specs["flavor"]), body, TR_specs['xs_model'])
     if args.e_cut:
         condition = lambda particle: (particle.energy <= args.e_cut*units.GeV and abs(particle.ID) in [12,14,16])
     else:

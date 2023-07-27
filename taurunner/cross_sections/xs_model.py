@@ -31,6 +31,10 @@ class XSModel(object):
     def __init__(self, model:str, path:str=''):
         
         self.model = model
+        if self.model.name=="CSMS":
+            model_name = "CSMS"
+        else:
+            model_name = "dipole"
         if not path:
             with imppath('taurunner.resources.cross_section_tables', '__init__.py') as p:
                 path = str(p).split('__init__.py')[0]
@@ -43,7 +47,7 @@ class XSModel(object):
                     for interaction in INTERACTIONS:
                         desc_str = f'{nutype}_{nucleon}_{td}_{interaction}'
                         # TODO add check to throw more readable error
-                        with open(f'{path}/{model}_{desc_str}.pkl', 'rb') as pkl_f:
+                        with open(f'{path}/{model_name}_{desc_str}.pkl', 'rb') as pkl_f:
                             setattr(self, f'_{desc_str}', pkl.load(pkl_f))
 
     def total_cross_section(self, E, nutype, interaction, proton_fraction=0.5):
