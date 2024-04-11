@@ -1,0 +1,18 @@
+[tool.poetry]
+name = "taurunner"
+version = "0.1.0"
+description = ""
+authors = ["Your Name <you@example.com>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.11"
+numpy = "^1.26.4"
+coverage = "^7.4.4"
+scipy = "^1.13.0"
+proposal = "^7.6.2"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
