@@ -1,12 +1,7 @@
 import numpy as np
-import sys
-# In Python 3.6 and before importlib.resources is importlib_resources
-if sys.version_info.major==3 and sys.version_info.minor<=6:
-    from importlib_resources import path
-else:
-    from importlib.resources import path
+from importlib.resources import path
 
-from taurunner.utils import units
+from ..utils import units
 from scipy.interpolate import InterpolatedUnivariateSpline as iuvs
 from taurunner.resources import secondaries_splines
 
