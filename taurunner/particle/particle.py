@@ -14,6 +14,8 @@ from .utils import *
 ISOSCALAR_MASS = ((0.9382720813+0.9395654133)/2.) * units.GeV
 EMIN = 1e9 # minimum energy allowed in the splines
 
+PROPOSAL_PROPAGATORS = {}
+
 class Particle:
     r'''
     This is the class that contains all relevant 
@@ -25,7 +27,6 @@ class Particle:
         energy: float, 
         position: float, 
         xs: CrossSections, 
-        rand: Union[np.random.RandomState, int] = None,
         secondaries: bool = True, 
         no_losses: bool = False
     ):
@@ -37,7 +38,6 @@ class Particle:
         energy: Initial energy of the particle [eV]
         position: Affine paramter describing the distance along the track of the particle (0<x<1)
         xs: TauRunner CrossSections object
-        rand: numpy random number generator
         secondaries: Boolean telling whether to include secondary (mu and e) neutrinos from tau decay
         no_losses: Boolean to turn off charged lepton losses
         '''
@@ -55,9 +55,6 @@ class Particle:
         self.nNC = 0.0
         self.ntdecay = 0.0
         self.decay_position = 0.0
-        self.rand = rand
-        if not isinstance(rand, np.random.RandomState):
-            self.rand = np.random.RandomState(rand)
         self.xs = xs
         self.xs_model = xs.model
         self.losses = not no_losses
@@ -103,7 +100,8 @@ class Particle:
             Column depth to interaction in natural units
         '''
         #Calculate the inverse of the interaction depths.
-        p = self.rand.random_sample()
+        #p = self.rand.random_sample()
+        p = np.random.random_sample()
         first_piece = (1./self.GetInteractionDepth(interaction='CC'))
         second_piece = (1./self.GetInteractionDepth(interaction='NC'))
         step = (first_piece + second_piece)
@@ -153,20 +151,23 @@ class Particle:
         if np.abs(self.ID) == 15:
             if self.secondaries:
                 # sample branching ratio of tau leptonic decay
-                p0 = self.rand.uniform(0,1)
+                p0 = np.random.uniform(0,1)
+                #p0 = self.rand.uniform(0,1)
                 if p0 < .18:
                     # sample energy of secondary antinumu
-                    sample = SampleSecondariesEnergyFraction(self.rand.uniform(0,1), antinumu_cdf)
+                    #sample = SampleSecondariesEnergyFraction(self.rand.uniform(0,1), antinumu_cdf)
+                    sample = SampleSecondariesEnergyFraction(np.random.uniform(0,1), antinumu_cdf)
                     enu = sample*self.energy
                     # add secondary to basket, prepare propagation
                     self.basket.append({"ID" : -np.sign(self.ID)*14, "position" : self.position, "energy" : enu})
                 elif p0 > .18 and p0 < .36:
                     # sample energy of secondary antinue
-                    sample = SampleSecondariesEnergyFraction(self.rand.uniform(0,1), antinue_cdf)
+                    #sample = SampleSecondariesEnergyFraction(self.rand.uniform(0,1), antinue_cdf)
+                    sample = SampleSecondariesEnergyFraction(np.random.uniform(0,1), antinue_cdf)
                     enu = sample*self.energy
                     # add secondary to basket, prepare propagation
                     self.basket.append({"ID" : -np.sign(self.ID)*12,  "position" : self.position, "energy" : enu})
-            self.energy = self.energy*self.rand.choice(TauDecayFractions, p=TauDecayWeights)
+            self.energy = self.energy*np.random.choice(TauDecayFractions, p=TauDecayWeights)
             self.ID = np.sign(self.ID) * 16
             self.SetParticleProperties()
             return
@@ -188,6 +189,7 @@ class Particle:
         track: bool
             This can be set to False to turn off energy losses. In this case, the particle decays at rest.
         '''
+            
         if(np.logical_or(not self.losses, np.abs(self.ID) in [11, 12])):
             return
         total_dist = track.x_to_d(1.0 - self.position) * body.radius
@@ -218,7 +220,7 @@ class Particle:
             NeutrinoInteractionWeights, 
             np.sum(NeutrinoInteractionWeights)
         )
-        z_choice = self.rand.choice(
+        z_choice = np.random.choice(
             NeutrinoDifferentialEnergyFractions,
             p=NeutrinoInteractionWeights
         )

@@ -71,17 +71,16 @@ def Propagate(
                 return particle
             else:
                 particle.position = track.X_to_x(body, accumulated_depth)
-                #particle.position = track.X_to_x(body, current_depth+depth_step)
 
             # I feel like this should all be handled inside particle ?
             # But the is probably cuz particle has too much responsibility
-            p2 = particle.rand.random_sample()
+            p2 = np.random.random_sample()
+
             CC_lint = particle.GetInteractionDepth('CC')
             p_int_CC = particle.GetTotalInteractionDepth() / CC_lint
+            interaction = "CC" if p2 <= p_int_CC else "NC"
+
             proton_fraction = body.get_proton_fraction(track.x_to_r(particle.position))
-            interaction = "NC"
-            if p2 <= p_int_CC:
-                interaction = "CC"
 
             particle.Interact(
                 interaction,
@@ -89,6 +88,7 @@ def Propagate(
                 track,
                 proton_fraction=proton_fraction
             )
+
             if interaction=="CC":
                 particle.PropagateChargedLepton(
                     body,
