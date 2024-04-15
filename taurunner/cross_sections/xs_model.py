@@ -31,7 +31,7 @@ class XSModel(object):
     def __init__(self, model:str, path:str=''):
         
         self.model = model
-        if self.model.name=="CSMS":
+        if model=="CSMS":
             model_name = "CSMS"
         else:
             model_name = "dipole"
