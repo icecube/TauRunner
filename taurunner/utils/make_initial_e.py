@@ -1,8 +1,16 @@
 import os
 import numpy as np
-from taurunner.utils import units, sample_powerlaw, is_floatable
 
-def make_initial_e(nevents, energy, e_min=None, e_max=None, rand=None):
+from typing import Union
+
+from .sample_powerlaw import sample_powerlaw
+
+def make_initial_e(
+    nevents: int,
+    energy: Union[float, str],
+    e_min=None,
+    e_max=None
+):
     r'''
     Creates an array of energies
     Params
@@ -15,22 +23,12 @@ def make_initial_e(nevents, energy, e_min=None, e_max=None, rand=None):
         for a power-law
     e_max (float or None): If not None, maximum energy in GeV 
         for a power-law
-    rand (np.random.RandomState): numpy random number generator object
     Returns
     -------
     output (array-like) : Energies in eV
     '''
-    if rand is None:
-        rand = np.random.RandomState()
-    
     # Make injected energies
-    if is_floatable(energy):
-        e = float(energy)
-        if e<=0:
-            eini = sample_powerlaw(rand, e_min, e_max, e + 1, size=nevents)
-        else:
-            eini = np.full(nevents, e)
-    else:
+    if isinstance(energy, str):
         if not os.path.isfile(energy):
             raise RuntimeError(f"Spline file {energy} does not exist")
         # sample initial energies and incoming angles from GZK parameterization
@@ -40,6 +38,12 @@ def make_initial_e(nevents, energy, e_min=None, e_max=None, rand=None):
             import pickle as pkl
             with open(energy, 'rb') as pkl_f:
                 cdf = pkl.load(pkl_f)
-        cdf_indices = rand.uniform(low=0., high=1.,size=nevents)
-        eini        = cdf(cdf_indices)
+        cdf_indices = np.random.uniform(low=0., high=1.,size=nevents)
+        eini = cdf(cdf_indices)
+    else:
+        e = float(energy)
+        if e<=0:
+            eini = sample_powerlaw(e_min, e_max, e + 1, size=nevents)
+        else:
+            eini = np.full(nevents, e)
     return eini
