@@ -3,7 +3,7 @@ import unittest
 import numpy as np
 from taurunner.main import *
 import taurunner.body as body
-from taurunner.body import HZ_Sun
+from taurunner.body import construct_sun
 from scipy.integrate import quad
 
 from taurunner.utils import units
@@ -16,8 +16,8 @@ class TestBodyMethods(unittest.TestCase):
         rad_km = 500.0
         dens = 6.
         tst_bod = body.Body(dens, rad_km)
-        tst_earth = lumen_sit([])
-        tst_sun = HZ_Sun
+        tst_earth = construct_earth([])
+        tst_sun = construct_sun()
         cls.bod_param = {'rad_km': rad_km, 'dens': dens}
         cls.body = tst_bod
         cls.earth = tst_earth
@@ -61,7 +61,7 @@ class TestBodyMethods(unittest.TestCase):
             4.77353433,  4.58358127,  4.38113778,  3.50463684,  2.6       ])
         self.assertTrue((np.around(dens_arr, 3) == np.around(ref_arr, 3)).all())
         self.assertTrue( (np.around(self.earth.layer_boundaries * self.earth.radius / units.km, 3) == \
-            np.around(np.asarray([0., 1221., 3480., 5701., 5771., 5971., 6151., 6346.6, 6356., 6368.]), 3)).all())
+            np.around(np.asarray([0., 1221.5, 3480., 5701., 5771., 5971., 6151., 6346.6, 6356., 6368.]), 3)).all())
 
     def test_HZ_sun(self):
         self.assertAlmostEqual(self.sun.get_density(0.5), 5.78148105641597e+18,
@@ -74,9 +74,9 @@ class TestBodyMethods(unittest.TestCase):
             5)
 
     def test_bad_body(self):
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(TypeError):
             tmp = body.Body([1., 2., 3.], 3.)
-        with self.assertRaises(RuntimeError):
+        with self.assertRaises(TypeError):
             tmp = body.Body([1., 2., 3.], 3., 
                 layer_boundaries=[0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6])
     
@@ -84,7 +84,7 @@ class TestBodyMethods(unittest.TestCase):
         import logging
         logging.getLogger('scipy').setLevel(logging.ERROR)
         mass = self.check_total_mass(self.earth)[0]
-        self.assertAlmostEqual(mass / units.kg, 5.970273732299387e+24, 5)
+        self.assertAlmostEqual(mass / units.kg, 5.970273706801712e+24, 5)
 
     def check_total_mass(self, Body):
         func = lambda x: 4*np.pi*Body.radius**3*Body.get_density(x)*x**2

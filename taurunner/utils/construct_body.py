@@ -1,13 +1,13 @@
 def construct_body(TR_specs):
     if TR_specs['body']=='earth':
-        from taurunner.body import lumen_sit
+        from taurunner.body import construct_earth
         if TR_specs['water']>0:
-            body = lumen_sit([(TR_specs['water'], 1)])
+            body = construct_earth([(TR_specs['water'], 1)])
         else:
-            body = lumen_sit()
-    elif TR_specs['body']=='sun':
-        from taurunner.body import HZ_Sun
-        body = HZ_Sun
+            body = construct_earth()
+    elif 'sun' in TR_specs['body'].lower(): # TODO make this less stupid
+        from taurunner.body import construct_sun
+        body = construct_sun(TR_specs['body'])
     else:
         try:
             density = float(TR_specs['body'])

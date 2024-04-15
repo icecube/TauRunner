@@ -7,7 +7,7 @@ Authors: Ibrahim Safa, Carlos A. Argüelles, Jeff Lazar, Alex Pizzuto
 
 ## Introduction
 
-`TauRunner` is a tool that propagates ultra-high-energy neutrinos, with a focus on tau neutrinos. Although it was developed for extremely high energy (EeV+) applications, it is able to propagate neutrinos from 1 to 10^16 GeV. Note that oscillations are not taken into account at the lowest energies, but they become negligible above 1 TeV.   
+`TauRunner` is a tool that propagates ultra-high-energy neutrinos, with a focus on tau neutrinos. Although it was developed for extremely high energy (EeV+) applications, it is able to propagate neutrinos from 1 to 10^16 GeV. Note that oscillations are not taken into account at the lowest energies, but they become negligible above 1 TeV for propagation distances equivalent to Earth's diameter.   
 
 ## Installation
 
@@ -25,20 +25,20 @@ pip install taurunner
 If you find any problems with the code or have any feature requests, please open an issue on [Github](https://github.com/icecube/TauRunner/issues).
 
 ## Examples
-Below are three prototypical use cases for this project. For more examples, see `notebooks/TauRunner_examples.ipynb`
+Below are three prototypical command-line use cases for this project. For more examples, see `notebooks/TauRunner_examples.ipynb`.
 
 ### Injecting a beam of monoenergetic tau-neutrinos
 We can simulate 500 tau neutrinos with an energy of 1 EeV that travel directly through the core. At the point of emergence from the Earth, we receive the resultant particle ID and energy.
 ```console
-python taurunner/main.py -n 500 -t 0.0 -e 1e9
+python taurunner/main.py -n 500 -t 0.0 -e 1e18
 ```
-`-n` specifies the number of events, `-t` is the nadir angle in degrees (0-90), `-s` specifies a unique seed, and `-e` is the particle energy in GeV. 
+`-n` specifies the number of events, `-t` is the nadir angle in degrees (0-90), `-s` specifies a unique seed, and `-e` is the particle energy in eV. 
 
 ### Injecting a beam of multi-energy tau-neutrinos following a power-law distribution
 
 We can simulate 500 tau neutrinos with energies following a power-law distribution from 100 Tev to 10 PeV that travel directly through the core. At the point of emergence from the Earth, we receive the resultant particle ID and energy.
 ```console
-python taurunner/main.py -e=-2. -t=30. -n=100 --e_min=1e5 --e_max=1e7
+python taurunner/main.py -e=-2. -t=30. -n=100 --e_min=1e14 --e_max=1e16
 ```
 `-n` specifies the number of events, `-t` is the nadir angle in degrees, a negative `-e` indicates a power law spectrum with a given spectral index, and `e_min` and `e_max` specify the range over which to sample these energies.
 

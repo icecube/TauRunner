@@ -2,7 +2,13 @@ import os
 import numpy as np
 import proposal as pp
 from scipy.optimize import ridder
-from importlib.resources import path
+import sys
+# In Python 3.6 and before importlib.resources is importlib_resources
+if sys.version_info.major==3 and sys.version_info.minor<=6:
+    from importlib_resources import path
+else:
+    from importlib.resources import path
+
 from scipy.integrate import quad
 from taurunner.utils import units
 
@@ -14,65 +20,101 @@ def segment_body(body, granularity=0.5):
     descs = []
     for xi, xf in zip(body.layer_boundaries[:-1], body.layer_boundaries[1:]):
         f_density = body.get_density(xf, right=True)
-        gran      = np.abs(f_density - body.get_density(xi, right=False)) / body.get_density(xi, right=False)
-        if gran<granularity:  # the percent difference within a layer is small
+        gran = np.abs(f_density - body.get_density(xi, right=False)) / body.get_density(xi, right=False)
+        if gran < granularity:  # the percent difference within a layer is small
             descs.append((xi, xf, body.get_average_density(0.5*(xi+xf))))
         else:
-            start     = xi
-            s_density = body.get_density(start)
+            start = xi
+            s_density = body.get_density(start, right=True)
             while np.abs(f_density-s_density)/s_density-granularity>0:
-                func         = lambda x: np.abs(body.get_density(x, right=True)-s_density)/s_density-granularity
-                end          = ridder(func, start, xf)
-                wrap         = lambda x: body.get_density(x, right=True)
-                I            = quad(wrap, start, end, full_output=1)
-                avg_density  = I[0]/(end-start)
+                func = lambda x: np.abs(body.get_density(x, right=True)-s_density)/s_density-granularity
+                end = ridder(func, start, xf)
+                wrap = lambda x: body.get_density(x, right=True)
+                I = quad(wrap, start, end, full_output=1)
+                avg_density = I[0] / (end-start)
                 descs.append((start, end, avg_density))
                 start = end
                 s_density = body.get_density(start)
     return descs
 
-def make_propagator(ID, body, xs_model='dipole', granularity=0.5):
-    
-    if(ID in [12, -12]):
-        return None
-    
-    particle_def              = getattr(pp.particle, ID_2_name[ID])()
+def make_propagator(
+    particle: Particle,
+    simulation_specs: dict,
+    path_dict: dict
+) -> pp.Propagator:
+    """Make a PROPOSAL propagator
 
-    #define how many layers of constant density we need for the tau
-    descs = segment_body(body, granularity)
-    #make the sectors
-    sec_defs = [make_sector(d/units.gr*units.cm**3, s*body.radius/units.meter, e*body.radius/units.meter, xs_model) for s, e, d in descs]
+    params
+    ______
+    particle: Prometheus particle for which we want a PROPOSAL propagator
+    simulation_specs: Dictionary specifying the configuration settings
+    path_dict: Dictionary specifying any required path variables
 
-    with path('taurunner.resources.proposal_tables', 'tables.txt') as p:
-        tables_path = str(p).split('tables.txt')[0]
-    
-    #define interpolator
-    interpolation_def                         = pp.InterpolationDef()
-    interpolation_def.path_to_tables          = tables_path
-    interpolation_def.path_to_tables_readonly = tables_path
-    interpolation_def.nodes_cross_section     = 199
+    returns
+    _______
+    prop: PROPOSAL propagator for input Particle
+    """
 
-    #define propagator -- takes a particle definition - sector - detector - interpolator
-    prop = pp.Propagator(particle_def=particle_def,
-                         sector_defs=sec_defs,
-                         detector=pp.geometry.Sphere(pp.Vector3D(), body.radius/units.cm, 0),
-                         interpolation_def=interpolation_def)
+    pp.InterpolationSettings.tables_path = path_dict["tables path"]
+    pdef = make_particle_definition(particle)
+    utilities = make_propagation_utilities(
+        pdef,
+        path_dict["earth model location"],
+        simulation_specs
+    )
+    geometries = make_geometries(path_dict["earth model location"])
+    density_distrs = make_density_distributions(path_dict["earth model location"])
+    prop = pp.Propagator(pdef, list(zip(geometries, utilities, density_distrs)))
 
     return prop
 
 
+def make_particle_definition(particle: Particle) -> pp.particle.ParticleDef:
+    '''
+    Builds a proposal particle definition
+
+    Parameters
+    ----------
+    particle: Prometheus particle you want a ParticleDef for
+
+    Returns
+    -------
+    pdef: PROPOSAL particle definition object corresponing
+        to input particle
+    '''
+    if str(particle) not in 'MuMinus MuPlus EMinus EPlus TauMinus TauPlus'.split():
+        raise ValueError(f"Particle string {particle} not recognized")
+    pdef = getattr(pp.particle, f'{particle}Def')()
+    return pdef
+
+
 def make_sector(density, start, end, xs_model):
-    sec_def                                        = pp.SectorDefinition()
-    sec_def.medium                                 = pp.medium.Ice(density)
-    sec_def.geometry                               = pp.geometry.Sphere(pp.Vector3D(), end, start)
-    sec_def.particle_location                      = pp.ParticleLocation.inside_detector        
-    sec_def.scattering_model                       = pp.scattering.ScatteringModel.Moliere
+    #Define a sector
+    sec_def = pp.SectorDefinition()
+    components = [
+        pp.component.Hydrogen(2),
+        pp.component.Oxygen()
+    ]
+    sec_def.medium = pp.medium.Medium(
+        f'Ice_{density}',
+        1,
+        75.0,
+        -3.5017, 
+        0.09116,
+        3.4773,
+        0.2400, 
+        2.8004,
+        0, 
+        density, 
+        components
+    ) 
+    sec_def.geometry = pp.geometry.Sphere(pp.Vector3D(), end, start)
+    sec_def.particle_location = pp.ParticleLocation.inside_detector        
+    sec_def.scattering_model = pp.scattering.ScatteringModel.Moliere
     sec_def.crosssection_defs.brems_def.lpm_effect = True
     sec_def.crosssection_defs.epair_def.lpm_effect = True
-
-    
-    sec_def.cut_settings.ecut = 1e9*1e3
-    sec_def.cut_settings.vcut = 1.0
+    sec_def.cut_settings.ecut = -1.0
+    sec_def.cut_settings.vcut = 1e-3
     sec_def.do_continuous_randomization = True
 
     if(xs_model=='dipole'):

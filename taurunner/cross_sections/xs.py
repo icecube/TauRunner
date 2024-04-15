@@ -1,8 +1,14 @@
 import os, sys, pickle
 import numpy as np
+
 from importlib.resources import path
+from enum import Enum
 
 from taurunner.utils import units
+
+class XSModel(Enum):
+    DIPOLE = 1
+    CSMS = 2
 
 def hima_tot_xs(E, spl): # pragma: no cover
     pass
@@ -27,13 +33,13 @@ def get_file_path(name):
 
 class CrossSections(object):
 
-    def __init__(self, model):
+    def __init__(self, model: XSModel):
 
         self.model = model
 
         #self.cross_section_path = os.path.dirname(os.path.realpath(__file__))+'/cross_section_tables/'
         #cross_section_path      = self.cross_section_path
-        if(self.model=='dipole'):
+        if(self.model==XSModel.DIPOLE):
             self.f_NC = np.load(get_file_path('NC_table_py3.npy'), allow_pickle=True).item()
             self.f_CC = np.load(get_file_path('CC_table_py3.npy'), allow_pickle=True).item()
 
@@ -41,7 +47,7 @@ class CrossSections(object):
             self.dsdy_spline_CC_lowe = np.load(get_file_path('dsigma_dy_CC_lowE_py3.npy'), allow_pickle=True).item()
             self.dsdy_spline_NC = np.load(get_file_path('dsigma_dy_NC_py3.npy'), allow_pickle=True).item()
             self.dsdy_spline_NC_lowe = np.load(get_file_path('dsigma_dy_NC_lowE_py3.npy'), allow_pickle=True).item()
-        elif(self.model=='CSMS'):
+        elif(self.model==XSModel.CSMS):
             with open(get_file_path('CSMS_nu_n_dsde_CC.pkl'), 'rb') as pkl_f:
                 diff_nu_n_CC = pickle.load(pkl_f)
             with open(get_file_path('CSMS_nu_p_dsde_CC.pkl'), 'rb') as pkl_f:
@@ -87,12 +93,12 @@ class CrossSections(object):
         '''
         if(np.log10(enu) < 0.):
             raise ValueError("Going below a GeV. this region is not supported.")
-        if self.model=='CSMS':
+        if self.model==XSModel.CSMS:
             if interaction=='NC':
                 return self.f_NC(enu)
             elif interaction=='CC':
                 return self.f_CC(enu)
-        elif self.model=='dipole':
+        elif self.model==XSModel.DIPOLE:
             if(interaction == 'NC'):
                 return((10**self.f_NC(np.log10(enu/1e9)))*(units.cm)**2)
             else:
@@ -119,7 +125,7 @@ class CrossSections(object):
         diff = np.zeros_like(eout)
         if np.log10(ein) < 0:
             return diff
-        if self.model=='dipole':
+        if self.model==XSModel.DIPOLE:
             if(interaction=='CC'):
                 greater_out_msk = (np.log10(eout) >= np.log10(ein))
                 diff[greater_out_msk] = 0.
@@ -146,7 +152,7 @@ class CrossSections(object):
                     diff[other_msk] = 10**self.dsdy_spline_NC(np.log10(ein), 
                         np.log10(eout[other_msk])
                         )[0][:]/ein
-        elif(self.model=='CSMS'):
+        elif(self.model==XSModel.CSMS):
             if interaction=='NC':
                 diff = self.dsdy_spline_NC(ein, eout)
             elif interaction=='CC':

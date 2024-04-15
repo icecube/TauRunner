@@ -12,10 +12,10 @@ class TestCasinoHelpers(unittest.TestCase):
         """ once before all tests """
         dip_xs = CrossSections('dipole')
         csms_xs = CrossSections('CSMS')
-        dipole_particle = Particle(15, 1e12, 0., 0., 1, dip_xs, None, True, False)
-        csms_particle = Particle(15, 1e12, 0., 0., 1, csms_xs, None, False, False)
-        nutau = Particle(16, 1e12, 0., 0., 1, dip_xs, None, True, False)
-        mu = Particle(13, 1e12, 0., 0., 1, dip_xs, None, False, False) 
+        dipole_particle = Particle(15, 1e12, 0.,1, dip_xs, None, True, False)
+        csms_particle = Particle(15, 1e12, 0., 1, csms_xs, None, False, False)
+        nutau = Particle(16, 1e12, 0., 1, dip_xs, None, True, False)
+        mu = Particle(13, 1e12, 0., 1, dip_xs, None, False, False) 
         cls.dipole = dipole_particle
         cls.csms = csms_particle
         cls.nutau = nutau

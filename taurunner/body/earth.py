@@ -18,7 +18,7 @@ def helper(param):
     func = lambda x: prem_density(x, param)
     return func
 
-def lumen_sit(layers: list=[]) -> Body:
+def construct_earth(layers: list=[]) -> Body:
     r'''
     Function for making the PREM Earth
 
@@ -32,8 +32,9 @@ def lumen_sit(layers: list=[]) -> Body:
     earth : TauRunner Earth object
     '''
     r_tot            =  6368.
-    layer_boundaries = [0, 1221, 3480, 5701, 5771, 5971, 6151, 6346.6, 6356, 6368]
+    layer_boundaries = [1221.5, 3480, 5701, 5771, 5971, 6151, 6346.6, 6356, 6368]
     pparams          = [_ for _ in prem_params] # hacky fix sorry
+
     for layer in layers:
         r, density = layer
         r_tot += r
@@ -41,6 +42,6 @@ def lumen_sit(layers: list=[]) -> Body:
         layer_boundaries.append(r_tot)
     pparams = list(pparams)
     layer_boundaries = np.array(layer_boundaries, dtype=float) / r_tot
-    earth_densities  = [helper(param) for param in pparams]
-    earth            = Body(earth_densities, r_tot, layer_boundaries=layer_boundaries, name='PREM_earth')
+    earth_densities  = [(helper(param), layer) for param, layer in zip(pparams, layer_boundaries)]
+    earth            = Body(earth_densities, r_tot, name='PREM_earth')
     return earth

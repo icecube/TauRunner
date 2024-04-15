@@ -36,7 +36,15 @@ class TestConservation(unittest.TestCase):
             body = Body(6.0, 500.0)
             xs = CrossSections('dipole')
             prop = make_propagator(16, body, xs_model=xs.model)
-            sim = run_MC(eini*1e9, thetas, body, xs, tracks, prop, rand, no_losses=True, no_secondaries=True)
+            sim = run_MC(
+                eini*1e9,
+                thetas,
+                body,
+                xs,
+                prop,
+                rand, 
+                no_losses=True,
+                no_secondaries=True)
             cls.sim_dict[en] = sim
         cls.num_sim = num_sim
         cls.sim_dict_ens = list(cls.sim_dict.keys())

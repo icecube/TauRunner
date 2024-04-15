@@ -1,7 +1,8 @@
 import numpy as np
-from taurunner.utils import units
-from scipy.interpolate import InterpolatedUnivariateSpline as iuvs
 from importlib.resources import path
+
+from ..utils import units
+from scipy.interpolate import InterpolatedUnivariateSpline as iuvs
 from taurunner.resources import secondaries_splines
 
 ##########################################################
@@ -70,36 +71,28 @@ def TauDecayToAll(Etau, Enu, P):
     return decay_spectra
 
 proton_mass = ((0.9382720813+0.9395654133)/2.)*units.GeV
-NeutrinoDifferentialEnergyFractions = np.linspace(0.0,1.0,300)[1:-1]
-TauDecayFractions = np.linspace(0.0,1.0,500)[1:-1]
+NeutrinoDifferentialEnergyFractions = np.linspace(0.0,1.0,1000)[1:-1]
+TauDecayFractions = np.linspace(0.0,1.0,1000)[1:-1]
 Etau = 100.
-dNTaudz = lambda z: TauDecayToAll(Etau, Etau*z, 0.)
+dNTaudz = lambda z: TauDecayToAll(Etau, Etau*z, -1.)
 TauDecayWeights = np.array(list(map(dNTaudz,TauDecayFractions)))
 TauDecayWeights = np.divide(TauDecayWeights, np.sum(TauDecayWeights))
-
 
 #########################################################
 #### SECONDARIES ########################################
 #########################################################
 
-with path(secondaries_splines, 'antinue_cdf.npy') as p:
+with path(secondaries_splines, 'secondaries_nuebar_spline.npy') as p:
         nue_path = str(p)
-with path(secondaries_splines, 'antinumu_cdf.npy') as p:
+with path(secondaries_splines, 'secondaries_numubar_spline.npy') as p:
         numu_path = str(p)
 
-antinue_cdf = np.load(nue_path)
-antinumu_cdf = np.load(numu_path)
-bins = list(np.logspace(-5,0,101))[:-1] # bins for the secondary splines
+antinue_cdf = np.load(nue_path, allow_pickle=True).item()
+antinumu_cdf = np.load(numu_path, allow_pickle=True).item()
 
 def SampleSecondariesEnergyFraction(u, cdf):
-    spl_cdf = iuvs(bins, cdf)
     # check if random sample u is in the range where the spline is defined
-    try:
-        return (iuvs(bins,cdf-u).roots())[0]
-    except:
-        if u <= np.min(spl_cdf(bins)): 
-            return 1e-3
-        elif u == np.max(spl_cdf(bins)):
-            return 1
-
-
+    if(u<1e-3):
+        return 10**cdf(-3)
+    else:
+        return 10**cdf(np.log10(u))
