@@ -11,7 +11,7 @@ else:
 import os
 import pickle as pkl
 
-from taurunner.utils import FileLock
+from taurunner.utils.file_lock import FileLock
 import taurunner as tr
 
 
