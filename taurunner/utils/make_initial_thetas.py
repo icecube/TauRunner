@@ -32,9 +32,10 @@ def make_initial_thetas(
         costh_max = np.cos(np.radians(theta[1]))
         thetas = np.arccos(np.random.uniform(costh_min, costh_max, nevents))
     else:
-        t = float(theta)
-        if t<0 or t>180:
+        if theta < 0 or theta > 180:
             raise ValueError('Angles must be between 0 and 180')
-        thetas = np.radians(np.ones(nevents)*t)
+        thetas = np.radians(np.full(nevents, theta))
 
+    sorter = np.argsort(thetas)
+    thetas = thetas[sorter]
     return thetas

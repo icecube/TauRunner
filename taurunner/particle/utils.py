@@ -1,7 +1,7 @@
 import numpy as np
 from importlib.resources import path
 
-from ..utils import units
+from ..units import units
 from scipy.interpolate import InterpolatedUnivariateSpline as iuvs
 from taurunner.resources import secondaries_splines
 

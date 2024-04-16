@@ -2,7 +2,7 @@ import numpy as np
 import proposal as pp
 
 from .new_proposal_lepton_propagator import make_propagator
-from ..utils import units
+from ..units import units
 from ..particle import Particle
 from ..body import Body
 from ..track import Track

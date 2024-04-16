@@ -4,7 +4,7 @@ import sys
 
 from typing import Union
 
-from ..utils import units
+from ..units import units
 from ..body import Body
 from ..track import Track
 from ..cross_sections import CrossSections

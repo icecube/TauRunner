@@ -7,8 +7,7 @@ if sys.version_info.major==3 and sys.version_info.minor<=6:
 else:
     from importlib.resources import path as imppath
 
-import taurunner as tr
-from taurunner.utils import units
+from ..units import units
 
 NUTYPES      = ['nu', 'nubar']
 NUCLEONS     = ['n', 'p']

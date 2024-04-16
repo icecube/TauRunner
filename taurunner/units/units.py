@@ -470,3 +470,4 @@ p_sur_inter_array_ta = 0.0
 #E temporary memory variables # 
         
         
+units = PhysicsConstants()

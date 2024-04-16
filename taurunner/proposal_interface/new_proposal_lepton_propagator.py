@@ -9,7 +9,7 @@ from dataclasses import dataclass
 
 from ..particle import Particle
 from ..body import Body
-from ..utils import units
+from ..units import units
 
 PARTICLE_DEF_DICT = {
     11: pp.particle.EMinusDef,

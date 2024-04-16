@@ -1,6 +1,6 @@
 import numpy as np
-from taurunner.body import Body
-from taurunner.track.utils import get_hash, set_spline
+from ..body import Body
+from .utils import get_hash, set_spline
 
 class Track(object):
 

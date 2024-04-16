@@ -4,7 +4,7 @@ import numpy as np
 from importlib.resources import path
 from enum import Enum
 
-from taurunner.utils import units
+from ..units import units
 
 class XSModel(Enum):
     DIPOLE = 1

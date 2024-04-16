@@ -8,8 +8,9 @@ else:
     from importlib.resources import path
 
 from .body import Body
-from taurunner.utils import Callable, units
-from taurunner.resources import solar_models
+from .utils import Callable
+from ..units import units
+from ..resources import solar_models
 
 def mass_density_from_model(solar_model_file):
     model   = np.genfromtxt(solar_model_file)
