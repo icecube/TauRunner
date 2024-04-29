@@ -12,6 +12,14 @@ from taurunner.Casino import *
 from taurunner.particle import Particle
 from taurunner.utils.make_track import make_track
 
+from typing import Union
+
+def str_or_float(v: str) -> Union[str, float]:
+    try:
+        return float(v)
+    except ValueError:
+        return v
+
 def initialize_parser(): # pragma: no cover
     r'''
     Helper function to parse command-line arguments
@@ -49,7 +57,8 @@ def initialize_parser(): # pragma: no cover
     parser.add_argument(
         '-e', 
         dest='energy',
-        default='',
+        type=str_or_float,
+        required=True,
         help='Energy in GeV if numerical value greater than 0 passed.\n\
              Sprectral index if numerical value less than or equal to 0 passed.\n\
              Else path to CDF to sample from.'
@@ -71,7 +80,8 @@ def initialize_parser(): # pragma: no cover
     parser.add_argument(
         '-t', 
         dest='theta',
-        default='',
+        required=True,
+        type=str_or_float,
         help='nadir angle in degrees if numerical value(0 is through the core).\n\
             "range" if you want to sample from a range of thetas. Use --th_min and --th_max to specify lims.'
     )
@@ -329,8 +339,12 @@ if __name__ == "__main__": # pragma: no cover
 
     # Make an array of injected energies
     from taurunner.utils.make_initial_e import make_initial_e
-    eini = make_initial_e(TR_specs['nevents'], TR_specs['energy'],
-                          e_min=TR_specs['e_min'], e_max=TR_specs['e_max'], rand=rand)
+    eini = make_initial_e(
+        TR_specs['nevents'],
+        TR_specs['energy'],
+        e_min=TR_specs['e_min'],
+        e_max=TR_specs['e_max']
+    )
 
     # Make an array of injected incident angles
     from taurunner.utils.make_initial_thetas import make_initial_thetas
@@ -338,21 +352,34 @@ if __name__ == "__main__": # pragma: no cover
         theta = (TR_specs['th_min'], TR_specs['th_max'])
     else:
         theta = TR_specs['theta']
-    thetas = make_initial_thetas(TR_specs['nevents'], theta, rand=rand, track_type=TR_specs['track'])
+    thetas = make_initial_thetas(
+        TR_specs['nevents'],
+        theta,
+        track_type=TR_specs['track']
+    )
     sorter = np.argsort(thetas)
     thetas = thetas[sorter]
     
     xs = CrossSections(getattr(XSModel, TR_specs['xs_model'].upper()))
 
-    prop = make_propagator(TR_specs['flavor'] - np.sign(TR_specs["flavor"]), body, TR_specs['xs_model'])
+    #prop = make_propagator(TR_specs['flavor'] - np.sign(TR_specs["flavor"]), body, TR_specs['xs_model'])
     if args.e_cut:
         condition = lambda particle: (particle.energy <= args.e_cut*units.GeV and abs(particle.ID) in [12,14,16])
     else:
         condition = None
 
-    result = run_MC(eini, thetas, body, xs, prop, rand=rand,
-                    no_secondaries=TR_specs['no_secondaries'], no_losses=TR_specs['no_losses'],
-                    flavor=TR_specs['flavor'], condition=condition, depth=TR_specs['depth'], track_type=TR_specs['track'])
+    result = run_MC(
+        eini,
+        thetas,
+        body,
+        xs,
+        no_secondaries=TR_specs['no_secondaries'],
+        no_losses=TR_specs['no_losses'],
+        flavor=TR_specs['flavor'],
+        condition=condition,
+        depth=TR_specs['depth'],
+        track_type=TR_specs['track']
+    )
 
     if TR_specs['save']:
         if '.npy' not in TR_specs['save']:
