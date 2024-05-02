@@ -33,13 +33,13 @@ class Radial(Track):
         return x*(1-self.depth)
 
     def x_to_pp_dir(self, x: float):
-        dir_vec   = pp.Vector3D(0, 0., 1.)
+        dir_vec   = pp.Cartesian3D(0, 0., 1.)
         return dir_vec
 
     def x_to_pp_pos(self, x:float, rad: float):
         #compute direction and position in proposal body
         phi       = 2.*self.theta
-        pos_vec   = pp.Vector3D(0,
+        pos_vec   = pp.Cartesian3D(0,
                                 0, 
                                 x*rad*(1-self.depth)
                                )
