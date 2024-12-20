@@ -120,9 +120,8 @@ def set_spline(track, body, npad=5):
     if track.desc=='chord':
         x2X_fname, spline_exists = spline_fname(hash_s)
         if spline_exists:
-            with FileLock(x2X_fname):
-                with open(x2X_fname, 'rb') as pkl_file:
-                    x2X_spline =  pkl.load(pkl_file)
+            with open(x2X_fname, 'rb') as pkl_file:
+                x2X_spline =  pkl.load(pkl_file)
         else:
             from taurunner.track import chord
             if track.depth==0:
