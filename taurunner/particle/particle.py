@@ -18,16 +18,16 @@ PROPOSAL_PROPAGATORS = {}
 
 class Particle:
     r'''
-    This is the class that contains all relevant 
+    This is the class that contains all relevant
     particle information stored in an object.
     '''
     def __init__(
-        self, 
-        ID: int, 
-        energy: float, 
-        position: float, 
-        xs: CrossSections, 
-        secondaries: bool = True, 
+        self,
+        ID: int,
+        energy: float,
+        position: float,
+        xs: CrossSections,
+        secondaries: bool = True,
         no_losses: bool = False
     ):
         r'''
@@ -68,7 +68,7 @@ class Particle:
 
     def __repr__(self):
         return f"ID:{self.ID} E:{self.energy/units.GeV} GeV"
-        
+
     def SetParticleProperties(self):
         r'''
         Sets particle properties, either when initializing or after an interaction.
@@ -135,12 +135,12 @@ class Particle:
             raise ValueError(f"{interaction} is not valid interaction type")
 
         return ISOSCALAR_MASS/self.xs.total_cross_section(
-            self.energy, 
-            self.nutype, 
+            self.energy,
+            self.nutype,
             interaction,
             proton_fraction=proton_fraction
         )
-                               
+
 
     def GetInteractionProbability(self,ddepth,interaction):
         return 1.-np.exp(-ddepth/self.GetInteractionDepth(interaction))
@@ -184,12 +184,12 @@ class Particle:
         Propagate taus/mus with PROPOSAL along 'track' through 'body'
         Parameters
         ----------
-        body: str 
+        body: str
             Cross section model to use for the photohadronic losses
         track: bool
             This can be set to False to turn off energy losses. In this case, the particle decays at rest.
         '''
-            
+
         if(np.logical_or(not self.losses, np.abs(self.ID) in [11, 12])):
             return
         total_dist = track.x_to_d(1.0 - self.position) * body.radius
@@ -207,7 +207,7 @@ class Particle:
 
     def Interact(self, interaction, body=None, track=None, proton_fraction=0.5):
         if np.abs(self.ID) not in [12, 14, 16]:
-            raise ValueError('Particle ID not supported by this function') 
+            raise ValueError('Particle ID not supported by this function')
         #Sample energy lost from differential distributions
         NeutrinoInteractionWeights = self.xs.differential_cross_section(
             self.energy,
@@ -217,7 +217,7 @@ class Particle:
             proton_fraction=proton_fraction
         )
         NeutrinoInteractionWeights = np.divide(
-            NeutrinoInteractionWeights, 
+            NeutrinoInteractionWeights,
             np.sum(NeutrinoInteractionWeights)
         )
         z_choice = np.random.choice(

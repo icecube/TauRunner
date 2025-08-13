@@ -50,7 +50,7 @@ def make_propagator(
     pp.InterpolationSettings.tables_path = tables_path
 
     if pdg_encoding not in PARTICLE_DEF_DICT:
-        raise ValueError(f"PDG code {pdg_encoding} is nota charged lepton")
+        raise ValueError(f"PDG code {pdg_encoding} is not a charged lepton")
     pdef = PARTICLE_DEF_DICT[pdg_encoding]()
 
     segments = segment_body(body)
@@ -67,7 +67,7 @@ def make_geometries(segments: List[ConstantDensitySegment], body: Body) -> List[
     params
     ______
     earth_file: data file where the parametrization of Earth is stored
-    
+
     returns
     _______
     geometries: List of PROPOSAL spherical shells that make up the Earth
@@ -84,7 +84,7 @@ def make_geometries(segments: List[ConstantDensitySegment], body: Body) -> List[
         geometries.append(geometry)
 
     return geometries
-            
+
 def make_density_distributions(segments: List[ConstantDensitySegment]) -> List[pp.density_distribution.density_distribution]:
     """Make list of proposal homogeneous density distributions from
     Earth datafile
@@ -95,7 +95,7 @@ def make_density_distributions(segments: List[ConstantDensitySegment]) -> List[p
 
     returns
     _______
-    density_distributions: Density distributions corresponding to the 
+    density_distributions: Density distributions corresponding to the
         average density in each layer of the Earth model at linear order
     """
     density_distributions = []
@@ -179,15 +179,15 @@ def make_propagation_utilities(
             f'Ice_{segment.density / (units.gr / units.cm**3)}',
             #1.0,
             75.0,
-            -3.5017, 
+            -3.5017,
             0.09116,
             3.4773,
-            0.2400, 
+            0.2400,
             2.8004,
-            0, 
-            segment.density / (units.gr / units.cm**3), 
+            0,
+            segment.density / (units.gr / units.cm**3),
             components
-        ) 
+        )
         collection = pp.PropagationUtilityCollection()
         cross = pp.crosssection.make_std_crosssection(
             particle_def,
