@@ -1,7 +1,10 @@
 #!/usr/bin/env python
 
-import os, sys, json
+import os
+import sys
+import json
 import proposal as pp
+import numpy as np
 
 from taurunner.utils import units
 from taurunner import track
@@ -29,20 +32,20 @@ def initialize_parser(): # pragma: no cover
     parser.add_argument(
         '-s',
         dest='seed',
-        type=int, 
+        type=int,
         default=None,
         help='just an integer seed to help with output file names'
     )
     parser.add_argument(
-        '-n', 
-        dest='nevents', 
-        type=int, 
+        '-n',
+        dest='nevents',
+        type=int,
         default=0,
         help='how many events do you want?'
     )
     parser.add_argument(
-        '--flavor', 
-        dest='flavor', 
+        '--flavor',
+        dest='flavor',
         type=int, default=16,
         help='neutrino flavor (default is nutau): 12 for nue 14 for numu 16 for nutau'
     )
@@ -55,11 +58,11 @@ def initialize_parser(): # pragma: no cover
     )
     # Energy arguments
     parser.add_argument(
-        '-e', 
+        '-e',
         dest='energy',
         type=str_or_float,
         required=True,
-        help='Energy in GeV if numerical value greater than 0 passed.\n\
+        help='Energy in eV if numerical value greater than 0 passed.\n\
              Sprectral index if numerical value less than or equal to 0 passed.\n\
              Else path to CDF to sample from.'
     )
@@ -75,10 +78,10 @@ def initialize_parser(): # pragma: no cover
         default=1e18,
         help='Maximum energy to sample from if doing powerlaw sampling (eV)'
     )
-    
+
     # Angular arguments
     parser.add_argument(
-        '-t', 
+        '-t',
         dest='theta',
         required=True,
         type=str_or_float,
@@ -88,23 +91,23 @@ def initialize_parser(): # pragma: no cover
     parser.add_argument(
         '--th_max',
         dest='th_max',
-        type=float, 
+        type=float,
         default=90,
         help='If doing a theta range, maximum theta value. Default 90, i.e. skimming'
     )
     parser.add_argument(
-        '--th_min', 
+        '--th_min',
         type=float,
         default=0,
         help='If doing a theta range, minimum theta value. Default 0, i.e. through the core'
     )
-    
+
     # Saving arguments
     parser.add_argument(
-        '--save', 
-        dest='save', 
-        type=str, 
-        default='', 
+        '--save',
+        dest='save',
+        type=str,
+        default='',
         help="If saving output, provide a path here, if not specified, output will be printed"
     )
 
@@ -142,10 +145,10 @@ def initialize_parser(): # pragma: no cover
                         default=0,
                         help="Depth of the detector in km."
                        )
-    
+
     # Options
     parser.add_argument('--no_losses',
-                        dest='no_losses', 
+                        dest='no_losses',
                         default=False,
                         action='store_true',
                         help="Raise this flag if you want to turn off tau losses. In this case, taus will decay at rest."
@@ -155,12 +158,12 @@ def initialize_parser(): # pragma: no cover
                         action='store_true',
                         help="Raise this flag to turn off secondaries"
                        )
-    parser.add_argument('-d', 
-                        dest='debug', 
-                        default=False, 
-                        action='store_true', 
+    parser.add_argument('-d',
+                        dest='debug',
+                        default=False,
+                        action='store_true',
                         help='Do you want to print out debug statments? If so, raise this flag'
-                       ) 
+                       )
     parser.add_argument('--e_cut',
                         dest='e_cut',
                         default=0.0,
@@ -172,10 +175,10 @@ def initialize_parser(): # pragma: no cover
     return args
 
 def run_MC(
-    eini: np.ndarray, 
+    eini: np.ndarray,
     thetas: np.ndarray,
-    body: Body, 
-    xs: CrossSections, 
+    body: Body,
+    xs: CrossSections,
     seed: int = 0,
     no_secondaries: bool = False,
     flavor: int = 16,
@@ -197,7 +200,7 @@ def run_MC(
 
     returns
     _______
-    output: Array containing the output information of the MC. This includes 
+    output: Array containing the output information of the MC. This includes
         initial and final energies, incident incoming angles, number of CC and NC interactions,
         and particle type (PDG convention)
     '''
@@ -213,7 +216,7 @@ def run_MC(
     prev_th = thetas[0]
     prev_track = make_track(prev_th)
     secondary_basket = []
-    idxx = []    
+    idxx = []
     my_track  = None
     prv_theta = np.nan
     # Run the algorithm
@@ -227,55 +230,61 @@ def run_MC(
 
         if (cur_theta!=prv_theta and track_type=='chord') or my_track is None: # We need to make a new track
             my_track = getattr(track, track_type)(theta=cur_theta, depth=depth)
+
         particle = Particle(
-            particleIDs[i], 
-            cur_e, 
+            particleIDs[i],
+            cur_e,
             0.0 ,
             xs,
-            not no_secondaries, 
+            not no_secondaries,
             no_losses
         )
-        
+
         out = Propagate(particle, my_track, body, clp, condition=condition)
-    
+
         if (out.survived==False):
             #this muon/electron was absorbed. we record it in the output with outgoing energy 0
-            output.append((cur_e, 0., cur_theta, out.nCC, out.nNC, out.ID, i, out.position))
+            output.append((cur_e, 0., cur_theta, out.nCC, out.nNC, out.ID, i, out.position, my_track.total_column_depth(body)))
         else:
             #this particle escaped
-            output.append((cur_e, float(out.energy), cur_theta, out.nCC, out.nNC, out.ID, i, out.position))
+            output.append((cur_e, float(out.energy), cur_theta, out.nCC, out.nNC, out.ID, i, out.position, my_track.total_column_depth(body)))
+
         if not no_secondaries:
             #store secondaries to propagate later
             secondary_basket.append(np.asarray(out.basket))
             #keep track of parent
             idxx = np.hstack([idxx, [i for _ in out.basket]])
+
         prv_theta = cur_theta
         del out
         del particle
+
     idxx = np.asarray(idxx).astype(np.int32)
-    if not no_secondaries:    
+    if not no_secondaries:
         #make muon propagator
         secondary_basket = np.concatenate(secondary_basket)
         for sec, i in zip(secondary_basket, idxx):
             cur_theta = thetas[i]
             if cur_theta!=prv_theta and track_type=='chord': # We need to make a new track
                 my_track = getattr(track, 'chord')(theta=cur_theta, depth=depth)
+
             sec_particle = Particle(
-                sec['ID'], 
+                sec['ID'],
                 sec['energy'],
                 sec['position'],
                 #rand,
-                xs=xs, 
-                #proposal_propagator=sec_prop[sec['ID']], 
-                secondaries=False, 
+                xs=xs,
+                #proposal_propagator=sec_prop[sec['ID']],
+                secondaries=False,
                 no_losses=False
             )
+
             sec_out = Propagate(sec_particle, my_track, body, clp, condition=condition)
             if(not sec_out.survived):
-                output.append((sec_out.initial_energy, 0.0, cur_theta, sec_out.nCC, sec_out.nNC, sec_out.ID, i, sec_out.position))
+                output.append((sec_out.initial_energy, 0.0, cur_theta, sec_out.nCC, sec_out.nNC, sec_out.ID, i, sec_out.position, my_track.total_column_depth(body)))
             else:
-                output.append((sec_out.initial_energy, sec_out.energy, cur_theta, 
-    	    		                 sec_out.nCC, sec_out.nNC, sec_out.ID, i, sec_out.position))
+                output.append((sec_out.initial_energy, sec_out.energy, cur_theta,
+    	    		                 sec_out.nCC, sec_out.nNC, sec_out.ID, i, sec_out.position, my_track.total_column_depth(body)))
             prv_theta = cur_theta
             del sec_particle
             del sec_out
@@ -290,10 +299,12 @@ def run_MC(
             ('nNC', int),
             ('PDG_Encoding', int),
             ('event_ID', int),
-            ('final_position', float)
+            ('final_position', float),
+            ('total_column_depth', float)
         ]
     )
     output['Theta'] = np.degrees(output['Theta'])
+    output['total_column_depth'] = output['total_column_depth'] / (units.gr / units.cm**2)
     return output
 
 if __name__ == "__main__": # pragma: no cover
@@ -328,7 +339,7 @@ if __name__ == "__main__": # pragma: no cover
         savedir = '/'.join(TR_specs['save'].split('/')[:-1])
         if not os.path.isdir(savedir):
             raise ValueError('Savedir %s does not exist' % TR_specs['save'])
-    
+
     # Set up a random state
     rand = np.random.RandomState(TR_specs['seed'])
 
@@ -359,7 +370,7 @@ if __name__ == "__main__": # pragma: no cover
     )
     sorter = np.argsort(thetas)
     thetas = thetas[sorter]
-    
+
     xs = CrossSections(getattr(XSModel, TR_specs['xs_model'].upper()))
 
     #prop = make_propagator(TR_specs['flavor'] - np.sign(TR_specs["flavor"]), body, TR_specs['xs_model'])
