@@ -90,7 +90,7 @@ def get_hash(track, body):
     for bd in body.layer_boundaries:
         s += str(bd)
         s += str(body.get_density(bd))
-    #s = s.replace('.', '').replace('+', '')
+    s = s.replace('.', 'd').replace('+', 'p')
     return s
 
 def spline_fname(hash_s):    
