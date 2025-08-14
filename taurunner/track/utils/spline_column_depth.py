@@ -19,12 +19,13 @@ with path('taurunner.resources.column_depth_splines', '__init__.py') as p:
     SPLINE_PATH = str(p).split('__init__.py')[0]
 
 
-def column_depth(track,
-                 body,
-                 xi: float,
-                 xf: float,
-                 safe_mode=True
-    ) -> float:
+def column_depth(
+    track,
+    body,
+    xi: float,
+    xf: float,
+    safe_mode=True
+) -> float:
     '''
     params
     ______
@@ -47,11 +48,11 @@ def column_depth(track,
         for r in body.layer_boundaries:
             xx = np.append(xx, track.r_to_x(r))
     # NaNs means it does not intersect the layer
-    xx        = xx[np.where(~np.isnan(xx))[0]] # non-nanize
+    xx = xx[np.where(~np.isnan(xx))[0]] # non-nanize
     # Remove xs before and after the integration limits
-    mask      = np.where(np.logical_and(xi<xx, xx<xf))[0]
-    xx        = np.hstack([[xi], xx[mask], [xf]])
-    II        = []
+    mask = np.where(np.logical_and(xi<xx, xx<xf))[0]
+    xx = np.hstack([[xi], xx[mask], [xf]])
+    II = []
     for xi, xf in zip(xx[:-1], xx[1:]):
         I = quad(integrand, xi, xf, full_output=1)
         if safe_mode:
@@ -79,19 +80,18 @@ def column_depth_helper(track, body):
     padded_xx     = np.hstack([-xpad[::-1], xx, 1+xpad])
     padded_cds    = np.hstack([np.full(npad, column_depths[0]), column_depths, np.full(npad, column_depths[-1])])
     # Make the splines
-    x_to_X_tck    = splrep(padded_xx, padded_cds)
-    x_to_X        = lambda x: splev(x, x_to_X_tck)
+    x_to_X_tck = splrep(padded_xx, padded_cds)
+    x_to_X = lambda x: splev(x, x_to_X_tck)
     
     return column_depths[-1], x_to_X
 
 def get_hash(track, body):
-    s = f'{track.desc}_{body.radius}{track.depth}'
+    s = f'{track.desc}_{body.radius}_{track.depth}'
     for bd in body.layer_boundaries:
-        s += str(round_sig(bd, sig=3))
-        s += str(round_sig(body.get_density(bd), sig=3))
-    s = s.replace('.', '').replace('+', '')
-    hash_s = s
-    return hash_s
+        s += str(bd)
+        s += str(body.get_density(bd))
+    #s = s.replace('.', '').replace('+', '')
+    return s
 
 def spline_fname(hash_s):    
     x2X_fname = f'{SPLINE_PATH}/{hash_s}_x_to_X.pkl'
@@ -106,10 +106,10 @@ def construct_X2x(x2X):
             def X2x(x):
                 raise Exception('You should not be calling this for null propagations')
     else:
-        xx         = np.linspace(0, 1, 301)
-        cds        = [float(x2X(x)) for x in xx]
-        cds[0]     = 0. # Sometimes spline support can be imperfect
-        X2x_tck    = splrep(cds, xx)
+        xx = np.linspace(0, 1, 301)
+        cds = [float(x2X(x)) for x in xx]
+        cds[0] = 0. # Sometimes spline support can be imperfect
+        X2x_tck = splrep(cds, xx)
         def X2x(X):
             return float(splev(X, X2x_tck))
     return X2x
