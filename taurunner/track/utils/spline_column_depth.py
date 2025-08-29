@@ -88,8 +88,8 @@ def column_depth_helper(track, body):
 def get_hash(track, body):
     s = f'{track.desc}_{body.radius}_{track.depth}'
     for bd in body.layer_boundaries:
-        s += str(bd)
-        s += str(body.get_density(bd))
+        s += str(round_sig(bd, sig=5))
+        s += str(round_sig(body.get_density(bd), sig=5))
     s = s.replace('.', 'd').replace('+', 'p')
     return s
 
