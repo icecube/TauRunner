@@ -11,6 +11,8 @@ else:
 import os
 import pickle as pkl
 
+import hashlib
+
 from taurunner.utils import FileLock
 import taurunner as tr
 
@@ -91,7 +93,7 @@ def get_hash(track, body):
         s += str(bd)
         s += str(body.get_density(bd))
     s = s.replace('.', 'd').replace('+', 'p')
-    return s
+    return hashlib.md5(s.encode('utf-8')).hexdigest()
 
 def spline_fname(hash_s):    
     x2X_fname = f'{SPLINE_PATH}/{hash_s}_x_to_X.pkl'
