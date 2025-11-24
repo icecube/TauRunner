@@ -2,12 +2,12 @@ import numpy as np
 from taurunner.body import Body
 from taurunner.track.utils import get_hash, set_spline
 
-class Track(object):
+class Track:
 
     def __init__(self, depth=0.0, theta=None):
-        self.depth                = depth
+        self.depth = depth
         self._column_depth_lookup = {}
-        self.desc                 = 'generic_track'
+        self.desc = 'generic_track'
       
     def d_to_x(self, d: float) -> float:
         '''
@@ -53,7 +53,7 @@ class Track(object):
             set_spline(self, body)
         return self._column_depth_lookup[hash_s][0]
 
-    def x_to_cartesian_direction(x):
+    def x_to_cartesian_direction(self, x):
         '''
         Convert from track parameter to direction in cartesian space
 
