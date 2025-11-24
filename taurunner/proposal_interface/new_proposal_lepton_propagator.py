@@ -29,7 +29,6 @@ class ConstantDensitySegment:
 def make_propagator(
     pdg_encoding: int,
     body: Body,
-    xs_model
 ) -> pp.Propagator:
     """Make a PROPOSAL propagator
 
@@ -46,7 +45,6 @@ def make_propagator(
 
     with path('taurunner.resources.proposal_tables', 'tables.txt') as p:
         tables_path = str(p).split('tables.txt')[0]
-    #tables_path = "/n/home12/jlazar/TauRunner/taurunner/resources/proposal_tables/"
     pp.InterpolationSettings.tables_path = tables_path
 
     if pdg_encoding not in PARTICLE_DEF_DICT:
@@ -175,19 +173,20 @@ def make_propagation_utilities(
         pp.component.Oxygen()
     ]
     for segment in segments:
-        medium = pp.medium.Medium(
-            f'Ice_{segment.density / (units.gr / units.cm**3)}',
-            #1.0,
-            75.0,
-            -3.5017, 
-            0.09116,
-            3.4773,
-            0.2400, 
-            2.8004,
-            0, 
-            segment.density / (units.gr / units.cm**3), 
-            components
-        ) 
+        medium = pp.medium.StandardRock()
+        #medium = pp.medium.Medium(
+        #    f'Ice_{segment.density / (units.gr / units.cm**3)}',
+        #    #1.0,
+        #    75.0,
+        #    -3.5017, 
+        #    0.09116,
+        #    3.4773,
+        #    0.2400, 
+        #    2.8004,
+        #    0, 
+        #    segment.density / (units.gr / units.cm**3), 
+        #    components
+        #) 
         collection = pp.PropagationUtilityCollection()
         cross = pp.crosssection.make_std_crosssection(
             particle_def,
