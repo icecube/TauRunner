@@ -80,13 +80,11 @@ def Propagate(
             p_int_CC = particle.GetTotalInteractionDepth() / CC_lint
             interaction = "CC" if p2 <= p_int_CC else "NC"
 
-            proton_fraction = body.get_proton_fraction(track.x_to_r(particle.position))
 
             particle.Interact(
                 interaction,
                 body,
                 track,
-                proton_fraction=proton_fraction
             )
 
             if interaction=="CC":
