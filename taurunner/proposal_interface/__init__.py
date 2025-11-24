@@ -1,2 +1,4 @@
 from .charged_lepton_propagator import ChargedLeptonPropagator
+from .charged_lepton_propagator_sphere import ChargedLeptonPropagatorSphere
 from .new_proposal_lepton_propagator import make_propagator
+from .charged_lepton_propagator_slab import ChargedLeptonPropagatorSlab
