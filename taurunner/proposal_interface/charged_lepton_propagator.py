@@ -1,25 +1,31 @@
 import numpy as np
-import proposal as pp
+from proposal.particle import Secondaries
 
-from .new_proposal_lepton_propagator import make_propagator
-from ..utils import units
+from abc import ABC, abstractmethod
+
+#from .new_proposal_lepton_propagator import make_propagator
+#from ..utils import units
 from ..particle import Particle
 from ..body import Body
 from ..track import Track
 from ..cross_sections import CrossSections
 
-class ChargedLeptonPropagator:
+class ChargedLeptonPropagator(ABC):
     """Class for propagating charged leptons using PROPOSAL"""
-    def __init__(
-            self,
-            body: Body,
-            xs: CrossSections,
-        ):
+    def __init__(self, body: Body):
         self._body = body
-        self._xs = xs
         self._propagators = {}
 
-    def propagate(self, particle: Particle, body: Body, track: Track):
+    @property
+    def body(self):
+        return self._body
+
+    @abstractmethod
+    def propagate(
+        self,
+        particle: Particle,
+        track: Track
+    )->Secondaries:
         """
         Propagates a charged lepton through a body
 
@@ -33,26 +39,4 @@ class ChargedLeptonPropagator:
         _______
         sec: PROPOSAL secodaries
         """
-        if particle.ID not in self._propagators:
-            self._propagators[particle.ID] = make_propagator(
-                particle.ID,
-                self._body,
-                self._xs
-            )
-        propagator = self._propagators[particle.ID]
-        
-        total_dist = track.x_to_d(1.0 - particle.position) * body.radius
-        lep = pp.particle.ParticleState(
-            pp.particle.Particle_Type(int(particle.ID - np.sign(particle.ID))),
-            track.x_to_pp_pos(particle.position, body.radius/units.cm),
-            track.x_to_pp_dir(particle.position),
-            particle.energy / units.MeV,
-            0.0,
-            0.0
-        )
-
-        # `int` here rounds to nearest cm and stops boundary segfaults
-        sec = propagator.propagate(lep, int(total_dist / units.cm))
-        # I feel like I shouldn't be returning a PROPOSAL object if this is
-        # truly supposed to be an interface
-        return sec
+        pass

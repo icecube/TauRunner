@@ -7,7 +7,7 @@ from taurunner.utils import units
 from taurunner import track
 from taurunner.body import *
 from taurunner.cross_sections import CrossSections, XSModel
-from taurunner.proposal_interface import ChargedLeptonPropagator
+from taurunner.proposal_interface import ChargedLeptonPropagatorSphere
 from taurunner.Casino import *
 from taurunner.particle import Particle
 from taurunner.utils.make_track import make_track
@@ -205,7 +205,7 @@ def run_MC(
     np.random.seed(seed)
     pp.RandomGenerator.get().set_seed(seed)
 
-    clp = ChargedLeptonPropagator(body, xs)
+    clp = ChargedLeptonPropagatorSphere(body)
     nevents = len(eini)
     output = []
     particleIDs = np.full(nevents, flavor, dtype=int)
