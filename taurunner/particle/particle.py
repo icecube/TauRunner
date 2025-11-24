@@ -192,15 +192,15 @@ class Particle:
             
         if(np.logical_or(not self.losses, np.abs(self.ID) in [11, 12])):
             return
-        total_dist = track.x_to_d(1.0 - self.position) * body.radius
+        total_dist = track.x_to_d(1.0 - self.position) * body.length
         if(np.logical_and(np.abs(self.ID) in [13, 14], total_dist / units.km > 100.)):  #muons farther than 100km will not make it
              return
-        sec = charged_lepton_propagator.propagate(self, body, track)
+        sec = charged_lepton_propagator.propagate(self, track)
         # Update praticle state
-        self.energy = sec.final_state().energy * units.MeV
-        current_distance = track.x_to_d(self.position)
-        charged_distance = sec.final_state().propagated_distance * units.cm / body.radius
-        self.position = track.d_to_x((current_distance + charged_distance))
+        #self.energy = sec.final_state().energy * units.MeV
+        #current_distance = track.x_to_d(self.position)
+        #charged_distance = sec.final_state().propagated_distance * units.cm / body.radius
+        #self.position = track.d_to_x((current_distance + charged_distance))
         # not adhering to unit protocol here !!!
         #self.chargedposition = sec.final_state().propagated_distance * units.cm / units.km
 
