@@ -7,7 +7,7 @@ if sys.version_info.major==3 and sys.version_info.minor<=6:
 else:
     from importlib.resources import path
 
-from .body import Body
+from .spherical_body import SphericalBody
 from taurunner.utils import Callable, units
 from taurunner.resources import solar_models
 
@@ -25,11 +25,11 @@ def e_density_from_model(solar_model_file):
     tck      = splrep(xx, np.log(density))
     return lambda x: np.exp(splev(x, tck))
 
-class Sun(Body):
+class Sun(SphericalBody):
 
     def __init__(self, density, radius, edensity, name='Sun'):
 
-        Body.__init__(self, density, radius, name=name)
+        SphericalBody.__init__(self, density, radius, name=name)
         if hasattr(density, '__iter__'):# pragma: no cover
             self._edensity = [1./units.cm**3*Callable(obj) for obj in edensity]
         else:

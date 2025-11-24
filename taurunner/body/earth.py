@@ -1,5 +1,5 @@
 import numpy as np
-from .body import Body
+from .spherical_body import SphericalBody
 
 prem_params = [(13.0885,  0.0,    -8.8381,  0.0),
                (12.5815, -1.2638, -3.6426, -5.5281),
@@ -18,7 +18,7 @@ def helper(param):
     func = lambda x: prem_density(x, param)
     return func
 
-def construct_earth(layers: list=[]) -> Body:
+def construct_earth(layers: list=[]) -> SphericalBody:
     r'''
     Function for making the PREM Earth
 
@@ -42,6 +42,6 @@ def construct_earth(layers: list=[]) -> Body:
         layer_boundaries.append(r_tot)
     pparams = list(pparams)
     layer_boundaries = np.array(layer_boundaries, dtype=float) / r_tot
-    earth_densities  = [(helper(param), layer) for param, layer in zip(pparams, layer_boundaries)]
-    earth            = Body(earth_densities, r_tot, name='PREM_earth')
+    earth_densities = [(helper(param), layer) for param, layer in zip(pparams, layer_boundaries)]
+    earth = SphericalBody(earth_densities, r_tot, name='PREM_earth')
     return earth
