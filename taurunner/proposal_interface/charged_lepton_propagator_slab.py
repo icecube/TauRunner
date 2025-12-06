@@ -17,9 +17,11 @@ class ChargedLeptonPropagatorSlab(ChargedLeptonPropagator):
     def propagate(
         self,
         particle: Particle,
-        track: Track
+        track: Track,
+        return_sec=False
     ):
 
+        print(43)
         prv = particle.position
         for (end, medium) in zip(self.body.layer_boundaries,self.body.media):
             if end < particle.position:
@@ -41,7 +43,8 @@ class ChargedLeptonPropagatorSlab(ChargedLeptonPropagator):
             if sec.decay_products():
                 break
             prv = end
-        return sec
+        if return_sec:
+            return sec
 
 particle_def_dict = {
     15: pp.particle.TauMinusDef,
@@ -50,7 +53,7 @@ particle_def_dict = {
     -13: pp.particle.MuPlusDef,
 }
 medium_dict = {
-    "Rock": pp.medium.StandardRock,
+    "StandardRock": pp.medium.StandardRock,
     "Air": pp.medium.Air
 }
 

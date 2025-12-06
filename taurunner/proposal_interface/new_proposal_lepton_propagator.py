@@ -174,19 +174,6 @@ def make_propagation_utilities(
     ]
     for segment in segments:
         medium = pp.medium.StandardRock()
-        #medium = pp.medium.Medium(
-        #    f'Ice_{segment.density / (units.gr / units.cm**3)}',
-        #    #1.0,
-        #    75.0,
-        #    -3.5017, 
-        #    0.09116,
-        #    3.4773,
-        #    0.2400, 
-        #    2.8004,
-        #    0, 
-        #    segment.density / (units.gr / units.cm**3), 
-        #    components
-        #) 
         collection = pp.PropagationUtilityCollection()
         cross = pp.crosssection.make_std_crosssection(
             particle_def,

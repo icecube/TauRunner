@@ -44,21 +44,21 @@ def Propagate(
     '''
     total_column_depth = track.total_column_depth(body)
     #keep iterating until final column depth is reached or a charged lepton is made
-    stopping_condition = lambda particle: (
+    stopping_condition0 = lambda particle: (
         particle.position >= 1. or 
         particle.survived==False
     )
 
     if condition:
         if hasattr(condition, '__call__'):
-            stopping_condition = lambda particle: (particle.position >= 1. or  particle.survived==False or condition(particle))
-        elif type(condition)==tuple:
-            stopping_condition = lambda particle: (particle.position >= 1. or  particle.survived==False or condition[0](particle, *condition[1]))
+            stopping_condition = lambda particle, body, track: (stopping_condition0(particle) or condition(particle, body, track))
         else:
             raise TypeError('Not known how to handle condition argument')
+    else:
+        stopping_condition = lambda particle, body, track: stopping_condition0(particle)
 
     accumulated_depth = 0
-    while(not stopping_condition(particle)):
+    while(not stopping_condition(particle, body, track)):
         if particle.ID not in LEPTON_IDS:
             raise ValueError("Whatcha up to ??")
         

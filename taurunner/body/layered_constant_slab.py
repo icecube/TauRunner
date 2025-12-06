@@ -8,7 +8,7 @@ from enum import Enum
 
 class Media(Enum):
     Air = 1
-    Rock = 2
+    StandardRock = 2
 
 class LayeredConstantSlab(Body):
 
