@@ -1,0 +1,241 @@
+"""
+Charged lepton propagation through slab bodies using PROPOSAL.jl.
+
+Similar to SphericalBodyPropagator but for flat slab geometry.
+"""
+
+# Import Particles module for decay!
+using ..TauRunner.Particles: Particle, decay!
+
+"""
+    SlabPropagator{B<:AbstractSlabBody} <: ChargedLeptonPropagator
+
+Propagator for charged leptons through slab bodies.
+
+# Fields
+- `body::B`: The slab body
+- `config_path::String`: Path to PROPOSAL JSON config file
+- `propagators::Dict`: Cached PROPOSAL propagators by particle type
+"""
+mutable struct SlabPropagator{B<:AbstractSlabBody} <: ChargedLeptonPropagator
+    body::B
+    config_path::String
+    propagators::Dict{ParticleType, Any}
+end
+
+"""
+    SlabPropagator(body::AbstractSlabBody)
+
+Create a propagator for a slab body.
+"""
+function SlabPropagator(body::B) where B<:AbstractSlabBody
+    # Generate config from body
+    config = generate_slab_config(body)
+    config_path = create_temp_config(config)
+
+    # Initialize propagator cache
+    propagators = Dict{ParticleType, Any}()
+
+    return SlabPropagator{B}(body, config_path, propagators)
+end
+
+"""
+Get or create a PROPOSAL propagator for a given particle type.
+"""
+function get_proposal_propagator(prop::SlabPropagator, particle_type::ParticleType)
+    if haskey(prop.propagators, particle_type)
+        return prop.propagators[particle_type]
+    end
+
+    if !PROPOSAL_AVAILABLE[]
+        return nothing
+    end
+
+    # Create the appropriate propagator based on particle type
+    pp = if particle_type == Tau
+        @eval PROPOSAL.create_propagator_tauminus($(prop.config_path))
+    elseif particle_type == AntiTau
+        @eval PROPOSAL.create_propagator_tauplus($(prop.config_path))
+    elseif particle_type == Muon
+        @eval PROPOSAL.create_propagator_muminus($(prop.config_path))
+    elseif particle_type == AntiMuon
+        @eval PROPOSAL.create_propagator_muplus($(prop.config_path))
+    elseif particle_type == Electron
+        @eval PROPOSAL.create_propagator_eminus($(prop.config_path))
+    elseif particle_type == Positron
+        @eval PROPOSAL.create_propagator_eplus($(prop.config_path))
+    else
+        error("Unknown particle type for PROPOSAL: $particle_type")
+    end
+
+    prop.propagators[particle_type] = pp
+    return pp
+end
+
+"""
+    propagate_charged_lepton!(propagator::SlabPropagator, particle, track)
+
+Propagate a charged lepton through a slab body using PROPOSAL.jl.
+"""
+function propagate_charged_lepton!(
+    propagator::SlabPropagator,
+    particle,
+    track::AbstractSlabTrack
+)
+    # Skip if losses are disabled or particle is electron
+    abs_id = abs(Int(particle.id))
+    if !particle.include_losses || abs_id == 11
+        return nothing
+    end
+
+    # For neutrinos, nothing to do
+    if abs_id in (12, 14, 16)
+        return nothing
+    end
+
+    # Calculate remaining distance
+    remaining_x = 1.0 - particle.position
+    if remaining_x < 1e-10
+        particle.position = 1.0
+        return nothing
+    end
+
+    remaining_dist_cm = x_to_d(track, remaining_x) * propagator.body.length_natural / units.cm
+
+    # For muons far from the exit (>100 km), they won't make it
+    if abs_id == 13 && remaining_dist_cm / 1e5 > 100.0
+        return nothing
+    end
+
+    # Use PROPOSAL if available
+    if PROPOSAL_AVAILABLE[]
+        _propagate_slab_with_proposal!(propagator, particle, track, remaining_dist_cm)
+    else
+        _simplified_slab_propagation!(propagator, particle, track)
+    end
+
+    return nothing
+end
+
+"""
+Propagate through slab using PROPOSAL.jl.
+"""
+function _propagate_slab_with_proposal!(
+    propagator::SlabPropagator,
+    particle,
+    track,
+    max_distance_cm::Float64
+)
+    pp = get_proposal_propagator(propagator, particle.id)
+    if isnothing(pp)
+        _simplified_slab_propagation!(propagator, particle, track)
+        return nothing
+    end
+
+    # Slab length in cm
+    slab_length_cm = propagator.body.length_natural / units.cm
+
+    # Current position in slab (in cm)
+    current_z_cm = particle.position * slab_length_cm
+
+    # Direction (along z-axis for normal incidence, or tilted for angled tracks)
+    dir = x_to_cartesian_direction(track, particle.position)
+
+    # Energy in MeV
+    energy_mev = particle.energy / units.MeV
+    min_energy_mev = particle.mass / units.MeV
+
+    # Create PROPOSAL ParticleState
+    particle_type_id = proposal_particle_type(particle.id)
+
+    state = @eval PROPOSAL.ParticleState(
+        $particle_type_id,
+        0.0, 0.0, $current_z_cm,
+        $(dir[1]), $(dir[2]), $(dir[3]),
+        $energy_mev;
+        time=0.0,
+        propagated_distance=0.0
+    )
+
+    # Propagate
+    secondaries = @eval PROPOSAL.propagate($pp, $state, $max_distance_cm, $min_energy_mev)
+
+    # Extract final state
+    final_state = @eval PROPOSAL.get_final_state($secondaries)
+    final_energy_mev = @eval PROPOSAL.get_energy($final_state)
+    propagated_dist_cm = @eval PROPOSAL.get_propagated_distance($final_state)
+
+    # Update particle energy
+    particle.energy = final_energy_mev * units.MeV
+
+    # Update position
+    dist_traveled_normalized = (propagated_dist_cm * units.cm) / propagator.body.length_natural
+    particle.position = clamp(particle.position + dist_traveled_normalized, 0.0, 1.0)
+
+    # Check for decay
+    if particle.energy <= particle.mass * 1.01
+        particle.decay_position = particle.position
+        decay!(particle)
+    end
+
+    return nothing
+end
+
+# Import track functions
+using ..TauRunner.Tracks: x_to_cartesian_direction
+
+"""
+Simplified propagation model for slabs (fallback when PROPOSAL.jl not available).
+
+⚠️  WARNING: This model is NOT suitable for physics analysis!
+
+Missing physics compared to PROPOSAL:
+- Stochastic energy loss sampling (bremsstrahlung, pair production, photonuclear)
+- Multiple scattering and angular deflection
+- Proper Monte Carlo decay sampling
+- Secondary particle production
+"""
+function _simplified_slab_propagation!(
+    propagator::SlabPropagator,
+    particle,
+    track
+)
+    # Warn user that simplified propagation is not physics-accurate
+    warn_simplified_propagation()
+    # Get remaining distance to exit
+    remaining_x = 1.0 - particle.position
+    remaining_dist = x_to_d(track, remaining_x) * propagator.body.length_natural
+
+    # Get density at current position
+    density = get_density(propagator.body, particle.position)
+
+    # Rough energy loss estimate
+    dE_dx = 2.0 * units.MeV * density / units.DENSITY_CONV
+
+    column_depth = density * remaining_dist
+    energy_loss = dE_dx * column_depth / (units.gr / units.cm^2)
+
+    # Check for decay
+    if particle.lifetime < Inf && particle.mass > 0
+        gamma = particle.energy / particle.mass
+        decay_length = gamma * particle.lifetime
+
+        if decay_length < remaining_dist
+            # Particle decays before exit
+            decay_frac = decay_length / remaining_dist
+            particle.position = particle.position + decay_frac * remaining_x
+            particle.decay_position = particle.position
+
+            particle.energy = max(particle.energy - decay_frac * energy_loss, particle.mass)
+
+            decay!(particle)
+            return nothing
+        end
+    end
+
+    # Particle exits
+    particle.position = 1.0
+    particle.energy = max(particle.energy - energy_loss, particle.mass)
+
+    return nothing
+end
