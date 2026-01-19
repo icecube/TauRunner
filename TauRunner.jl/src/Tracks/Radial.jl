@@ -104,14 +104,18 @@ end
 
 """
 Integrand for column depth calculation along a radial track.
+
+Column depth is X = ∫ρ·dl where dl is the physical path element.
+For a radial track with parameter x ∈ [0,1]:
+    dl = (dl/dx) dx = (1-depth) · R · dx
+So the integrand is: ρ(r(x)) · (1-depth) · R
 """
 function integrand_column_depth(track::Radial, body::AbstractSphericalBody)
     function f(x)
         r = x_to_r(track, x)
         density = get_density(body, r)
-        # dr/dx is constant and negative, we want absolute value
-        dr_dx = abs(x_to_r_prime(track, x))
-        return density * dr_dx * radius(body)
+        dl_dx = x_to_d_prime(track, x)  # = 1-depth (constant for radial)
+        return density * dl_dx * radius(body)
     end
     return f
 end

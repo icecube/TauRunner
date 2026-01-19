@@ -180,13 +180,18 @@ end
 
 """
 Integrand for column depth calculation along a chord.
+
+Column depth is X = ∫ρ·dl where dl is the physical path element.
+For a chord with track parameter x ∈ [0,1]:
+    dl = (dl/dx) dx = total_length · R · dx
+So the integrand is: ρ(r(x)) · total_length · R
 """
 function integrand_column_depth(chord::Chord, body::AbstractSphericalBody)
     function f(x)
         r = x_to_r(chord, x)
         density = get_density(body, r)
-        dr_dx = abs(x_to_r_prime(chord, x))
-        return density * dr_dx * radius(body)
+        dl_dx = x_to_d_prime(chord, x)  # = total_length (constant for chord)
+        return density * dl_dx * radius(body)
     end
     return f
 end
