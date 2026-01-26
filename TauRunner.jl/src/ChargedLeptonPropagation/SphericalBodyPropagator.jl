@@ -220,17 +220,7 @@ function track_to_proposal_coords(track::AbstractSphericalTrack, x::Real, body_r
     r = x_to_r(track, x)
     r_cm = r * body_radius_cm
 
-    # For a chord track, position along the track
-    # We need to compute the actual Cartesian position
-    # This depends on the track type
-
-    # Use track's x_to_pp_pos if available, otherwise compute from geometry
-    if hasmethod(x_to_pp_pos, Tuple{typeof(track), typeof(x), typeof(body_radius_cm)})
-        pos = x_to_pp_pos(track, x, body_radius_cm)
-        return (pos, dir)
-    end
-
-    # Default: compute position from track geometry
+    # Compute position from track geometry
     # For a chord at angle θ starting at surface:
     # Position moves inward along the chord direction
     d = x_to_d(track, x)  # Normalized distance

@@ -7,6 +7,24 @@ PROPOSAL uses JSON configs to define geometry, media, and energy cuts.
 
 # PROPOSAL units: position in cm, energy in MeV
 
+# Default path for PROPOSAL interpolation tables
+# This is set to a subdirectory within the TauRunner.jl package
+const DEFAULT_PROPOSAL_TABLES_PATH = abspath(joinpath(@__DIR__, "..", "..", "data", "proposal_tables"))
+
+"""
+    get_proposal_tables_path()
+
+Get the path for PROPOSAL interpolation tables.
+Returns the default path within TauRunner.jl/data/proposal_tables,
+or the value of PROPOSAL_TABLES_PATH environment variable if set.
+"""
+function get_proposal_tables_path()
+    path = get(ENV, "PROPOSAL_TABLES_PATH", DEFAULT_PROPOSAL_TABLES_PATH)
+    # Ensure the directory exists
+    mkpath(path)
+    return abspath(path)
+end
+
 """
 Map TauRunner density (in natural units eV^4) to PROPOSAL medium name.
 This is approximate - we select the closest standard medium.
@@ -53,21 +71,23 @@ function default_cuts()
 end
 
 """
-    generate_sphere_config(body::AbstractSphericalBody; cuts=default_cuts())
+    generate_sphere_config(body::AbstractSphericalBody; cuts=default_cuts(), outer_buffer=1e10)
 
 Generate a PROPOSAL JSON configuration for a spherical body.
 
 The body is represented as concentric spherical shells, each with the
-medium that best matches the layer's density.
+medium that best matches the layer's density. An outer "Air" layer is added
+to handle particles at/near the surface.
 
 # Arguments
 - `body`: A SphericalBody from TauRunner
 - `cuts`: Energy cut settings (optional)
+- `outer_buffer`: Additional radius beyond body surface for air layer (cm, default: 1e10)
 
 # Returns
 A Dict that can be serialized to JSON for PROPOSAL.
 """
-function generate_sphere_config(body::AbstractSphericalBody; cuts=default_cuts())
+function generate_sphere_config(body::AbstractSphericalBody; cuts=default_cuts(), outer_buffer::Real=1e10)
     # Get body radius in cm (PROPOSAL units)
     radius_cm = radius(body) / units.cm
 
@@ -100,8 +120,29 @@ function generate_sphere_config(body::AbstractSphericalBody; cuts=default_cuts()
         push!(sectors, sector)
     end
 
+    # Add outer Air layer to handle particles at/near the surface
+    # This is necessary because particles may start exactly at the surface
+    # and PROPOSAL needs a defined sector at all particle positions
+    n_layers = length(boundaries) - 1
+    outer_sector = Dict(
+        "medium" => "Air",
+        "geometries" => [
+            Dict(
+                "hierarchy" => n_layers,
+                "shape" => "sphere",
+                "origin" => [0.0, 0.0, 0.0],
+                "outer_radius" => radius_cm + Float64(outer_buffer),
+                "inner_radius" => radius_cm
+            )
+        ]
+    )
+    push!(sectors, outer_sector)
+
     config = Dict(
-        "global" => Dict("cuts" => cuts),
+        "global" => Dict(
+            "cuts" => cuts,
+            "tables_path" => get_proposal_tables_path()
+        ),
         "sectors" => sectors
     )
 
@@ -120,7 +161,10 @@ Generate a simple uniform sphere configuration.
 """
 function generate_uniform_sphere_config(radius_cm::Real, medium::String; cuts=default_cuts())
     config = Dict(
-        "global" => Dict("cuts" => cuts),
+        "global" => Dict(
+            "cuts" => cuts,
+            "tables_path" => get_proposal_tables_path()
+        ),
         "sectors" => [
             Dict(
                 "medium" => medium,
@@ -184,7 +228,10 @@ function generate_slab_config(body::AbstractSlabBody; cuts=default_cuts())
     end
 
     config = Dict(
-        "global" => Dict("cuts" => cuts),
+        "global" => Dict(
+            "cuts" => cuts,
+            "tables_path" => get_proposal_tables_path()
+        ),
         "sectors" => sectors
     )
 

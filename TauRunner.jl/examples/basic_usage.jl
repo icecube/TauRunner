@@ -142,29 +142,193 @@ for p in [Electron, Muon, Tau]
 end
 
 # =============================================================================
-# Example 7: Using different cross-section models
+# Example 7: Cross-Section Models (loading from JLD2)
 # =============================================================================
 
 println("\n" * "=" ^ 60)
-println("Example 7: Cross-Section Models (requires data files)")
+println("Example 7: Cross-Section Models (loading from JLD2)")
 println("=" ^ 60)
 
-println("""
-TauRunner.jl supports two cross-section models:
-  - DIPOLE: Dipole model for neutrino-nucleon interactions
-  - CSMS:   Connolly-Sarkar-Mohanty-Sahu model
+println("\nTauRunner.jl supports two cross-section models:")
+println("  - DIPOLE: Dipole model for neutrino-nucleon interactions")
+println("  - CSMS:   Connolly-Sarkar-Mohanty-Sahu (perturbative QCD) model")
 
-To use cross-sections, load the data files:
+# Load both cross-section models from JLD2 files
+println("\nLoading DIPOLE cross-sections from JLD2...")
+xs_dipole = CrossSections(DIPOLE)
+println("  Loaded: $xs_dipole")
 
-    using TauRunner
-    xs = CrossSections(DIPOLE)  # or CSMS
+println("\nLoading CSMS cross-sections from JLD2...")
+xs_csms = CrossSections(CSMS)
+println("  Loaded: $xs_csms")
 
-    # Total cross-section at energy E
-    σ = total_cross_section(xs, E, :nu, :CC)
+# Conversion factor: natural units (eV^-2) to cm^2
+# 1 eV^-1 = hbar*c / eV ≈ 1.97e-5 cm, so 1 eV^-2 ≈ 3.89e-10 cm^2
+const EV2_TO_CM2 = (1.97326963e-5)^2  # (hbar*c in cm*eV)^2
 
-    # Differential cross-section
-    dσ_dy = differential_cross_section(xs, E_in, y, :nu, :CC)
-""")
+# Test energies: 1 PeV, 10 PeV, 100 PeV, 1 EeV
+test_energies_eV = [1e15, 1e16, 1e17, 1e18]  # in eV
+test_energy_names = ["1 PeV", "10 PeV", "100 PeV", "1 EeV"]
+
+println("\nTotal neutrino CC cross-sections (ν + N → l + X):")
+println("-" ^ 55)
+println("  Energy       |    DIPOLE         |    CSMS")
+println("-" ^ 55)
+for (E, name) in zip(test_energies_eV, test_energy_names)
+    σ_dipole = total_cross_section(xs_dipole, E, :nu, :CC) * EV2_TO_CM2
+    σ_csms = total_cross_section(xs_csms, E, :nu, :CC) * EV2_TO_CM2
+    println("  $(rpad(name, 12)) |  $(round(σ_dipole / 1e-33, digits=2)) × 10⁻³³ cm²  |  $(round(σ_csms / 1e-33, digits=2)) × 10⁻³³ cm²")
+end
+println("-" ^ 55)
+
+# Verify cross-sections are in expected range (physics sanity check)
+# At 1 PeV, neutrino-nucleon CC cross-sections should be ~10^-33 cm^2
+# At 1 EeV, should be ~10^-32 cm^2
+println("\nPhysics sanity check:")
+σ_1PeV = total_cross_section(xs_csms, 1e15, :nu, :CC) * EV2_TO_CM2
+σ_1EeV = total_cross_section(xs_csms, 1e18, :nu, :CC) * EV2_TO_CM2
+if 1e-35 < σ_1PeV < 1e-31 && 1e-34 < σ_1EeV < 1e-30
+    println("  ✓ Cross-sections at 1 PeV and 1 EeV are in expected range")
+else
+    println("  ✗ WARNING: Cross-sections outside expected range!")
+end
+
+# Test differential cross-section
+println("\nDifferential cross-section dσ/dz at 1 PeV (z = outgoing lepton energy fraction):")
+E_test = 1e16  # 10 PeV
+z_values = [0.1, 0.3, 0.5, 0.7, 0.9]
+println("  z      |  dσ/dz (CSMS)")
+for z in z_values
+    dsigma = differential_cross_section(xs_csms, E_test, z, :nu, :CC) * EV2_TO_CM2
+    println("  $(z)    |  $(round(dsigma / 1e-33, digits=3)) × 10⁻³³ cm²")
+end
+
+# =============================================================================
+# Example 8: Monte Carlo Neutrino Propagation
+# =============================================================================
+
+println("\n" * "=" ^ 60)
+println("Example 8: Monte Carlo Neutrino Propagation")
+println("=" ^ 60)
+
+using Random
+
+# Set up the simulation components
+earth = construct_earth()
+xs = CrossSections(CSMS)
+
+println("\nSingle particle propagation:")
+println("-" ^ 40)
+
+# Create a tau neutrino with 100 PeV energy
+E_initial = 1e17  # 100 PeV in eV
+theta = π/4       # 45° nadir angle
+
+# Create the track and propagator
+track = Chord(theta)
+clp = SphericalBodyPropagator(earth)
+
+# Create a particle
+# Particle(type, energy, position, cross_sections; secondaries=true, losses=true)
+particle = Particle(NuTau, E_initial, 0.0, xs; secondaries=true, losses=true)
+
+println("  Initial: $(particle.id) at E = $(E_initial/GeV) GeV")
+println("  Track: Chord at θ = $(round(theta * 180/π, digits=1))°")
+
+# Propagate with a fixed random seed for reproducibility
+rng = MersenneTwister(42)
+propagate!(particle, track, earth, clp; rng=rng)
+
+println("\n  Final state:")
+println("    Particle: $(particle.id)")
+println("    Energy: $(round(particle.energy/GeV, digits=1)) GeV")
+println("    Position: $(round(particle.position, digits=4)) (1.0 = exited)")
+println("    Survived: $(particle.survived)")
+println("    CC interactions: $(particle.n_cc)")
+println("    NC interactions: $(particle.n_nc)")
+println("    Decays: $(particle.n_decay)")
+
+# =============================================================================
+# Example 9: Batch Monte Carlo with run_mc()
+# =============================================================================
+
+println("\n" * "=" ^ 60)
+println("Example 9: Batch Monte Carlo Simulation")
+println("=" ^ 60)
+
+# Run multiple events at once using run_mc()
+n_events = 10000
+E_batch = 1e18  # 100 PeV
+theta_batch = 0.0  # Nadir (straight through Earth center)
+
+# Create arrays of energies and angles
+energies = fill(E_batch, n_events)
+thetas = fill(theta_batch, n_events)
+
+println("\nRunning $n_events events at E = $(E_batch/1e15) PeV, θ = 0° (nadir)...")
+println("(This may take a moment on first run while PROPOSAL builds tables)")
+
+# Run the Monte Carlo
+results = run_mc(energies, thetas, earth, xs;
+                 flavor=NuTau,
+                 seed=12345,
+                 losses=true,
+                 secondaries=true)
+
+# Analyze results
+n_exited = count(r -> r.position >= 1.0, results)
+n_nutau = count(r -> r.id == Int(NuTau), results)
+n_tau = count(r -> r.id == Int(Tau), results)
+
+# Energy statistics for exiting particles
+exit_energies = [r.E_final for r in results if r.position >= 1.0]
+mean_E_out = isempty(exit_energies) ? 0.0 : sum(exit_energies) / length(exit_energies)
+
+# Interaction statistics
+total_cc = sum(r.n_cc for r in results)
+total_nc = sum(r.n_nc for r in results)
+
+println("\nResults:")
+println("  Events exited: $n_exited / $n_events ($(round(100*n_exited/n_events, digits=1))%)")
+println("  Final particles: ν_τ=$n_nutau, τ=$n_tau")
+println("  Mean exit energy: $(round(mean_E_out/GeV, digits=1)) GeV")
+println("  Mean CC interactions: $(round(total_cc/n_events, digits=2))")
+println("  Mean NC interactions: $(round(total_nc/n_events, digits=2))")
+
+# =============================================================================
+# Example 10: Energy-dependent Transmission
+# =============================================================================
+
+println("\n" * "=" ^ 60)
+println("Example 10: Energy-dependent Transmission")
+println("=" ^ 60)
+
+println("\nComputing transmission probability vs energy at θ = 60°...")
+
+n_per_energy = 50
+theta_test = π/3  # 60°
+test_Es = [1e16, 1e17, 1e18]  # 10 PeV, 100 PeV, 1 EeV
+
+println("\n  Energy     | Exit rate | Mean E_out/E_in")
+println("  " * "-" ^ 45)
+
+for E in test_Es
+    local energies = fill(E, n_per_energy)
+    local thetas = fill(theta_test, n_per_energy)
+
+    local results = run_mc(energies, thetas, earth, xs;
+                           flavor=NuTau, seed=999, losses=true)
+
+    n_exit = count(r -> r.position >= 1.0, results)
+    exit_frac = n_exit / n_per_energy
+
+    # Mean energy ratio for exiting particles
+    ratios = [r.E_final / r.E_initial for r in results if r.position >= 1.0]
+    mean_ratio = isempty(ratios) ? 0.0 : sum(ratios) / length(ratios)
+
+    E_name = E >= 1e18 ? "$(E/1e18) EeV" : "$(E/1e15) PeV"
+    println("  $(rpad(E_name, 10)) |   $(round(100*exit_frac, digits=1))%   |   $(round(mean_ratio, digits=3))")
+end
 
 println("\n" * "=" ^ 60)
 println("Examples complete!")
