@@ -71,20 +71,15 @@ function propagate!(
     # Get total column depth for this track/body combination
     total_depth = total_column_depth(track, body)
 
-    # Default stopping condition: exited or absorbed
-    default_stop = (p, b, t) -> p.position >= 1.0 || !p.survived
-
-    # Combine with user condition if provided
-    if !isnothing(condition)
-        stopping_condition = (p, b, t) -> default_stop(p, b, t) || condition(p, b, t)
-    else
-        stopping_condition = default_stop
-    end
-
     accumulated_depth = 0.0
 
     # Main propagation loop
-    while !stopping_condition(particle, body, track)
+    # Inline default stop check to avoid closure overhead on every iteration
+    while true
+        # Default stop: exited or absorbed
+        (particle.position >= 1.0 || !particle.survived) && break
+        # User-provided stop condition
+        (!isnothing(condition) && condition(particle, body, track)) && break
         if is_neutrino(particle.id)
             # Neutrino propagation: sample interaction
             depth_step = get_proposed_depth_step(particle; rng=rng)
@@ -167,8 +162,11 @@ function run_mc(
         throw(ArgumentError("energies and thetas must have the same length"))
     end
 
-    # Set up RNG
+    # Set up RNG (both Julia and PROPOSAL)
     rng = isnothing(seed) ? Random.default_rng() : MersenneTwister(seed)
+    if !isnothing(seed)
+        ChargedLeptonPropagationModule.seed_proposal!(seed)
+    end
 
     # Create propagator
     clp = if body isa AbstractSphericalBody
@@ -251,6 +249,9 @@ function run_mc_parallel(
 
     # Base seed for reproducibility
     base_seed = isnothing(seed) ? rand(UInt64) : UInt64(seed)
+    if !isnothing(seed)
+        ChargedLeptonPropagationModule.seed_proposal!(seed)
+    end
 
     Threads.@threads for i in 1:n_events
         # Thread-local RNG for reproducibility

@@ -106,7 +106,7 @@ export charged_partner, neutrino_partner
 export units, PhysicsConstants
 
 # Export from Bodies
-export SphericalBody, construct_earth, get_density, get_average_density
+export SphericalBody, construct_earth, get_density, get_average_density, radius, radius_km
 
 # Export from Tracks
 export Chord, Radial, SlabTrack
@@ -119,9 +119,11 @@ export total_cross_section, differential_cross_section
 # Export from Particles
 export Particle, SecondaryParticle
 export get_proposed_depth_step, get_interaction_depth, interact!, decay!
+export sample_tau_decay_fraction
 
 # Export from ChargedLeptonPropagation
-export ChargedLeptonPropagator, propagate_charged_lepton!
+export ChargedLeptonPropagator, SphericalBodyPropagator, SlabPropagator
+export propagate_charged_lepton!
 
 # Export main propagation function
 export propagate!
