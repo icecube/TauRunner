@@ -52,21 +52,22 @@ function get_proposal_propagator(prop::SlabPropagator, particle_type::ParticleTy
     end
 
     # Create the appropriate propagator based on particle type
-    pp = if particle_type == Tau
-        @eval PROPOSAL.create_propagator_tauminus($(prop.config_path))
+    creator_key = if particle_type == Tau
+        :create_propagator_tauminus
     elseif particle_type == AntiTau
-        @eval PROPOSAL.create_propagator_tauplus($(prop.config_path))
+        :create_propagator_tauplus
     elseif particle_type == Muon
-        @eval PROPOSAL.create_propagator_muminus($(prop.config_path))
+        :create_propagator_muminus
     elseif particle_type == AntiMuon
-        @eval PROPOSAL.create_propagator_muplus($(prop.config_path))
+        :create_propagator_muplus
     elseif particle_type == Electron
-        @eval PROPOSAL.create_propagator_eminus($(prop.config_path))
+        :create_propagator_eminus
     elseif particle_type == Positron
-        @eval PROPOSAL.create_propagator_eplus($(prop.config_path))
+        :create_propagator_eplus
     else
         error("Unknown particle type for PROPOSAL: $particle_type")
     end
+    pp = Base.invokelatest(PROPOSAL_FN[creator_key], prop.config_path)
 
     prop.propagators[particle_type] = pp
     return pp
@@ -148,22 +149,25 @@ function _propagate_slab_with_proposal!(
     # Create PROPOSAL ParticleState
     particle_type_id = proposal_particle_type(particle.id)
 
-    state = @eval PROPOSAL.ParticleState(
-        $particle_type_id,
-        0.0, 0.0, $current_z_cm,
-        $(dir[1]), $(dir[2]), $(dir[3]),
-        $energy_mev;
+    state = Base.invokelatest(
+        PROPOSAL_FN[:ParticleState],
+        particle_type_id,
+        0.0, 0.0, current_z_cm,
+        dir[1], dir[2], dir[3],
+        energy_mev;
         time=0.0,
         propagated_distance=0.0
     )
 
     # Propagate
-    secondaries = @eval PROPOSAL.propagate($pp, $state, $max_distance_cm, $min_energy_mev)
+    secondaries = suppress_proposal_warnings() do
+        Base.invokelatest(PROPOSAL_FN[:propagate], pp, state, max_distance_cm, min_energy_mev)
+    end
 
     # Extract final state
-    final_state = @eval PROPOSAL.get_final_state($secondaries)
-    final_energy_mev = @eval PROPOSAL.get_energy($final_state)
-    propagated_dist_cm = @eval PROPOSAL.get_propagated_distance($final_state)
+    final_state = Base.invokelatest(PROPOSAL_FN[:get_final_state], secondaries)
+    final_energy_mev = Base.invokelatest(PROPOSAL_FN[:get_energy], final_state)
+    propagated_dist_cm = Base.invokelatest(PROPOSAL_FN[:get_propagated_distance], final_state)
 
     # Update particle energy
     particle.energy = final_energy_mev * units.MeV

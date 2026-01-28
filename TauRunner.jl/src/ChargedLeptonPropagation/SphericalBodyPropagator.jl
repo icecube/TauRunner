@@ -56,21 +56,22 @@ function get_proposal_propagator(prop::SphericalBodyPropagator, particle_type::P
     end
 
     # Create the appropriate propagator based on particle type
-    pp = if particle_type == Tau
-        @eval PROPOSAL.create_propagator_tauminus($(prop.config_path))
+    creator_key = if particle_type == Tau
+        :create_propagator_tauminus
     elseif particle_type == AntiTau
-        @eval PROPOSAL.create_propagator_tauplus($(prop.config_path))
+        :create_propagator_tauplus
     elseif particle_type == Muon
-        @eval PROPOSAL.create_propagator_muminus($(prop.config_path))
+        :create_propagator_muminus
     elseif particle_type == AntiMuon
-        @eval PROPOSAL.create_propagator_muplus($(prop.config_path))
+        :create_propagator_muplus
     elseif particle_type == Electron
-        @eval PROPOSAL.create_propagator_eminus($(prop.config_path))
+        :create_propagator_eminus
     elseif particle_type == Positron
-        @eval PROPOSAL.create_propagator_eplus($(prop.config_path))
+        :create_propagator_eplus
     else
         error("Unknown particle type for PROPOSAL: $particle_type")
     end
+    pp = Base.invokelatest(PROPOSAL_FN[creator_key], prop.config_path)
 
     prop.propagators[particle_type] = pp
     return pp
@@ -165,22 +166,28 @@ function _propagate_with_proposal!(
     # Create PROPOSAL ParticleState
     particle_type_id = proposal_particle_type(particle.id)
 
-    state = @eval PROPOSAL.ParticleState(
-        $particle_type_id,
-        $(pos_cm[1]), $(pos_cm[2]), $(pos_cm[3]),
-        $(dir[1]), $(dir[2]), $(dir[3]),
-        $energy_mev;
+    state = Base.invokelatest(
+        PROPOSAL_FN[:ParticleState],
+        particle_type_id,
+        pos_cm[1], pos_cm[2], pos_cm[3],
+        dir[1], dir[2], dir[3],
+        energy_mev;
         time=0.0,
         propagated_distance=0.0
     )
 
     # Propagate
-    secondaries = @eval PROPOSAL.propagate($pp, $state, $max_distance_cm, $min_energy_mev)
+    # Round distance to integer cm to avoid PROPOSAL bisection failures at geometry boundaries
+    # (matches Python TauRunner convention)
+    max_distance_cm_int = floor(max_distance_cm)
+    secondaries = suppress_proposal_warnings() do
+        Base.invokelatest(PROPOSAL_FN[:propagate], pp, state, max_distance_cm_int, min_energy_mev)
+    end
 
     # Extract final state
-    final_state = @eval PROPOSAL.get_final_state($secondaries)
-    final_energy_mev = @eval PROPOSAL.get_energy($final_state)
-    propagated_dist_cm = @eval PROPOSAL.get_propagated_distance($final_state)
+    final_state = Base.invokelatest(PROPOSAL_FN[:get_final_state], secondaries)
+    final_energy_mev = Base.invokelatest(PROPOSAL_FN[:get_energy], final_state)
+    propagated_dist_cm = Base.invokelatest(PROPOSAL_FN[:get_propagated_distance], final_state)
 
     # Update particle energy
     particle.energy = final_energy_mev * units.MeV
@@ -199,7 +206,7 @@ function _propagate_with_proposal!(
 
     # Check if particle decayed (energy dropped to rest mass or below)
     # For tau/muon, if energy is at rest mass, it decayed
-    if particle.energy <= particle.mass * 1.01  # Allow small tolerance
+    if particle.energy <= particle.mass * (1.0 + 1e-6)  # Rest mass = decayed
         particle.decay_position = particle.position
         decay!(particle)
     end
@@ -221,18 +228,17 @@ function track_to_proposal_coords(track::AbstractSphericalTrack, x::Real, body_r
     r_cm = r * body_radius_cm
 
     # Compute position from track geometry
-    # For a chord at angle θ starting at surface:
-    # Position moves inward along the chord direction
-    d = x_to_d(track, x)  # Normalized distance
-    d_cm = d * body_radius_cm
+    # Use remaining distance (1-x) to place the particle correctly:
+    # At x=0 (entry), the particle is at the entry point on the surface
+    # At x=1 (exit), the particle is at (0, 0, body_radius)
+    # This matches Python TauRunner's x_to_pp_pos convention
+    remaining_d = x_to_d(track, 1.0 - x)  # Remaining normalized distance to exit
+    remaining_d_cm = remaining_d * body_radius_cm
 
-    # Starting position (on surface, entry point)
-    # For simplicity, assume entry at (0, 0, body_radius)
-    # and direction pointing inward
     pos = (
-        -dir[1] * d_cm,
-        -dir[2] * d_cm,
-        body_radius_cm - dir[3] * d_cm
+        -dir[1] * remaining_d_cm,
+        -dir[2] * remaining_d_cm,
+        body_radius_cm - dir[3] * remaining_d_cm
     )
 
     return (pos, dir)
@@ -242,19 +248,18 @@ end
 Map TauRunner ParticleType to PROPOSAL particle type constant.
 """
 function proposal_particle_type(p::ParticleType)
-    # PROPOSAL particle type constants
     if p == Tau
-        return @eval PROPOSAL.PARTICLE_TYPE_TAUMINUS
+        return PROPOSAL_FN[:PARTICLE_TYPE_TAUMINUS]
     elseif p == AntiTau
-        return @eval PROPOSAL.PARTICLE_TYPE_TAUPLUS
+        return PROPOSAL_FN[:PARTICLE_TYPE_TAUPLUS]
     elseif p == Muon
-        return @eval PROPOSAL.PARTICLE_TYPE_MUMINUS
+        return PROPOSAL_FN[:PARTICLE_TYPE_MUMINUS]
     elseif p == AntiMuon
-        return @eval PROPOSAL.PARTICLE_TYPE_MUPLUS
+        return PROPOSAL_FN[:PARTICLE_TYPE_MUPLUS]
     elseif p == Electron
-        return @eval PROPOSAL.PARTICLE_TYPE_EMINUS
+        return PROPOSAL_FN[:PARTICLE_TYPE_EMINUS]
     elseif p == Positron
-        return @eval PROPOSAL.PARTICLE_TYPE_EPLUS
+        return PROPOSAL_FN[:PARTICLE_TYPE_EPLUS]
     else
         error("Unknown particle type: $p")
     end

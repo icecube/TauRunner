@@ -64,8 +64,8 @@ Default energy cut settings for PROPOSAL.
 """
 function default_cuts()
     return Dict(
-        "e_cut" => 500.0,       # Absolute energy cut (MeV)
-        "v_cut" => 0.05,        # Relative energy cut
+        "e_cut" => 1e14,        # Effectively infinite energy cut (matches Python TauRunner's np.inf)
+        "v_cut" => 1e-3,        # Relative energy cut (matches Python TauRunner)
         "cont_rand" => true     # Continuous randomization
     )
 end
@@ -99,13 +99,16 @@ function generate_sphere_config(body::AbstractSphericalBody; cuts=default_cuts()
         r_inner = boundaries[i] * radius_cm
         r_outer = boundaries[i + 1] * radius_cm
 
-        # Get average density in this layer and map to medium
+        # Get average density in this layer (g/cm³)
         r_mid = (boundaries[i] + boundaries[i + 1]) / 2
         density = get_density(body, r_mid)
-        medium_name = density_to_medium(density)
+        density_gcm3 = density / units.DENSITY_CONV
 
+        # Use StandardRock for all layers with explicit density override
+        # (matches Python TauRunner which uses density_homogeneous)
         sector = Dict(
-            "medium" => medium_name,
+            "medium" => "StandardRock",
+            "density" => density_gcm3,
             "geometries" => [
                 Dict(
                     "hierarchy" => i - 1,
@@ -120,23 +123,21 @@ function generate_sphere_config(body::AbstractSphericalBody; cuts=default_cuts()
         push!(sectors, sector)
     end
 
-    # Add outer Air layer to handle particles at/near the surface
-    # This is necessary because particles may start exactly at the surface
-    # and PROPOSAL needs a defined sector at all particle positions
+    # Add outer air buffer layer so particles near the surface don't
+    # propagate beyond the defined geometry (which causes PROPOSAL segfaults)
     n_layers = length(boundaries) - 1
-    outer_sector = Dict(
+    push!(sectors, Dict(
         "medium" => "Air",
         "geometries" => [
             Dict(
                 "hierarchy" => n_layers,
                 "shape" => "sphere",
                 "origin" => [0.0, 0.0, 0.0],
-                "outer_radius" => radius_cm + Float64(outer_buffer),
+                "outer_radius" => radius_cm + outer_buffer,
                 "inner_radius" => radius_cm
             )
         ]
-    )
-    push!(sectors, outer_sector)
+    ))
 
     config = Dict(
         "global" => Dict(
@@ -189,7 +190,7 @@ Generate a PROPOSAL JSON configuration for a slab body.
 
 Uses box geometry to represent the slab.
 """
-function generate_slab_config(body::AbstractSlabBody; cuts=default_cuts())
+function generate_slab_config(body::AbstractSlabBody; cuts=default_cuts(), outer_buffer::Real=1e10)
     # Slab length in cm
     length_cm = body.length_natural / units.cm
 
@@ -226,6 +227,23 @@ function generate_slab_config(body::AbstractSlabBody; cuts=default_cuts())
 
         push!(sectors, sector)
     end
+
+    # Add air buffer beyond slab end so particles don't propagate
+    # beyond the defined geometry (which causes PROPOSAL segfaults)
+    n_layers = length(boundaries) - 1
+    push!(sectors, Dict(
+        "medium" => "Air",
+        "geometries" => [
+            Dict(
+                "hierarchy" => n_layers,
+                "shape" => "box",
+                "origin" => [0.0, 0.0, length_cm + outer_buffer / 2],
+                "length" => transverse_size,
+                "width" => transverse_size,
+                "height" => outer_buffer
+            )
+        ]
+    ))
 
     config = Dict(
         "global" => Dict(
