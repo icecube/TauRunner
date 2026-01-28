@@ -9,6 +9,7 @@ These examples focus on geometry and column depth calculations which work
 without the full cross-section infrastructure.
 =#
 
+using StatsBase
 using TauRunner
 using TauRunner.units: GeV, TeV, km, cm, gr
 
@@ -108,10 +109,10 @@ println("\n" * "=" ^ 60)
 println("Example 5: Radial Trajectory")
 println("=" ^ 60)
 
-# Radial trajectory goes from surface to center
+# Radial trajectory goes from center to surface
 radial = Radial()
 
-println("\nRadial trajectory (surface to center):")
+println("\nRadial trajectory (center to surface):")
 for x in [0.0, 0.25, 0.5, 0.75, 1.0]
     r = x_to_r(radial, x)
     println("  x = $x → r = $(round(r, digits=3))")
@@ -194,13 +195,16 @@ else
 end
 
 # Test differential cross-section
-println("\nDifferential cross-section dσ/dz at 1 PeV (z = outgoing lepton energy fraction):")
+# Note: These values are in natural units (eV^-2) and scale with z
+# dσ/dz increases with z because more forward scattering is favored
+println("\nDifferential cross-section dσ/dz at 10 PeV (z = outgoing lepton energy fraction):")
 E_test = 1e16  # 10 PeV
 z_values = [0.1, 0.3, 0.5, 0.7, 0.9]
-println("  z      |  dσ/dz (CSMS)")
+println("  z      |  dσ/dz (CSMS, eV⁻²)")
 for z in z_values
-    dsigma = differential_cross_section(xs_csms, E_test, z, :nu, :CC) * EV2_TO_CM2
-    println("  $(z)    |  $(round(dsigma / 1e-33, digits=3)) × 10⁻³³ cm²")
+    dsigma = differential_cross_section(xs_csms, E_test, z, :nu, :CC)
+    # Display in scientific notation for clarity
+    println("  $(z)    |  $(round(dsigma / 1e-40, digits=2)) × 10⁻⁴⁰")
 end
 
 # =============================================================================
@@ -215,7 +219,7 @@ using Random
 
 # Set up the simulation components
 earth = construct_earth()
-xs = CrossSections(CSMS)
+xs = CrossSections(DIPOLE)
 
 println("\nSingle particle propagation:")
 println("-" ^ 40)
@@ -258,8 +262,8 @@ println("=" ^ 60)
 
 # Run multiple events at once using run_mc()
 n_events = 10000
-E_batch = 1e18  # 100 PeV
-theta_batch = 0.0  # Nadir (straight through Earth center)
+E_batch = 1e18  # 1000 PeV
+theta_batch = deg2rad(0.0)  # Nadir (straight through Earth center)
 
 # Create arrays of energies and angles
 energies = fill(E_batch, n_events)
@@ -283,6 +287,7 @@ n_tau = count(r -> r.id == Int(Tau), results)
 # Energy statistics for exiting particles
 exit_energies = [r.E_final for r in results if r.position >= 1.0]
 mean_E_out = isempty(exit_energies) ? 0.0 : sum(exit_energies) / length(exit_energies)
+median_E_out = isempty(exit_energies) ? 0.0 : median(exit_energies)
 
 # Interaction statistics
 total_cc = sum(r.n_cc for r in results)
@@ -292,6 +297,7 @@ println("\nResults:")
 println("  Events exited: $n_exited / $n_events ($(round(100*n_exited/n_events, digits=1))%)")
 println("  Final particles: ν_τ=$n_nutau, τ=$n_tau")
 println("  Mean exit energy: $(round(mean_E_out/GeV, digits=1)) GeV")
+println("  Mean exit energy: $(round(median_E_out/GeV, digits=1)) GeV")
 println("  Mean CC interactions: $(round(total_cc/n_events, digits=2))")
 println("  Mean NC interactions: $(round(total_nc/n_events, digits=2))")
 
