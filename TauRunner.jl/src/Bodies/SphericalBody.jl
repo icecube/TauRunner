@@ -94,7 +94,12 @@ function SphericalBody(
 
         for item in density
             d, b = item
-            push!(boundaries, T(b))
+            b_val = T(b)
+            if !isempty(boundaries) && b_val <= boundaries[end]
+                throw(ArgumentError("Layer boundaries must be strictly increasing. " *
+                    "Got $b_val after $(boundaries[end])."))
+            end
+            push!(boundaries, b_val)
             df = DensityFunction(d, T(units.DENSITY_CONV))
             push!(density_funcs, df)
         end
@@ -172,15 +177,12 @@ function get_density(body::SphericalBody{T}, r::Real; right::Bool=false) where T
     elseif r == 0
         layer_idx = 1
     else
-        # Find which layer this radius falls in
-        # Similar to np.digitize
         layer_idx = searchsortedlast(body.layer_boundaries, r)
         if right
             layer_idx = searchsortedfirst(body.layer_boundaries, r) - 1
         end
         layer_idx = clamp(layer_idx, 1, length(body.density_functions))
     end
-
     return body.density_functions[layer_idx](r)
 end
 
