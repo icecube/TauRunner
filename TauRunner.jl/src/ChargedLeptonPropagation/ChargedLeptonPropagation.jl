@@ -11,6 +11,7 @@ module ChargedLeptonPropagationModule
 
 using JSON3
 using Random
+using PROPOSAL
 
 using ..TauRunner: AbstractChargedLeptonPropagator
 using ..TauRunner: AbstractBody, AbstractSphericalBody, AbstractSlabBody
@@ -22,14 +23,10 @@ using ..TauRunner: units, PhysicsConstants
 using ..TauRunner.Bodies: get_density, radius, layer_boundaries
 using ..TauRunner.Tracks: x_to_d, d_to_x, x_to_r
 
-# Try to import PROPOSAL.jl - it may not be available
-const PROPOSAL_AVAILABLE = Ref(false)
+const PROPOSAL_AVAILABLE = Ref(PROPOSAL.is_library_available())
 const SIMPLIFIED_WARNING_SHOWN = Ref(false)
 
 # Type-stable cache for PROPOSAL function references.
-# Using a mutable struct with concrete `Any` fields avoids Dict lookup overhead
-# on every call in hot loops, while keeping the late-binding semantics needed
-# because PROPOSAL types are only known at runtime.
 mutable struct ProposalFunctions
     # Hot-path functions (called per propagation step)
     ParticleState::Any
@@ -60,7 +57,6 @@ ProposalFunctions() = ProposalFunctions(ntuple(_ -> nothing, fieldcount(Proposal
 const PROPOSAL_FN_STRUCT = ProposalFunctions()
 
 # Legacy Dict interface for backward compatibility (used in SphericalBodyPropagator.jl)
-# Maps symbol keys to field access on the struct.
 const PROPOSAL_FN = Dict{Symbol, Any}()
 
 function _sync_proposal_fn_dict!()
@@ -69,41 +65,40 @@ function _sync_proposal_fn_dict!()
     end
 end
 
+function _populate_proposal_functions!()
+    M = PROPOSAL
+    PROPOSAL_FN_STRUCT.ParticleState = getfield(M, :ParticleState)
+    PROPOSAL_FN_STRUCT.propagate = getfield(M, :propagate)
+    PROPOSAL_FN_STRUCT.get_final_state = getfield(M, :get_final_state)
+    PROPOSAL_FN_STRUCT.get_energy = getfield(M, :get_energy)
+    PROPOSAL_FN_STRUCT.get_propagated_distance = getfield(M, :get_propagated_distance)
+
+    PROPOSAL_FN_STRUCT.create_propagator_tauminus = getfield(M, :create_propagator_tauminus)
+    PROPOSAL_FN_STRUCT.create_propagator_tauplus = getfield(M, :create_propagator_tauplus)
+    PROPOSAL_FN_STRUCT.create_propagator_muminus = getfield(M, :create_propagator_muminus)
+    PROPOSAL_FN_STRUCT.create_propagator_muplus = getfield(M, :create_propagator_muplus)
+    PROPOSAL_FN_STRUCT.create_propagator_eminus = getfield(M, :create_propagator_eminus)
+    PROPOSAL_FN_STRUCT.create_propagator_eplus = getfield(M, :create_propagator_eplus)
+
+    PROPOSAL_FN_STRUCT.PARTICLE_TYPE_TAUMINUS = getfield(M, :PARTICLE_TYPE_TAUMINUS)
+    PROPOSAL_FN_STRUCT.PARTICLE_TYPE_TAUPLUS = getfield(M, :PARTICLE_TYPE_TAUPLUS)
+    PROPOSAL_FN_STRUCT.PARTICLE_TYPE_MUMINUS = getfield(M, :PARTICLE_TYPE_MUMINUS)
+    PROPOSAL_FN_STRUCT.PARTICLE_TYPE_MUPLUS = getfield(M, :PARTICLE_TYPE_MUPLUS)
+    PROPOSAL_FN_STRUCT.PARTICLE_TYPE_EMINUS = getfield(M, :PARTICLE_TYPE_EMINUS)
+    PROPOSAL_FN_STRUCT.PARTICLE_TYPE_EPLUS = getfield(M, :PARTICLE_TYPE_EPLUS)
+    PROPOSAL_FN_STRUCT.set_random_seed = getfield(M, :set_random_seed)
+
+    _sync_proposal_fn_dict!()
+end
+
 function __init__()
-    try
-        @eval using PROPOSAL
-        PROPOSAL_AVAILABLE[] = true
-
-        # Cache function references in type-stable struct
-        PROPOSAL_FN_STRUCT.ParticleState = @eval PROPOSAL.ParticleState
-        PROPOSAL_FN_STRUCT.propagate = @eval PROPOSAL.propagate
-        PROPOSAL_FN_STRUCT.get_final_state = @eval PROPOSAL.get_final_state
-        PROPOSAL_FN_STRUCT.get_energy = @eval PROPOSAL.get_energy
-        PROPOSAL_FN_STRUCT.get_propagated_distance = @eval PROPOSAL.get_propagated_distance
-
-        PROPOSAL_FN_STRUCT.create_propagator_tauminus = @eval PROPOSAL.create_propagator_tauminus
-        PROPOSAL_FN_STRUCT.create_propagator_tauplus = @eval PROPOSAL.create_propagator_tauplus
-        PROPOSAL_FN_STRUCT.create_propagator_muminus = @eval PROPOSAL.create_propagator_muminus
-        PROPOSAL_FN_STRUCT.create_propagator_muplus = @eval PROPOSAL.create_propagator_muplus
-        PROPOSAL_FN_STRUCT.create_propagator_eminus = @eval PROPOSAL.create_propagator_eminus
-        PROPOSAL_FN_STRUCT.create_propagator_eplus = @eval PROPOSAL.create_propagator_eplus
-
-        PROPOSAL_FN_STRUCT.PARTICLE_TYPE_TAUMINUS = @eval PROPOSAL.PARTICLE_TYPE_TAUMINUS
-        PROPOSAL_FN_STRUCT.PARTICLE_TYPE_TAUPLUS = @eval PROPOSAL.PARTICLE_TYPE_TAUPLUS
-        PROPOSAL_FN_STRUCT.PARTICLE_TYPE_MUMINUS = @eval PROPOSAL.PARTICLE_TYPE_MUMINUS
-        PROPOSAL_FN_STRUCT.PARTICLE_TYPE_MUPLUS = @eval PROPOSAL.PARTICLE_TYPE_MUPLUS
-        PROPOSAL_FN_STRUCT.PARTICLE_TYPE_EMINUS = @eval PROPOSAL.PARTICLE_TYPE_EMINUS
-        PROPOSAL_FN_STRUCT.PARTICLE_TYPE_EPLUS = @eval PROPOSAL.PARTICLE_TYPE_EPLUS
-        PROPOSAL_FN_STRUCT.set_random_seed = @eval PROPOSAL.set_random_seed
-
-        # Sync to Dict for code that still uses PROPOSAL_FN[key] syntax
-        _sync_proposal_fn_dict!()
-
+    PROPOSAL_AVAILABLE[] = PROPOSAL.is_library_available()
+    if PROPOSAL_AVAILABLE[]
+        _populate_proposal_functions!()
         @info "PROPOSAL.jl loaded successfully"
-    catch e
-        PROPOSAL_AVAILABLE[] = false
+    else
         @warn """
-        PROPOSAL.jl not available. Falling back to simplified charged lepton propagation.
+        PROPOSAL.jl native library not available. Falling back to simplified charged lepton propagation.
 
         ⚠️  WARNING: The simplified propagation model is NOT suitable for physics analysis!
 
@@ -113,9 +108,9 @@ function __init__()
         • No multiple scattering or angular deflection
         • Decay uses mean decay length instead of proper Monte Carlo sampling
 
-        For accurate physics results, install PROPOSAL.jl:
-            using Pkg; Pkg.add("PROPOSAL")
-        """ exception=e
+        For accurate physics results, build and install the PROPOSAL native library.
+        See the PROPOSAL.jl README for instructions.
+        """
     end
 end
 
@@ -147,7 +142,7 @@ Seed PROPOSAL's internal random number generator for reproducibility.
 """
 function seed_proposal!(seed::Integer)
     if PROPOSAL_AVAILABLE[]
-        Base.invokelatest(PROPOSAL_FN_STRUCT.set_random_seed, Int(seed))
+        PROPOSAL.set_random_seed(Int(seed))
     end
     return nothing
 end
@@ -160,20 +155,7 @@ PROPOSAL's JSON config API produces occasional "Maximum number of iterations
 exceeded in Bisection" warnings that are expected and harmless.
 """
 function suppress_proposal_warnings(f)
-    old_stdout = ccall(:dup, Cint, (Cint,), 1)
-    old_stderr = ccall(:dup, Cint, (Cint,), 2)
-    devnull_fd = ccall(:open, Cint, (Cstring, Cint), "/dev/null", 1)
-    ccall(:dup2, Cint, (Cint, Cint), devnull_fd, 1)
-    ccall(:dup2, Cint, (Cint, Cint), devnull_fd, 2)
-    ccall(:close, Cint, (Cint,), devnull_fd)
-    try
-        return f()
-    finally
-        ccall(:dup2, Cint, (Cint, Cint), old_stdout, 1)
-        ccall(:dup2, Cint, (Cint, Cint), old_stderr, 2)
-        ccall(:close, Cint, (Cint,), old_stdout)
-        ccall(:close, Cint, (Cint,), old_stderr)
-    end
+    return f()
 end
 
 include("ConfigGeneration.jl")
