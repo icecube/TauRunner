@@ -55,7 +55,7 @@ function CrossSections(model::XSModel; datapath::Union{String, Nothing}=nothing)
     total_splines = Dict{Tuple{Symbol, Symbol, Symbol}, Any}()
     differential_splines = Dict{Tuple{Symbol, Symbol, Symbol}, Any}()
 
-    model_name = model == DIPOLE ? "dipole" : "CSMS"
+    model_name = model == DIPOLE ? "dipole" : "csms"
     model_path = joinpath(datapath, "cross_sections", model_name)
 
     # Load splines for each combination
@@ -69,13 +69,13 @@ function CrossSections(model::XSModel; datapath::Union{String, Nothing}=nothing)
                 if isfile(total_file)
                     total_splines[key] = load_spline(total_file)
                 else
-                    @warn "Cross-section file not found: $total_file"
+                    error("Required cross-section file not found: $total_file")
                 end
 
-                # Load differential cross-section spline
+                # Load differential cross-section spline (2D: energy x z)
                 diff_file = joinpath(model_path, "$(nutype)_$(target)_dsigma_$(interaction).jld2")
                 if isfile(diff_file)
-                    differential_splines[key] = load_spline(diff_file)
+                    differential_splines[key] = load_spline_2d(diff_file)
                 end
             end
         end
@@ -176,14 +176,15 @@ function differential_cross_section(
     log_E = log(energy)
 
     if haskey(xs.differential_splines, key_p) && haskey(xs.differential_splines, key_n)
-        # Differential splines are 2D: f(log_E, z)
+        # Differential splines are 2D: f(log_E, z), stored as log(dsigma/dE)
+        # To get dσ/dz, divide by energy (matching Python implementation)
         if z isa AbstractVector
-            dsigma_p = [xs.differential_splines[key_p](log_E, zi) for zi in z]
-            dsigma_n = [xs.differential_splines[key_n](log_E, zi) for zi in z]
+            dsigma_p = [exp(xs.differential_splines[key_p](log_E, zi)) / energy for zi in z]
+            dsigma_n = [exp(xs.differential_splines[key_n](log_E, zi)) / energy for zi in z]
             return T.(proton_fraction .* dsigma_p .+ neutron_fraction .* dsigma_n)
         else
-            dsigma_p = xs.differential_splines[key_p](log_E, z)
-            dsigma_n = xs.differential_splines[key_n](log_E, z)
+            dsigma_p = exp(xs.differential_splines[key_p](log_E, z)) / energy
+            dsigma_n = exp(xs.differential_splines[key_n](log_E, z)) / energy
             return T(proton_fraction * dsigma_p + neutron_fraction * dsigma_n)
         end
     else
