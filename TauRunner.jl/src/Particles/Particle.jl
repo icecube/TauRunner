@@ -243,8 +243,9 @@ function interact!(
         proton_fraction=proton_fraction
     )
 
-    # Normalize weights
-    weights = weights ./ sum(weights)
+    # Normalize weights in-place to avoid allocation
+    w_sum = sum(weights)
+    weights ./= w_sum
 
     # Sample energy fraction
     z_choice = sample_weighted(rng, NEUTRINO_DIFF_ENERGY_FRACTIONS, weights)
@@ -274,12 +275,19 @@ end
 
 """
 Sample from a weighted distribution.
+
+Uses a running cumulative sum to avoid allocating a temporary array.
 """
 function sample_weighted(rng::AbstractRNG, values::AbstractVector, weights::AbstractVector)
-    cumsum_weights = cumsum(weights)
     r = rand(rng)
-    idx = searchsortedfirst(cumsum_weights, r)
-    return values[clamp(idx, 1, length(values))]
+    cumulative = zero(eltype(weights))
+    @inbounds for i in eachindex(weights)
+        cumulative += weights[i]
+        if cumulative >= r
+            return values[i]
+        end
+    end
+    return @inbounds values[end]
 end
 
 """

@@ -16,6 +16,7 @@ using ..TauRunner.CrossSectionsModule: total_cross_section, differential_cross_s
 export Particle, SecondaryParticle
 export get_proposed_depth_step, get_interaction_depth, get_total_interaction_depth
 export interact!, decay!, reset!
+export sample_tau_decay_fraction
 
 include("Particle.jl")
 include("TauDecay.jl")
