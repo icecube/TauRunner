@@ -1,16 +1,18 @@
 """
 Radial track through a spherical body.
 
-A radial track goes from the surface toward the center of the sphere.
-The track parameter x ∈ [0, 1] represents progress inward, where:
-- x = 0 is the surface (r = 1)
-- x = 1 is the center (r = 0)
+A radial track goes from the center toward the surface of the sphere.
+The track parameter x ∈ [0, 1] represents progress outward, where:
+- x = 0 is the center (r = 0)
+- x = 1 is the surface (r = 1)
+
+NOTE: This convention matches Python TauRunner where x=0 is center, x=1 is surface.
 """
 
 """
     Radial{T} <: AbstractSphericalTrack
 
-A radial trajectory through a spherical body (surface to center).
+A radial trajectory through a spherical body (center to surface).
 
 # Fields
 - `depth::T`: Starting depth as fraction of radius (usually 0)
@@ -37,10 +39,10 @@ end
     x_to_r(track::Radial, x::Real)
 
 Convert track parameter x to normalized radius r.
-For radial track: r = 1 - x (moving from surface toward center).
+For radial track: r = x (moving from center toward surface).
 """
 function x_to_r(track::Radial{T}, x::Real) where T
-    return T(1 - track.depth - x * (1 - track.depth))
+    return T(x * (1 - track.depth))
 end
 
 """
@@ -49,7 +51,7 @@ end
 Derivative of r with respect to x (constant for radial track).
 """
 function x_to_r_prime(track::Radial{T}, x::Real) where T
-    return T(-(1 - track.depth))
+    return T(1 - track.depth)
 end
 
 """
@@ -61,7 +63,7 @@ function r_to_x(track::Radial{T}, r::Real) where T
     if !(0 <= r <= 1 - track.depth)
         throw(ArgumentError("Radius $r is out of range for this radial track"))
     end
-    return T((1 - track.depth - r) / (1 - track.depth))
+    return T(r / (1 - track.depth))
 end
 
 """
@@ -95,11 +97,11 @@ end
     x_to_cartesian_direction(track::Radial, x::Real)
 
 Get the direction vector in Cartesian coordinates at position x.
-Returns a 3-tuple (dx, dy, dz) pointing toward the center.
+Returns a 3-tuple (dx, dy, dz) pointing toward the surface (outward).
 """
 function x_to_cartesian_direction(track::Radial{T}, x::Real) where T
-    # Pointing straight down (toward center)
-    return (zero(T), zero(T), T(-1))
+    # Pointing straight up (toward surface)
+    return (zero(T), zero(T), T(1))
 end
 
 """

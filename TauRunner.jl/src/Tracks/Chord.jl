@@ -62,7 +62,7 @@ function Chord(theta::Real; depth::Real=0.0)
     T = Float64
 
     if !(0 <= theta <= π)
-        @warn "Theta should be between 0 and π radians. Got $theta."
+        throw(ArgumentError("Theta must be between 0 and π radians. Got $theta."))
     end
 
     c = cos(theta)

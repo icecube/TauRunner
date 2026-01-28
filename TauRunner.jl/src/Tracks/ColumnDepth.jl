@@ -73,8 +73,8 @@ function compute_column_depth_spline(
     if length(valid_indices) >= 2
         X_to_x_interp = linear_interpolation(Xs[valid_indices], xs[valid_indices])
     else
-        # Fallback for degenerate cases
-        X_to_x_interp = x -> 0.0
+        error("Column depth is degenerate (not strictly increasing) for this track/body combination. " *
+              "Total column depth: $total_depth. Check body density and track geometry.")
     end
 
     return (total_depth, x_to_X_interp, X_to_x_interp)
