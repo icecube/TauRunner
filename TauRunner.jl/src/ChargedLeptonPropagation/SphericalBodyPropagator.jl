@@ -155,7 +155,11 @@ function _propagate_with_proposal!(
 
     # Get current position in Cartesian coordinates
     # For a chord track, we need to compute the 3D position
-    pos_cm, dir = track_to_proposal_coords(track, particle.position, body_radius_cm)
+    # Clamp position to stay strictly inside the geometry — PROPOSAL errors if the
+    # particle position lands exactly on or beyond a boundary due to floating-point
+    # arithmetic ("No sector defined at particle position").
+    clamped_x = clamp(particle.position, 1e-12, 1.0 - 1e-12)
+    pos_cm, dir = track_to_proposal_coords(track, clamped_x, body_radius_cm)
 
     # Energy in MeV for PROPOSAL
     energy_mev = particle.energy / units.MeV
@@ -180,6 +184,7 @@ function _propagate_with_proposal!(
     # Round distance to integer cm to avoid PROPOSAL bisection failures at geometry boundaries
     # (matches Python TauRunner convention)
     max_distance_cm_int = floor(max_distance_cm)
+
     secondaries = suppress_proposal_warnings() do
         Base.invokelatest(PROPOSAL_FN[:propagate], pp, state, max_distance_cm_int, min_energy_mev)
     end
@@ -232,13 +237,13 @@ function track_to_proposal_coords(track::AbstractSphericalTrack, x::Real, body_r
     # At x=0 (entry), the particle is at the entry point on the surface
     # At x=1 (exit), the particle is at (0, 0, body_radius)
     # This matches Python TauRunner's x_to_pp_pos convention
-    remaining_d = x_to_d(track, 1.0 - x)  # Remaining normalized distance to exit
+    remaining_d = x_to_d(track, 1.0) - x_to_d(track, x)  # Remaining normalized distance to exit
     remaining_d_cm = remaining_d * body_radius_cm
 
     pos = (
         -dir[1] * remaining_d_cm,
         -dir[2] * remaining_d_cm,
-        body_radius_cm - dir[3] * remaining_d_cm
+        (1.0 - track.depth) * body_radius_cm - dir[3] * remaining_d_cm
     )
 
     return (pos, dir)

@@ -95,6 +95,12 @@ function generate_sphere_config(body::AbstractSphericalBody; cuts=default_cuts()
     sectors = []
     boundaries = layer_boundaries(body)
 
+    # Use sphere origin (0,0,1) to match Python TauRunner convention.
+    # The 1 cm z-offset breaks exact symmetry at shell boundaries, preventing
+    # PROPOSAL's IsInside check from hitting the degenerate case where a
+    # particle lies exactly on a boundary (determinant == 0 is excluded).
+    sphere_origin = [0.0, 0.0, 1.0]
+
     for i in 1:(length(boundaries) - 1)
         r_inner = boundaries[i] * radius_cm
         r_outer = boundaries[i + 1] * radius_cm
@@ -108,12 +114,12 @@ function generate_sphere_config(body::AbstractSphericalBody; cuts=default_cuts()
         # (matches Python TauRunner which uses density_homogeneous)
         sector = Dict(
             "medium" => "StandardRock",
-            "density" => density_gcm3,
+            "density_distribution" => Dict("type" => "homogeneous", "mass_density" => density_gcm3),
             "geometries" => [
                 Dict(
-                    "hierarchy" => i - 1,
+                    "hierarchy" => 0,
                     "shape" => "sphere",
-                    "origin" => [0.0, 0.0, 0.0],
+                    "origin" => sphere_origin,
                     "outer_radius" => r_outer,
                     "inner_radius" => r_inner
                 )
@@ -130,9 +136,9 @@ function generate_sphere_config(body::AbstractSphericalBody; cuts=default_cuts()
         "medium" => "Air",
         "geometries" => [
             Dict(
-                "hierarchy" => n_layers,
+                "hierarchy" => 0,
                 "shape" => "sphere",
-                "origin" => [0.0, 0.0, 0.0],
+                "origin" => sphere_origin,
                 "outer_radius" => radius_cm + outer_buffer,
                 "inner_radius" => radius_cm
             )
@@ -209,13 +215,15 @@ function generate_slab_config(body::AbstractSlabBody; cuts=default_cuts(), outer
         # Get density and map to medium
         x_mid = (boundaries[i] + boundaries[i + 1]) / 2
         density = get_density(body, x_mid)
+        density_gcm3 = density / units.DENSITY_CONV
         medium_name = density_to_medium(density)
 
         sector = Dict(
             "medium" => medium_name,
+            "density_distribution" => Dict("type" => "homogeneous", "mass_density" => density_gcm3),
             "geometries" => [
                 Dict(
-                    "hierarchy" => i - 1,
+                    "hierarchy" => 0,
                     "shape" => "box",
                     "origin" => [0.0, 0.0, z_start + layer_thickness / 2],
                     "length" => transverse_size,
@@ -229,18 +237,25 @@ function generate_slab_config(body::AbstractSlabBody; cuts=default_cuts(), outer
     end
 
     # Add air buffer beyond slab end so particles don't propagate
-    # beyond the defined geometry (which causes PROPOSAL segfaults)
+    # beyond the defined geometry (which causes PROPOSAL segfaults).
+    # Overlap by 1 cm to avoid floating-point boundary gaps between the
+    # last slab sector and the air buffer — PROPOSAL crashes with
+    # "No sector defined at particle position" if a particle lands exactly
+    # on the boundary between two adjacent non-overlapping sectors.
+    overlap_cm = 1.0
     n_layers = length(boundaries) - 1
+    air_start = length_cm - overlap_cm
+    air_height = outer_buffer + overlap_cm
     push!(sectors, Dict(
         "medium" => "Air",
         "geometries" => [
             Dict(
-                "hierarchy" => n_layers,
+                "hierarchy" => 0,
                 "shape" => "box",
-                "origin" => [0.0, 0.0, length_cm + outer_buffer / 2],
+                "origin" => [0.0, 0.0, air_start + air_height / 2],
                 "length" => transverse_size,
                 "width" => transverse_size,
-                "height" => outer_buffer
+                "height" => air_height
             )
         ]
     ))
