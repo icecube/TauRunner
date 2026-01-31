@@ -47,10 +47,6 @@ function get_proposal_propagator(prop::SlabPropagator, particle_type::ParticleTy
         return prop.propagators[particle_type]
     end
 
-    if !PROPOSAL_AVAILABLE[]
-        return nothing
-    end
-
     # Create the appropriate propagator based on particle type
     creator_key = if particle_type == Tau
         :create_propagator_tauminus
@@ -108,12 +104,7 @@ function propagate_charged_lepton!(
         return nothing
     end
 
-    # Use PROPOSAL if available
-    if PROPOSAL_AVAILABLE[]
-        _propagate_slab_with_proposal!(propagator, particle, track, remaining_dist_cm)
-    else
-        _simplified_slab_propagation!(propagator, particle, track)
-    end
+    _propagate_slab_with_proposal!(propagator, particle, track, remaining_dist_cm)
 
     return nothing
 end
@@ -128,23 +119,23 @@ function _propagate_slab_with_proposal!(
     max_distance_cm::Float64
 )
     pp = get_proposal_propagator(propagator, particle.id)
-    if isnothing(pp)
-        _simplified_slab_propagation!(propagator, particle, track)
-        return nothing
-    end
 
     # Slab length in cm
     slab_length_cm = propagator.body.length_natural / units.cm
 
     # Current position in slab (in cm)
-    current_z_cm = particle.position * slab_length_cm
+    # Clamp to stay strictly inside the geometry — PROPOSAL segfaults if the
+    # particle position lands exactly on or beyond the slab boundary due to
+    # floating-point arithmetic ("No sector defined at particle position").
+    current_z_cm = clamp(particle.position * slab_length_cm, 0.0, slab_length_cm * (1.0 - 1e-12))
 
     # Direction (along z-axis for normal incidence, or tilted for angled tracks)
     dir = x_to_cartesian_direction(track, particle.position)
 
     # Energy in MeV
     energy_mev = particle.energy / units.MeV
-    min_energy_mev = particle.mass / units.MeV
+    # Minimum energy: use 0 to match Python TauRunner (PROPOSAL default)
+    min_energy_mev = 0.0
 
     # Create PROPOSAL ParticleState
     particle_type_id = proposal_particle_type(particle.id)
@@ -177,7 +168,7 @@ function _propagate_slab_with_proposal!(
     particle.position = clamp(particle.position + dist_traveled_normalized, 0.0, 1.0)
 
     # Check for decay
-    if particle.energy <= particle.mass * 1.01
+    if particle.energy <= particle.mass * (1.0 + 1e-6)
         particle.decay_position = particle.position
         decay!(particle)
     end
@@ -187,59 +178,3 @@ end
 
 # Import track functions
 using ..TauRunner.Tracks: x_to_cartesian_direction
-
-"""
-Simplified propagation model for slabs (fallback when PROPOSAL.jl not available).
-
-⚠️  WARNING: This model is NOT suitable for physics analysis!
-
-Missing physics compared to PROPOSAL:
-- Stochastic energy loss sampling (bremsstrahlung, pair production, photonuclear)
-- Multiple scattering and angular deflection
-- Proper Monte Carlo decay sampling
-- Secondary particle production
-"""
-function _simplified_slab_propagation!(
-    propagator::SlabPropagator,
-    particle,
-    track
-)
-    # Warn user that simplified propagation is not physics-accurate
-    warn_simplified_propagation()
-    # Get remaining distance to exit
-    remaining_x = 1.0 - particle.position
-    remaining_dist = x_to_d(track, remaining_x) * propagator.body.length_natural
-
-    # Get density at current position
-    density = get_density(propagator.body, particle.position)
-
-    # Rough energy loss estimate
-    dE_dx = 2.0 * units.MeV * density / units.DENSITY_CONV
-
-    column_depth = density * remaining_dist
-    energy_loss = dE_dx * column_depth / (units.gr / units.cm^2)
-
-    # Check for decay
-    if particle.lifetime < Inf && particle.mass > 0
-        gamma = particle.energy / particle.mass
-        decay_length = gamma * particle.lifetime
-
-        if decay_length < remaining_dist
-            # Particle decays before exit
-            decay_frac = decay_length / remaining_dist
-            particle.position = particle.position + decay_frac * remaining_x
-            particle.decay_position = particle.position
-
-            particle.energy = max(particle.energy - decay_frac * energy_loss, particle.mass)
-
-            decay!(particle)
-            return nothing
-        end
-    end
-
-    # Particle exits
-    particle.position = 1.0
-    particle.energy = max(particle.energy - energy_loss, particle.mass)
-
-    return nothing
-end

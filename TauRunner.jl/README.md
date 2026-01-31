@@ -24,17 +24,9 @@ using Pkg
 Pkg.develop(path="path/to/TauRunner/TauRunner.jl")
 ```
 
-## PROPOSAL.jl Status
+## PROPOSAL.jl Dependency
 
-**Note:** TauRunner.jl uses [PROPOSAL](https://github.com/tudo-astroparticlephysics/PROPOSAL) for accurate charged lepton propagation. The Julia bindings (PROPOSAL.jl) are currently **not yet available** through Yggdrasil, but the submission is pending.
-
-Until PROPOSAL.jl is available, TauRunner.jl will use a simplified propagation model for charged leptons. **This simplified model is NOT suitable for physics analysis** - it uses average continuous energy losses instead of proper stochastic sampling.
-
-Once PROPOSAL.jl is available via Yggdrasil, simply add it to your environment and TauRunner.jl will automatically use it:
-```julia
-using Pkg
-Pkg.add("PROPOSAL")
-```
+TauRunner.jl requires [PROPOSAL](https://github.com/tudo-astroparticlephysics/PROPOSAL) for charged lepton propagation. The Julia bindings (PROPOSAL.jl) are currently **not yet available** through Yggdrasil, but the submission is pending. Until then, PROPOSAL.jl must be installed as a local development dependency.
 
 ## Quick Start
 
@@ -66,6 +58,19 @@ println("Column depth: ", depth / (TauRunner.units.gr / TauRunner.units.cm^2), "
 using Pkg
 Pkg.test("TauRunner")
 ```
+
+## Known Differences from Python TauRunner
+
+The differential cross-section splines (dσ/dz) are interpolated using bilinear interpolation in Julia (`Interpolations.jl`) versus bicubic splines in Python (`scipy.interpolate.RectBivariateSpline`). Both use the same underlying 200x200 grid of knot points. The bilinear interpolation produces a slightly higher mean inelasticity z (the neutrino retains more energy per interaction), with the effect growing at higher energies:
+
+| log10(E/eV) | Δmean(z) bilinear−bicubic |
+|-------------|---------------------------|
+| 15          | 0.0003                    |
+| 16          | 0.003                     |
+| 17          | 0.012                     |
+| 18          | 0.029                     |
+
+This compounds over multiple interactions, producing a ~0.01−0.02 dex systematic shift toward higher outgoing energies in Julia relative to Python. The total cross-sections, column depth calculations, interaction sampling logic, and PROPOSAL charged lepton propagation all agree between the two implementations.
 
 ## Authors
 

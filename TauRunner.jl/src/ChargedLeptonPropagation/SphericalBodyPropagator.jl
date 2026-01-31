@@ -51,10 +51,6 @@ function get_proposal_propagator(prop::SphericalBodyPropagator, particle_type::P
         return prop.propagators[particle_type]
     end
 
-    if !PROPOSAL_AVAILABLE[]
-        return nothing
-    end
-
     # Create the appropriate propagator based on particle type
     creator_key = if particle_type == Tau
         :create_propagator_tauminus
@@ -121,12 +117,7 @@ function propagate_charged_lepton!(
         return nothing
     end
 
-    # Use PROPOSAL if available, otherwise fall back to simplified model
-    if PROPOSAL_AVAILABLE[]
-        _propagate_with_proposal!(propagator, particle, track, remaining_dist_cm)
-    else
-        _simplified_propagation!(propagator, particle, track)
-    end
+    _propagate_with_proposal!(propagator, particle, track, remaining_dist_cm)
 
     return nothing
 end
@@ -141,10 +132,6 @@ function _propagate_with_proposal!(
     max_distance_cm::Float64
 )
     pp = get_proposal_propagator(propagator, particle.id)
-    if isnothing(pp)
-        _simplified_propagation!(propagator, particle, track)
-        return nothing
-    end
 
     # Get body radius in cm
     body_radius_cm = radius(propagator.body) / units.cm
@@ -164,8 +151,8 @@ function _propagate_with_proposal!(
     # Energy in MeV for PROPOSAL
     energy_mev = particle.energy / units.MeV
 
-    # Minimum energy (rest mass in MeV)
-    min_energy_mev = particle.mass / units.MeV
+    # Minimum energy: use 0 to match Python TauRunner (PROPOSAL default)
+    min_energy_mev = 0.0
 
     # Create PROPOSAL ParticleState
     particle_type_id = proposal_particle_type(particle.id)
@@ -272,69 +259,3 @@ end
 
 # Import track coordinate functions
 using ..TauRunner.Tracks: x_to_cartesian_direction
-
-"""
-Simplified propagation model (fallback when PROPOSAL.jl is not available).
-
-⚠️  WARNING: This model is NOT suitable for physics analysis!
-
-This is a rough approximation that:
-1. Estimates energy loss based on path length and material (~2 MeV/(g/cm²))
-2. Checks for decay based on mean decay length
-
-Missing physics compared to PROPOSAL:
-- Stochastic energy loss sampling (bremsstrahlung, pair production, photonuclear)
-- Multiple scattering and angular deflection
-- Proper Monte Carlo decay sampling
-- Secondary particle production
-"""
-function _simplified_propagation!(
-    propagator::SphericalBodyPropagator,
-    particle,
-    track
-)
-    # Warn user that simplified propagation is not physics-accurate
-    warn_simplified_propagation()
-    # Get remaining distance to exit (in natural units)
-    remaining_x = 1.0 - particle.position
-    remaining_dist = x_to_d(track, remaining_x) * radius(propagator.body)
-
-    # Get average density along remaining path
-    # (simplified: use density at current position)
-    r = x_to_r(track, particle.position)
-    density = get_density(propagator.body, r)
-
-    # Rough energy loss estimate (for tau: ~2 MeV/(g/cm²) at high energies)
-    # This is very approximate
-    dE_dx = 2.0 * units.MeV * density / units.DENSITY_CONV
-
-    column_depth = density * remaining_dist
-    energy_loss = dE_dx * column_depth / (units.gr / units.cm^2)
-
-    # Check if particle would decay before reaching exit
-    # Decay length = γcτ = E/(mc²) * cτ
-    if particle.lifetime < Inf && particle.mass > 0
-        gamma = particle.energy / particle.mass
-        decay_length = gamma * particle.lifetime
-
-        if decay_length < remaining_dist
-            # Particle decays before exit
-            decay_frac = decay_length / remaining_dist
-            particle.position = particle.position + decay_frac * remaining_x
-            particle.decay_position = particle.position
-
-            # Apply partial energy loss
-            particle.energy = max(particle.energy - decay_frac * energy_loss, particle.mass)
-
-            # Trigger decay
-            decay!(particle)
-            return nothing
-        end
-    end
-
-    # Particle exits the body
-    particle.position = 1.0
-    particle.energy = max(particle.energy - energy_loss, particle.mass)
-
-    return nothing
-end

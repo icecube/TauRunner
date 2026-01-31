@@ -9,7 +9,7 @@ const ISOSCALAR_MASS = PhysicsConstants.ISOSCALAR_MASS_GEV * units.GeV
 const EMIN = 1e9  # eV
 
 # Energy fractions for sampling differential cross-sections
-const NEUTRINO_DIFF_ENERGY_FRACTIONS = collect(range(0.0, 1.0, length=101))
+const NEUTRINO_DIFF_ENERGY_FRACTIONS = collect(range(0.0, 1.0, length=1000))[2:end-1]
 
 """
     SecondaryParticle{T}

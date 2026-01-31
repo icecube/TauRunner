@@ -23,9 +23,6 @@ using ..TauRunner: units, PhysicsConstants
 using ..TauRunner.Bodies: get_density, radius, layer_boundaries
 using ..TauRunner.Tracks: x_to_d, d_to_x, x_to_r
 
-const PROPOSAL_AVAILABLE = Ref(PROPOSAL.is_library_available())
-const SIMPLIFIED_WARNING_SHOWN = Ref(false)
-
 # Type-stable cache for PROPOSAL function references.
 mutable struct ProposalFunctions
     # Hot-path functions (called per propagation step)
@@ -92,48 +89,21 @@ function _populate_proposal_functions!()
 end
 
 function __init__()
-    PROPOSAL_AVAILABLE[] = PROPOSAL.is_library_available()
-    if PROPOSAL_AVAILABLE[]
-        _populate_proposal_functions!()
-        @info "PROPOSAL.jl loaded successfully"
-    else
-        @warn """
-        PROPOSAL.jl native library not available. Falling back to simplified charged lepton propagation.
+    if !PROPOSAL.is_library_available()
+        error("""
+        PROPOSAL.jl native library not available.
 
-        ⚠️  WARNING: The simplified propagation model is NOT suitable for physics analysis!
-
-        Limitations of simplified model:
-        • Uses average continuous energy loss (~2 MeV/(g/cm²)) instead of stochastic sampling
-        • No bremsstrahlung, pair production, or photonuclear interaction sampling
-        • No multiple scattering or angular deflection
-        • Decay uses mean decay length instead of proper Monte Carlo sampling
-
-        For accurate physics results, build and install the PROPOSAL native library.
-        See the PROPOSAL.jl README for instructions.
-        """
+        TauRunner.jl requires PROPOSAL for charged lepton propagation.
+        For instructions on building and installing the PROPOSAL native library,
+        see the PROPOSAL.jl README.
+        """)
     end
-end
-
-"""
-    warn_simplified_propagation()
-
-Issue a one-time warning that simplified propagation is being used.
-"""
-function warn_simplified_propagation()
-    if !SIMPLIFIED_WARNING_SHOWN[]
-        SIMPLIFIED_WARNING_SHOWN[] = true
-        @warn """
-        Using simplified charged lepton propagation (PROPOSAL.jl not available).
-        Results are NOT suitable for physics analysis. See TauRunner documentation for details.
-        """
-    end
+    _populate_proposal_functions!()
+    @info "PROPOSAL.jl loaded successfully"
 end
 
 export ChargedLeptonPropagator, SphericalBodyPropagator, SlabPropagator
-export propagate_charged_lepton!, is_proposal_available, seed_proposal!
-
-"""Check if PROPOSAL.jl is available."""
-is_proposal_available() = PROPOSAL_AVAILABLE[]
+export propagate_charged_lepton!, seed_proposal!
 
 """
     seed_proposal!(seed::Integer)
@@ -141,9 +111,7 @@ is_proposal_available() = PROPOSAL_AVAILABLE[]
 Seed PROPOSAL's internal random number generator for reproducibility.
 """
 function seed_proposal!(seed::Integer)
-    if PROPOSAL_AVAILABLE[]
-        PROPOSAL.set_random_seed(Int(seed))
-    end
+    PROPOSAL.set_random_seed(Int(seed))
     return nothing
 end
 
