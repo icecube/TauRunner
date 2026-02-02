@@ -1,7 +1,9 @@
 """
 Charged lepton propagation through slab bodies using PROPOSAL.jl.
 
-Similar to SphericalBodyPropagator but for flat slab geometry.
+Matches the Python TauRunner approach: each layer gets its own propagator
+with a large enclosing sphere geometry, and the particle always starts at
+the origin. This avoids PROPOSAL segfaults from boundary issues.
 """
 
 # Import Particles module for decay!
@@ -14,13 +16,11 @@ Propagator for charged leptons through slab bodies.
 
 # Fields
 - `body::B`: The slab body
-- `config_path::String`: Path to PROPOSAL JSON config file
-- `propagators::Dict`: Cached PROPOSAL propagators by particle type
+- `propagators::Dict`: Cached PROPOSAL propagators by (particle_type, medium_name)
 """
 mutable struct SlabPropagator{B<:AbstractSlabBody} <: ChargedLeptonPropagator
     body::B
-    config_path::String
-    propagators::Dict{ParticleType, Any}
+    propagators::Dict{Tuple{ParticleType, String}, Any}
 end
 
 """
@@ -29,23 +29,24 @@ end
 Create a propagator for a slab body.
 """
 function SlabPropagator(body::B) where B<:AbstractSlabBody
-    # Generate config from body
-    config = generate_slab_config(body)
-    config_path = create_temp_config(config)
-
-    # Initialize propagator cache
-    propagators = Dict{ParticleType, Any}()
-
-    return SlabPropagator{B}(body, config_path, propagators)
+    propagators = Dict{Tuple{ParticleType, String}, Any}()
+    return SlabPropagator{B}(body, propagators)
 end
 
 """
-Get or create a PROPOSAL propagator for a given particle type.
+Get or create a PROPOSAL propagator for a given particle type and medium.
+Each (particle_type, medium) pair gets its own propagator with a large
+enclosing sphere, matching the Python TauRunner approach.
 """
-function get_proposal_propagator(prop::SlabPropagator, particle_type::ParticleType)
-    if haskey(prop.propagators, particle_type)
-        return prop.propagators[particle_type]
+function get_proposal_propagator(prop::SlabPropagator, particle_type::ParticleType, medium_name::String, density_gcm3::Float64)
+    key = (particle_type, medium_name)
+    if haskey(prop.propagators, key)
+        return prop.propagators[key]
     end
+
+    # Generate config for this layer
+    config = generate_slab_layer_config(density_gcm3, medium_name)
+    config_path = create_temp_config(config)
 
     # Create the appropriate propagator based on particle type
     creator_key = if particle_type == Tau
@@ -63,9 +64,9 @@ function get_proposal_propagator(prop::SlabPropagator, particle_type::ParticleTy
     else
         error("Unknown particle type for PROPOSAL: $particle_type")
     end
-    pp = Base.invokelatest(PROPOSAL_FN[creator_key], prop.config_path)
+    pp = Base.invokelatest(PROPOSAL_FN[creator_key], config_path)
 
-    prop.propagators[particle_type] = pp
+    prop.propagators[key] = pp
     return pp
 end
 
@@ -73,6 +74,7 @@ end
     propagate_charged_lepton!(propagator::SlabPropagator, particle, track)
 
 Propagate a charged lepton through a slab body using PROPOSAL.jl.
+Iterates over layers like the Python implementation.
 """
 function propagate_charged_lepton!(
     propagator::SlabPropagator,
@@ -97,80 +99,99 @@ function propagate_charged_lepton!(
         return nothing
     end
 
-    remaining_dist_cm = x_to_d(track, remaining_x) * propagator.body.length_natural / units.cm
-
     # For muons far from the exit (>100 km), they won't make it
+    remaining_dist_cm = x_to_d(track, remaining_x) * propagator.body.length_natural / units.cm
     if abs_id == 13 && remaining_dist_cm / 1e5 > 100.0
         return nothing
     end
 
-    _propagate_slab_with_proposal!(propagator, particle, track, remaining_dist_cm)
+    _propagate_slab_with_proposal!(propagator, particle, track)
 
     return nothing
 end
 
 """
-Propagate through slab using PROPOSAL.jl.
+Propagate through slab layer-by-layer using PROPOSAL.jl.
+
+Matches the Python TauRunner approach: for each layer that the particle
+still needs to traverse, create a propagator with a large enclosing sphere
+and start the particle at the origin. This completely avoids PROPOSAL
+segfaults from particles landing on sector boundaries.
 """
 function _propagate_slab_with_proposal!(
     propagator::SlabPropagator,
     particle,
-    track,
-    max_distance_cm::Float64
+    track
 )
-    pp = get_proposal_propagator(propagator, particle.id)
+    body = propagator.body
+    boundaries = layer_boundaries(body)
+    slab_length_cm = body.length_natural / units.cm
 
-    # Slab length in cm
-    slab_length_cm = propagator.body.length_natural / units.cm
-
-    # Current position in slab (in cm)
-    # Clamp to stay strictly inside the geometry — PROPOSAL segfaults if the
-    # particle position lands exactly on or beyond the slab boundary due to
-    # floating-point arithmetic ("No sector defined at particle position").
-    current_z_cm = clamp(particle.position * slab_length_cm, 0.0, slab_length_cm * (1.0 - 1e-12))
-
-    # Direction (along z-axis for normal incidence, or tilted for angled tracks)
+    particle_type_id = proposal_particle_type(particle.id)
     dir = x_to_cartesian_direction(track, particle.position)
-
-    # Energy in MeV
-    energy_mev = particle.energy / units.MeV
-    # Minimum energy: use 0 to match Python TauRunner (PROPOSAL default)
     min_energy_mev = 0.0
 
-    # Create PROPOSAL ParticleState
-    particle_type_id = proposal_particle_type(particle.id)
+    prv = particle.position
 
-    state = Base.invokelatest(
-        PROPOSAL_FN[:ParticleState],
-        particle_type_id,
-        0.0, 0.0, current_z_cm,
-        dir[1], dir[2], dir[3],
-        energy_mev;
-        time=0.0,
-        propagated_distance=0.0
-    )
+    for i in 1:(length(boundaries) - 1)
+        layer_end = boundaries[i + 1]
 
-    # Propagate
-    secondaries = suppress_proposal_warnings() do
-        Base.invokelatest(PROPOSAL_FN[:propagate], pp, state, max_distance_cm, min_energy_mev)
-    end
+        # Skip layers the particle has already passed
+        if layer_end <= particle.position
+            continue
+        end
 
-    # Extract final state
-    final_state = Base.invokelatest(PROPOSAL_FN[:get_final_state], secondaries)
-    final_energy_mev = Base.invokelatest(PROPOSAL_FN[:get_energy], final_state)
-    propagated_dist_cm = Base.invokelatest(PROPOSAL_FN[:get_propagated_distance], final_state)
+        # Get layer properties
+        x_mid = (boundaries[i] + boundaries[i + 1]) / 2
+        density = get_density(body, x_mid)
+        density_gcm3 = density / units.DENSITY_CONV
+        medium_name = density_to_medium(density)
 
-    # Update particle energy
-    particle.energy = final_energy_mev * units.MeV
+        # Get or create propagator for this (particle_type, medium) pair
+        pp = get_proposal_propagator(propagator, particle.id, medium_name, density_gcm3)
 
-    # Update position
-    dist_traveled_normalized = (propagated_dist_cm * units.cm) / propagator.body.length_natural
-    particle.position = clamp(particle.position + dist_traveled_normalized, 0.0, 1.0)
+        # Distance to propagate in this layer (in cm)
+        prop_length_cm = (layer_end - prv) * slab_length_cm
 
-    # Check for decay
-    if particle.energy <= particle.mass * (1.0 + 1e-6)
-        particle.decay_position = particle.position
-        decay!(particle)
+        # Energy in MeV
+        energy_mev = particle.energy / units.MeV
+
+        # Create PROPOSAL ParticleState at the origin (like Python)
+        state = Base.invokelatest(
+            PROPOSAL_FN[:ParticleState],
+            particle_type_id,
+            0.0, 0.0, 0.0,
+            dir[1], dir[2], dir[3],
+            energy_mev;
+            time=0.0,
+            propagated_distance=0.0
+        )
+
+        # Propagate for the layer thickness
+        secondaries = suppress_proposal_warnings() do
+            Base.invokelatest(PROPOSAL_FN[:propagate], pp, state, prop_length_cm, min_energy_mev)
+        end
+
+        # Extract final state
+        final_state = Base.invokelatest(PROPOSAL_FN[:get_final_state], secondaries)
+        final_energy_mev = Base.invokelatest(PROPOSAL_FN[:get_energy], final_state)
+        propagated_dist_cm = Base.invokelatest(PROPOSAL_FN[:get_propagated_distance], final_state)
+
+        # Update particle energy
+        particle.energy = final_energy_mev * units.MeV
+
+        # Update position based on actual distance propagated
+        dist_traveled_normalized = (propagated_dist_cm * units.cm) / body.length_natural
+        particle.position = clamp(prv + dist_traveled_normalized, 0.0, 1.0)
+
+        # Check for decay
+        if particle.energy <= particle.mass * (1.0 + 1e-6)
+            particle.decay_position = particle.position
+            decay!(particle)
+            return nothing
+        end
+
+        prv = layer_end
     end
 
     return nothing

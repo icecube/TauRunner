@@ -190,82 +190,37 @@ function generate_uniform_sphere_config(radius_cm::Real, medium::String; cuts=de
 end
 
 """
-    generate_slab_config(body::AbstractSlabBody; cuts=default_cuts())
+    generate_slab_layer_config(density_gcm3::Real, medium_name::String; cuts=default_cuts())
 
-Generate a PROPOSAL JSON configuration for a slab body.
+Generate a PROPOSAL JSON configuration for a single slab layer.
 
-Uses box geometry to represent the slab.
+Uses a large enclosing sphere (radius 1e20 cm) centered at the origin,
+matching the Python TauRunner approach. The particle is always placed at
+the origin and propagated for the layer thickness. This avoids all
+boundary-related PROPOSAL segfaults ("No sector defined at particle
+position") that occur with fitted box geometries when a particle lands
+exactly on a sector boundary due to floating-point arithmetic.
 """
-function generate_slab_config(body::AbstractSlabBody; cuts=default_cuts(), outer_buffer::Real=1e10)
-    # Slab length in cm
-    length_cm = body.length_natural / units.cm
-
-    # Use a large transverse size (effectively infinite)
-    transverse_size = 1e10  # cm
-
-    sectors = []
-    boundaries = layer_boundaries(body)
-
-    z_offset = 0.0
-    for i in 1:(length(boundaries) - 1)
-        z_start = boundaries[i] * length_cm
-        z_end = boundaries[i + 1] * length_cm
-        layer_thickness = z_end - z_start
-
-        # Get density and map to medium
-        x_mid = (boundaries[i] + boundaries[i + 1]) / 2
-        density = get_density(body, x_mid)
-        density_gcm3 = density / units.DENSITY_CONV
-        medium_name = density_to_medium(density)
-
-        sector = Dict(
-            "medium" => medium_name,
-            "density_distribution" => Dict("type" => "homogeneous", "mass_density" => density_gcm3),
-            "geometries" => [
-                Dict(
-                    "hierarchy" => 0,
-                    "shape" => "box",
-                    "origin" => [0.0, 0.0, z_start + layer_thickness / 2],
-                    "length" => transverse_size,
-                    "width" => transverse_size,
-                    "height" => layer_thickness
-                )
-            ]
-        )
-
-        push!(sectors, sector)
-    end
-
-    # Add air buffer beyond slab end so particles don't propagate
-    # beyond the defined geometry (which causes PROPOSAL segfaults).
-    # Overlap by 1 cm to avoid floating-point boundary gaps between the
-    # last slab sector and the air buffer — PROPOSAL crashes with
-    # "No sector defined at particle position" if a particle lands exactly
-    # on the boundary between two adjacent non-overlapping sectors.
-    overlap_cm = 1.0
-    n_layers = length(boundaries) - 1
-    air_start = length_cm - overlap_cm
-    air_height = outer_buffer + overlap_cm
-    push!(sectors, Dict(
-        "medium" => "Air",
-        "geometries" => [
-            Dict(
-                "hierarchy" => 0,
-                "shape" => "box",
-                "origin" => [0.0, 0.0, air_start + air_height / 2],
-                "length" => transverse_size,
-                "width" => transverse_size,
-                "height" => air_height
-            )
-        ]
-    ))
-
+function generate_slab_layer_config(density_gcm3::Real, medium_name::String; cuts=default_cuts())
     config = Dict(
         "global" => Dict(
             "cuts" => cuts,
             "tables_path" => get_proposal_tables_path()
         ),
-        "sectors" => sectors
+        "sectors" => [
+            Dict(
+                "medium" => medium_name,
+                "density_distribution" => Dict("type" => "homogeneous", "mass_density" => density_gcm3),
+                "geometries" => [
+                    Dict(
+                        "hierarchy" => 0,
+                        "shape" => "sphere",
+                        "origin" => [0.0, 0.0, 0.0],
+                        "outer_radius" => 1e20
+                    )
+                ]
+            )
+        ]
     )
 
     return config
