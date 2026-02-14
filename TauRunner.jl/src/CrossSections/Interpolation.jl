@@ -43,7 +43,9 @@ function load_spline_2d(filepath::String)
     knots_y = Float64.(data["knots_y"])
     values = Float64.(data["values"])
 
-    return linear_interpolation((knots_x, knots_y), values, extrapolation_bc=Line())
+    # Use Dierckx Spline2D for bicubic interpolation to match Python's scipy bicubic splines
+    # kx=3, ky=3 gives cubic interpolation (default)
+    return Spline2D(knots_x, knots_y, values)
 end
 
 """

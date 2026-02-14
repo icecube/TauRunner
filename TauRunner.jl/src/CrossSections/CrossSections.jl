@@ -9,6 +9,7 @@ using Interpolations
 using JLD2
 using JSON3
 using NPZ
+using Dierckx
 using ..TauRunner: AbstractCrossSections
 using ..TauRunner: units, PhysicsConstants
 
