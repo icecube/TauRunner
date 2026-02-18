@@ -89,15 +89,6 @@ function _populate_proposal_functions!()
 end
 
 function __init__()
-    if !PROPOSAL.is_library_available()
-        error("""
-        PROPOSAL.jl native library not available.
-
-        TauRunner.jl requires PROPOSAL for charged lepton propagation.
-        For instructions on building and installing the PROPOSAL native library,
-        see the PROPOSAL.jl README.
-        """)
-    end
     _populate_proposal_functions!()
     @info "PROPOSAL.jl loaded successfully"
 end
