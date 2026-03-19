@@ -13,20 +13,21 @@ TauRunner.jl is a Julia port of the [TauRunner](https://github.com/icecube/TauRu
 
 ## Installation
 
+Requires Julia 1.11 or later.
+
+PROPOSAL.jl is not yet registered in the General registry, so it must be added explicitly before TauRunner.jl:
+
 ```julia
 using Pkg
+Pkg.add(url="https://github.com/jlazar17/PROPOSAL.jl")
 Pkg.add(url="https://github.com/icecube/TauRunner", subdir="TauRunner.jl")
 ```
 
-Or for development:
+For development:
 ```julia
 using Pkg
 Pkg.develop(path="path/to/TauRunner/TauRunner.jl")
 ```
-
-## PROPOSAL.jl Dependency
-
-TauRunner.jl requires [PROPOSAL](https://github.com/tudo-astroparticlephysics/PROPOSAL) for charged lepton propagation. The Julia bindings (PROPOSAL.jl) are currently **not yet available** through Yggdrasil, but the submission is pending. Until then, PROPOSAL.jl must be installed as a local development dependency.
 
 ## Quick Start
 
