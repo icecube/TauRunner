@@ -86,12 +86,9 @@ python taurunner/main.py --h
 
 ## Citation
 
-To cite this work, and for more information, please refer to
+If you use TauRunner in your research, please cite:
 
-Observing EeV neutrinos through Earth: GZK and the anomalous ANITA events
-
-Ibrahim Safa, Alex Pizzuto, Carlos Argüelles, Francis Halzen, Raamis Hussain, Ali Kheirandish, Justin Vandenbroucke
-
-Journal article: https://doi.org/10.1088/1475-7516/2020/01/012
-preprint: arXiv:1909.10487
+> Ibrahim Safa, Jeffrey Lazar, Alex Pizzuto, Oswaldo Vasquez, Carlos A. Argüelles, Justin Vandenbroucke
+> "TauRunner: A Public Python Program to Propagate Neutral and Charged Leptons"
+> Comput. Phys. Commun. 278 (2022) 108422. [arXiv:2110.14662](https://arxiv.org/abs/12110.14662)
 
