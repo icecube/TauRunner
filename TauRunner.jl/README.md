@@ -81,6 +81,6 @@ Ibrahim Safa, Carlos A. Arguelles, Jeff Lazar, Alex Pizzuto
 
 If you use TauRunner in your research, please cite:
 
-> Ibrahim Safa, Alex Pizzuto, Carlos Arguelles, Francis Halzen, Raamis Hussain, Ali Kheirandish, Justin Vandenbroucke.
-> "Observing EeV neutrinos through Earth: GZK and the anomalous ANITA events"
-> JCAP 01 (2020) 012. [arXiv:1909.10487](https://arxiv.org/abs/1909.10487)
+> Ibrahim Safa, Jeffrey Lazar, Alex Pizzuto, Oswaldo Vasquez, Carlos A. Argüelles, Justin Vandenbroucke
+> "TauRunner: A Public Python Program to Propagate Neutral and Charged Leptons"
+> Comput. Phys. Commun. 278 (2022) 108422. [arXiv:2110.14662](https://arxiv.org/abs/12110.14662)
