@@ -260,7 +260,7 @@ const ATOL = 1e-10  # Absolute tolerance for near-zero values
         ref_mc = REF_DATA["monte_carlo"]
 
         earth = construct_earth()
-        xs = CrossSections(DIPOLE)
+        xs = CrossSections(CSMS)
 
         # Use larger tolerance for MC due to stochastic nature
         # We use 20% tolerance since we're comparing 100-event samples
