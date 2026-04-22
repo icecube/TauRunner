@@ -90,7 +90,6 @@ end
 
 function __init__()
     _populate_proposal_functions!()
-    @info "PROPOSAL.jl loaded successfully"
 end
 
 export ChargedLeptonPropagator, SphericalBodyPropagator, SlabPropagator
