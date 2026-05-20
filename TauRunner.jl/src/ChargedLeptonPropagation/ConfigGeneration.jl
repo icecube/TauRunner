@@ -147,8 +147,7 @@ function generate_sphere_config(body::AbstractSphericalBody; cuts=default_cuts()
 
     config = Dict(
         "global" => Dict(
-            "cuts" => cuts,
-            "tables_path" => get_proposal_tables_path()
+            "cuts" => cuts
         ),
         "sectors" => sectors
     )
@@ -169,8 +168,7 @@ Generate a simple uniform sphere configuration.
 function generate_uniform_sphere_config(radius_cm::Real, medium::String; cuts=default_cuts())
     config = Dict(
         "global" => Dict(
-            "cuts" => cuts,
-            "tables_path" => get_proposal_tables_path()
+            "cuts" => cuts
         ),
         "sectors" => [
             Dict(
@@ -204,8 +202,7 @@ exactly on a sector boundary due to floating-point arithmetic.
 function generate_slab_layer_config(density_gcm3::Real, medium_name::String; cuts=default_cuts())
     config = Dict(
         "global" => Dict(
-            "cuts" => cuts,
-            "tables_path" => get_proposal_tables_path()
+            "cuts" => cuts
         ),
         "sectors" => [
             Dict(
@@ -244,6 +241,11 @@ end
 Write config to a temporary file and return the path.
 """
 function create_temp_config(config::Dict)
+    # PROPOSAL reads its interpolation-table directory from a process-global
+    # (InterpolationSettings::TABLES_PATH), NOT from the JSON config. Push the
+    # resolved path in here so it takes effect before the propagator is built.
+    PROPOSAL.set_tables_path(get_proposal_tables_path())
+
     filepath = tempname() * ".json"
     write_config(config, filepath)
     return filepath
