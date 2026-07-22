@@ -31,6 +31,7 @@ mutable struct ProposalFunctions
     get_final_state::Any
     get_energy::Any
     get_propagated_distance::Any
+    has_decay::Any
     # Propagator creation (called once per particle type, then cached)
     create_propagator_tauminus::Any
     create_propagator_tauplus::Any
@@ -69,6 +70,7 @@ function _populate_proposal_functions!()
     PROPOSAL_FN_STRUCT.get_final_state = getfield(M, :get_final_state)
     PROPOSAL_FN_STRUCT.get_energy = getfield(M, :get_energy)
     PROPOSAL_FN_STRUCT.get_propagated_distance = getfield(M, :get_propagated_distance)
+    PROPOSAL_FN_STRUCT.has_decay = getfield(M, :has_decay)
 
     PROPOSAL_FN_STRUCT.create_propagator_tauminus = getfield(M, :create_propagator_tauminus)
     PROPOSAL_FN_STRUCT.create_propagator_tauplus = getfield(M, :create_propagator_tauplus)
