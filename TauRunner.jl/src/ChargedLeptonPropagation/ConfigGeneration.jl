@@ -26,6 +26,27 @@ function get_proposal_tables_path()
 end
 
 """
+    ensure_proposal_tables_path!()
+
+Point PROPOSAL's interpolation-table directory at [`get_proposal_tables_path`](@ref).
+
+PROPOSAL takes this from a process-global (`InterpolationSettings::TABLES_PATH`),
+not from the JSON config, so it must be set before any propagator is built.
+Idempotent: only writes the global when it does not already hold the wanted path.
+"""
+function ensure_proposal_tables_path!()
+    if !isdefined(PROPOSAL, :set_tables_path)
+        # Older PROPOSAL.jl without the settings bindings; fall back to its default.
+        return nothing
+    end
+    wanted = get_proposal_tables_path()
+    if PROPOSAL.get_tables_path() != wanted
+        PROPOSAL.set_tables_path(wanted)
+    end
+    return nothing
+end
+
+"""
 Map TauRunner density (in natural units eV^4) to PROPOSAL medium name.
 This is approximate - we select the closest standard medium.
 """
@@ -147,8 +168,7 @@ function generate_sphere_config(body::AbstractSphericalBody; cuts=default_cuts()
 
     config = Dict(
         "global" => Dict(
-            "cuts" => cuts,
-            "tables_path" => get_proposal_tables_path()
+            "cuts" => cuts
         ),
         "sectors" => sectors
     )
@@ -169,8 +189,7 @@ Generate a simple uniform sphere configuration.
 function generate_uniform_sphere_config(radius_cm::Real, medium::String; cuts=default_cuts())
     config = Dict(
         "global" => Dict(
-            "cuts" => cuts,
-            "tables_path" => get_proposal_tables_path()
+            "cuts" => cuts
         ),
         "sectors" => [
             Dict(
@@ -204,8 +223,7 @@ exactly on a sector boundary due to floating-point arithmetic.
 function generate_slab_layer_config(density_gcm3::Real, medium_name::String; cuts=default_cuts())
     config = Dict(
         "global" => Dict(
-            "cuts" => cuts,
-            "tables_path" => get_proposal_tables_path()
+            "cuts" => cuts
         ),
         "sectors" => [
             Dict(

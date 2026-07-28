@@ -67,6 +67,8 @@ function get_proposal_propagator(prop::SphericalBodyPropagator, particle_type::P
     else
         error("Unknown particle type for PROPOSAL: $particle_type")
     end
+
+    ensure_proposal_tables_path!()
     pp = Base.invokelatest(PROPOSAL_FN[creator_key], prop.config_path)
 
     prop.propagators[particle_type] = pp
@@ -196,9 +198,8 @@ function _propagate_with_proposal!(
     # Clamp to [0, 1]
     particle.position = clamp(new_x, 0.0, 1.0)
 
-    # Check if particle decayed (energy dropped to rest mass or below)
-    # For tau/muon, if energy is at rest mass, it decayed
-    if particle.energy <= particle.mass * (1.0 + 1e-6)  # Rest mass = decayed
+    # Check if PROPOSAL decayed the particle during this propagation
+    if Base.invokelatest(PROPOSAL_FN[:has_decay], secondaries)
         particle.decay_position = particle.position
         decay!(particle)
     end

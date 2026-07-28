@@ -48,6 +48,8 @@ function get_proposal_propagator(prop::SlabPropagator, particle_type::ParticleTy
     config = generate_slab_layer_config(density_gcm3, medium_name)
     config_path = create_temp_config(config)
 
+    ensure_proposal_tables_path!()
+
     # Create the appropriate propagator based on particle type
     creator_key = if particle_type == Tau
         :create_propagator_tauminus
@@ -185,7 +187,7 @@ function _propagate_slab_with_proposal!(
         particle.position = clamp(prv + dist_traveled_normalized, 0.0, 1.0)
 
         # Check for decay
-        if particle.energy <= particle.mass * (1.0 + 1e-6)
+        if Base.invokelatest(PROPOSAL_FN[:has_decay], secondaries)
             particle.decay_position = particle.position
             decay!(particle)
             return nothing
