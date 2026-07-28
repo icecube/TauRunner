@@ -338,4 +338,6 @@ const ATOL = 1e-10  # Absolute tolerance for near-zero values
         end
     end
 
+    include("test_decay_in_flight.jl")
+
 end

@@ -67,6 +67,8 @@ function get_proposal_propagator(prop::SphericalBodyPropagator, particle_type::P
     else
         error("Unknown particle type for PROPOSAL: $particle_type")
     end
+
+    ensure_proposal_tables_path!()
     pp = Base.invokelatest(PROPOSAL_FN[creator_key], prop.config_path)
 
     prop.propagators[particle_type] = pp

@@ -48,6 +48,8 @@ function get_proposal_propagator(prop::SlabPropagator, particle_type::ParticleTy
     config = generate_slab_layer_config(density_gcm3, medium_name)
     config_path = create_temp_config(config)
 
+    ensure_proposal_tables_path!()
+
     # Create the appropriate propagator based on particle type
     creator_key = if particle_type == Tau
         :create_propagator_tauminus
