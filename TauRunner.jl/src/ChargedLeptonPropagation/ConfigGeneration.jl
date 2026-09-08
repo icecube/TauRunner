@@ -126,7 +126,8 @@ function generate_sphere_config(body::AbstractSphericalBody; cuts=default_cuts()
         r_inner = boundaries[i] * radius_cm
         r_outer = boundaries[i + 1] * radius_cm
 
-        # Get average density in this layer (g/cm³)
+        # Pointwise density at the layer's midpoint radius (g/cm³); this is
+        # not the layer's radial average (see get_average_density).
         r_mid = (boundaries[i] + boundaries[i + 1]) / 2
         density = get_density(body, r_mid)
         density_gcm3 = density / units.DENSITY_CONV
